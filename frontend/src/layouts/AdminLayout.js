@@ -37,7 +37,7 @@ const AdminLayout = () => {
   const menuItems = [
     { path: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
     { path: '/admin/users', icon: Users, label: 'Usuarios' },
-    { path: '/admin/roles', icon: FolderTree, label: 'Roles y Mallas' },
+    { path: '/admin/roles', icon: FolderTree, label: 'Roles/Actividades' },
     { path: '/admin/courses', icon: GraduationCap, label: 'Cursos' },
     { path: '/admin/evaluations', icon: ClipboardCheck, label: 'Evaluaciones' },
     { path: '/admin/certificates', icon: Award, label: 'Certificados' },
