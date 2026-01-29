@@ -56,7 +56,7 @@ const StudentDashboard = () => {
           ¡Hola, {user?.full_name || user?.name || 'Estudiante'}!
         </h1>
         <p className="text-orange-100 mb-6">
-          {progress?.role_name ? `Rol: ${progress.role_name}` : 'Continúa tu formación y obtén tus certificados'}
+          {progress?.role_names ? `Rol/Actividad: ${progress.role_names}` : 'Continúa tu formación y obtén tus certificados'}
         </p>
         <div className="flex items-center gap-6">
           <div className="text-center">
