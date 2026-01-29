@@ -122,6 +122,7 @@ class BrandingUpdate(BaseModel):
     primary_color: Optional[str] = None
     secondary_color: Optional[str] = None
     footer_text: Optional[str] = None
+    banner_logo_url: Optional[str] = None
 
 # ==================== AUTH HELPERS ====================
 
