@@ -58,13 +58,13 @@ class UserCreate(BaseModel):
     full_name: str
     rut: str
     company: Optional[str] = None
-    role_id: Optional[str] = None
+    role_ids: List[str] = []  # Multiple roles/activities
     is_admin: bool = False
 
 class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     company: Optional[str] = None
-    role_id: Optional[str] = None
+    role_ids: Optional[List[str]] = None  # Multiple roles/activities
     is_active: Optional[bool] = None
 
 class UserLogin(BaseModel):
