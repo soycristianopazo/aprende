@@ -397,6 +397,7 @@ async def create_role(data: RoleCreate, admin: dict = Depends(require_admin)):
         "name": data.name,
         "description": data.description,
         "course_ids": data.course_ids,
+        "course_order": data.course_order if data.course_order else data.course_ids,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.roles.insert_one(role_doc)
