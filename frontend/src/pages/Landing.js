@@ -225,12 +225,22 @@ const Landing = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-orange-500 flex items-center justify-center">
-                <BookOpen className="w-5 h-5 text-white" />
-              </div>
-              <span className="font-bold text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                E-Learning Platform
-              </span>
+              {branding?.banner_logo_url ? (
+                <img 
+                  src={`${BACKEND_URL}${branding.banner_logo_url}`} 
+                  alt="Logo" 
+                  className="h-8 max-w-[140px] object-contain brightness-0 invert"
+                />
+              ) : (
+                <>
+                  <div className="w-8 h-8 rounded-lg bg-orange-500 flex items-center justify-center">
+                    <BookOpen className="w-5 h-5 text-white" />
+                  </div>
+                  <span className="font-bold text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                    E-Learning Platform
+                  </span>
+                </>
+              )}
             </div>
             <p className="text-slate-400 text-sm">
               © {new Date().getFullYear()} E-Learning Platform. Todos los derechos reservados.
