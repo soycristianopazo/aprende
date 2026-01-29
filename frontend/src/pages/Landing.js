@@ -1,9 +1,30 @@
 import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { BookOpen, Users, Award, BarChart3, CheckCircle, PlayCircle, ArrowRight } from 'lucide-react';
 
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
+
 const Landing = () => {
+  const [branding, setBranding] = useState(null);
+
+  useEffect(() => {
+    fetchBranding();
+  }, []);
+
+  const fetchBranding = async () => {
+    try {
+      const response = await fetch(`${API}/branding`);
+      if (response.ok) {
+        setBranding(await response.json());
+      }
+    } catch (error) {
+      console.error('Error fetching branding:', error);
+    }
+  };
+
   const features = [
     {
       icon: BookOpen,
@@ -44,10 +65,18 @@ const Landing = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center">
-                <BookOpen className="w-6 h-6 text-white" />
-              </div>
-              <span className="font-bold text-xl text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              {branding?.banner_logo_url ? (
+                <img 
+                  src={`${BACKEND_URL}${branding.banner_logo_url}`} 
+                  alt="Logo" 
+                  className="h-10 max-w-[180px] object-contain"
+                />
+              ) : (
+                <>
+                  <div className="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center">
+                    <BookOpen className="w-6 h-6 text-white" />
+                  </div>
+                  <span className="font-bold text-xl text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
                 E-Learning
               </span>
             </div>
