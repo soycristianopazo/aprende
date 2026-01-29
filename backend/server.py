@@ -451,6 +451,7 @@ async def create_course(data: CourseCreate, admin: dict = Depends(require_admin)
         "video_url": data.video_url,
         "material_url": None,
         "status": data.status,
+        "prerequisites": data.prerequisites,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.courses.insert_one(course_doc)
