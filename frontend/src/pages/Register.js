@@ -97,13 +97,23 @@ const Register = () => {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex justify-center mb-8">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-12 h-12 rounded-xl bg-orange-500 flex items-center justify-center">
-              <BookOpen className="w-7 h-7 text-white" />
-            </div>
-            <span className="font-bold text-2xl text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
-              E-Learning
-            </span>
+          <Link to="/" className="flex items-center justify-center">
+            {branding?.banner_logo_url ? (
+              <img 
+                src={`${BACKEND_URL}${branding.banner_logo_url}`} 
+                alt="Logo" 
+                className="h-14 max-w-[200px] object-contain"
+              />
+            ) : (
+              <div className="flex items-center gap-2">
+                <div className="w-12 h-12 rounded-xl bg-orange-500 flex items-center justify-center">
+                  <BookOpen className="w-7 h-7 text-white" />
+                </div>
+                <span className="font-bold text-2xl text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                  E-Learning
+                </span>
+              </div>
+            )}
           </Link>
         </div>
 
