@@ -209,7 +209,7 @@ async def register(user_data: UserCreate):
         "full_name": user_data.full_name,
         "rut": user_data.rut,
         "company": user_data.company,
-        "role_id": user_data.role_id,
+        "role_ids": user_data.role_ids,  # Multiple roles
         "is_admin": user_data.is_admin,
         "is_active": True,
         "picture": None,
