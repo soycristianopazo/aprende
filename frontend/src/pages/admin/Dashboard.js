@@ -170,9 +170,9 @@ const AdminDashboard = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-orange-500" />
-              Usuarios por Rol
+              Usuarios por Rol/Actividad
             </CardTitle>
-            <CardDescription>Distribución de alumnos según su rol</CardDescription>
+            <CardDescription>Distribución de alumnos según su rol/actividad</CardDescription>
           </CardHeader>
           <CardContent>
             {groupedUsersByRole && groupedUsersByRole.length > 0 ? (
