@@ -390,6 +390,55 @@ async def search_user_by_rut(rut: str, admin: dict = Depends(require_admin)):
 
 # ==================== ROLE ROUTES ====================
 
+# Predefined roles/activities
+PREDEFINED_ROLES = [
+    "TRABAJO EN ALTURA",
+    "ARMADO DE ANDAMIOS",
+    "OPERADOR PLATAFORMAS MÓVILES MOTORIZADAS",
+    "OPERADOR GRÚA",
+    "RIGGER",
+    "IZAJE",
+    "OPERADOR EQUIPO EXCAVACIÓN Y MOVIMIENTO DE TIERRA",
+    "ESPACIOS CONFINADOS",
+    "SOLDADOR",
+    "ACTIVIDADES CON LLAMA ABIERTA O TRABAJOS EN CALIENTE",
+    "ESPECIALISTA SEC CON INTERVENCIÓN EN LÍNEAS DE GAS",
+    "OPERADOR EQUIPO RADIACTIVO",
+    "AISLACIÓN Y BLOQUEO DE ENERGÍAS",
+    "INSTALADOR ELÉCTRICO",
+    "INTERVENCIÓN EN ENERGÍA ELÉCTRICA",
+    "MANIPULADOR DE EXPLOSIVOS",
+    "CONDUCCIÓN",
+    "CONDUCCIÓN DE BUS O VEHÍCULOS DE TRANSPORTE DE CARGA",
+    "CONDUCCIÓN MINA"
+]
+
+@api_router.get("/roles/predefined/list")
+async def get_predefined_roles():
+    """Get list of predefined roles/activities"""
+    return {"roles": PREDEFINED_ROLES}
+
+@api_router.post("/roles/predefined/init")
+async def init_predefined_roles(admin: dict = Depends(require_admin)):
+    """Initialize predefined roles if they don't exist"""
+    created = []
+    for role_name in PREDEFINED_ROLES:
+        existing = await db.roles.find_one({"name": role_name})
+        if not existing:
+            role_id = f"role_{uuid.uuid4().hex[:12]}"
+            role_doc = {
+                "role_id": role_id,
+                "name": role_name,
+                "description": f"Rol/Actividad: {role_name}",
+                "course_ids": [],
+                "course_order": [],
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.roles.insert_one(role_doc)
+            created.append(role_name)
+    
+    return {"message": f"Created {len(created)} roles", "created": created}
+
 @api_router.post("/roles")
 async def create_role(data: RoleCreate, admin: dict = Depends(require_admin)):
     role_id = f"role_{uuid.uuid4().hex[:12]}"
