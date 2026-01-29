@@ -100,6 +100,26 @@ const AdminDashboard = () => {
     },
   ];
 
+  // Agrupar usuarios por rol (combinar duplicados)
+  const groupedUsersByRole = React.useMemo(() => {
+    if (!stats?.users_by_role) return [];
+    
+    const grouped = {};
+    stats.users_by_role.forEach(item => {
+      const roleName = item.role || 'Sin rol';
+      if (grouped[roleName]) {
+        grouped[roleName] += item.count;
+      } else {
+        grouped[roleName] = item.count;
+      }
+    });
+    
+    return Object.entries(grouped).map(([role, count]) => ({
+      role,
+      count
+    }));
+  }, [stats?.users_by_role]);
+
   const certData = [
     { name: 'Válidos', value: stats?.valid_certificates || 0 },
     { name: 'Vencidos', value: stats?.expired_certificates || 0 },
