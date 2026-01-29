@@ -164,7 +164,7 @@ const AdminLayout = () => {
       <div className="lg:pl-64">
         {/* Top Bar */}
         <header className="sticky top-0 z-30 h-16 bg-white/80 backdrop-blur-md border-b border-slate-200">
-          <div className="flex items-center justify-between h-full px-4 lg:px-8 relative">
+          <div className="flex items-center justify-between h-full px-4 lg:px-8">
             <Button
               variant="ghost"
               size="icon"
@@ -177,20 +177,9 @@ const AdminLayout = () => {
             <div className="flex items-center gap-2 lg:hidden">
               <span className="text-sm font-medium text-slate-600">Panel de Administración</span>
             </div>
-            
-            {/* Centered Logo */}
-            <div className="absolute left-1/2 transform -translate-x-1/2 hidden lg:flex items-center">
-              {branding?.banner_logo_url ? (
-                <img 
-                  src={`${BACKEND_URL}${branding.banner_logo_url}`} 
-                  alt="Logo" 
-                  className="h-10 max-w-[180px] object-contain"
-                />
-              ) : (
-                <span className="text-sm text-slate-500">Panel de Administración</span>
-              )}
+            <div className="hidden lg:block">
+              <span className="text-sm text-slate-500">Panel de Administración</span>
             </div>
-            
             <div className="flex items-center gap-2">
               <span className="text-sm text-slate-600 hidden sm:inline">
                 Bienvenido, {user?.full_name || user?.name || 'Administrador'}
