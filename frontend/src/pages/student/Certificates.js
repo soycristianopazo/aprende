@@ -134,7 +134,9 @@ const StudentCertificates = () => {
                               )}
                             </div>
                             <div>
-                              <CardTitle className="text-xl">Rol: {cert.role_name}</CardTitle>
+                              <CardTitle className="text-xl">
+                                Rol/Actividad: {cert.role_names || cert.role_name}
+                              </CardTitle>
                               <CardDescription>
                                 Código: <code className="text-xs bg-slate-100 px-1.5 py-0.5 rounded font-mono">{cert.verification_code}</code>
                               </CardDescription>
