@@ -61,6 +61,29 @@ Desarrollar una plataforma web autónoma de capacitaciones e-learning que permit
 ## DB Schema Updates (2025-01-29)
 - **courses**: Added `prerequisites: List[str]` (list of course_ids)
 - **roles**: Added `course_order: List[str]` (ordered list of course_ids)
+- **users**: Changed `role_id` to `role_ids: List[str]` (supports multiple roles/activities)
+- **certificates**: Changed `role_id/role_name` to `role_ids/role_names` (supports multiple roles)
+
+## Predefined Roles/Activities
+1. TRABAJO EN ALTURA
+2. ARMADO DE ANDAMIOS
+3. OPERADOR PLATAFORMAS MÓVILES MOTORIZADAS
+4. OPERADOR GRÚA
+5. RIGGER
+6. IZAJE
+7. OPERADOR EQUIPO EXCAVACIÓN Y MOVIMIENTO DE TIERRA
+8. ESPACIOS CONFINADOS
+9. SOLDADOR
+10. ACTIVIDADES CON LLAMA ABIERTA O TRABAJOS EN CALIENTE
+11. ESPECIALISTA SEC CON INTERVENCIÓN EN LÍNEAS DE GAS
+12. OPERADOR EQUIPO RADIACTIVO
+13. AISLACIÓN Y BLOQUEO DE ENERGÍAS
+14. INSTALADOR ELÉCTRICO
+15. INTERVENCIÓN EN ENERGÍA ELÉCTRICA
+16. MANIPULADOR DE EXPLOSIVOS
+17. CONDUCCIÓN
+18. CONDUCCIÓN DE BUS O VEHÍCULOS DE TRANSPORTE DE CARGA
+19. CONDUCCIÓN MINA
 
 ## Prioritized Backlog
 
