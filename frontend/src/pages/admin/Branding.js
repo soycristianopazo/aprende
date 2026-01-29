@@ -439,20 +439,6 @@ const AdminBranding = () => {
           </div>
         </CardContent>
       </Card>
-              <p className="font-mono font-semibold text-slate-700">ABC12345</p>
-            </div>
-            {branding.footer_image_url && (
-              <div className="mt-4">
-                <img
-                  src={`${BACKEND_URL}${branding.footer_image_url}`}
-                  alt="Footer"
-                  className="max-h-12 object-contain mx-auto"
-                />
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };
