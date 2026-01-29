@@ -112,7 +112,7 @@ const StudentDashboard = () => {
               Tu Ruta de Aprendizaje
             </DialogTitle>
             <DialogDescription>
-              {progress?.role_name && `Malla curricular para: ${progress.role_name}`}
+              {progress?.role_names && `Malla curricular para: ${progress.role_names}`}
             </DialogDescription>
           </DialogHeader>
           
