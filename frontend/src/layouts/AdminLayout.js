@@ -75,7 +75,7 @@ const AdminLayout = () => {
       `}>
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center justify-center h-16 px-4 border-b border-slate-200">
+          <div className="flex items-center justify-center h-16 px-4 border-b border-slate-200 relative">
             <Link to="/admin" className="flex items-center justify-center">
               {branding?.banner_logo_url ? (
                 <img 
@@ -97,7 +97,7 @@ const AdminLayout = () => {
             <Button
               variant="ghost"
               size="icon"
-              className="lg:hidden absolute right-4"
+              className="lg:hidden absolute right-2"
               onClick={() => setSidebarOpen(false)}
             >
               <X className="w-5 h-5" />
