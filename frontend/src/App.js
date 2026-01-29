@@ -1,53 +1,130 @@
-import { useEffect } from "react";
-import "@/App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import axios from "axios";
+import { useEffect, useRef, useState } from "react";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Toaster } from "./components/ui/sonner";
+
+// Contexts
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+
+// Pages
+import Landing from "./pages/Landing";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import AuthCallback from "./pages/AuthCallback";
+import VerifyCertificate from "./pages/VerifyCertificate";
+
+// Admin Pages
+import AdminDashboard from "./pages/admin/Dashboard";
+import AdminUsers from "./pages/admin/Users";
+import AdminRoles from "./pages/admin/Roles";
+import AdminCourses from "./pages/admin/Courses";
+import AdminCourseEdit from "./pages/admin/CourseEdit";
+import AdminEvaluations from "./pages/admin/Evaluations";
+import AdminCertificates from "./pages/admin/Certificates";
+import AdminReports from "./pages/admin/Reports";
+import AdminBranding from "./pages/admin/Branding";
+
+// Student Pages
+import StudentDashboard from "./pages/student/Dashboard";
+import StudentCourse from "./pages/student/Course";
+import StudentEvaluation from "./pages/student/Evaluation";
+import StudentCertificates from "./pages/student/Certificates";
+
+// Layouts
+import AdminLayout from "./layouts/AdminLayout";
+import StudentLayout from "./layouts/StudentLayout";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-const Home = () => {
-  const helloWorldApi = async () => {
-    try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
-    }
-  };
+// Protected Route Component
+const ProtectedRoute = ({ children, requireAdmin = false }) => {
+  const { user, isAuthenticated, loading } = useAuth();
+  const location = useLocation();
 
-  useEffect(() => {
-    helloWorldApi();
-  }, []);
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  if (requireAdmin && !user?.is_admin) {
+    return <Navigate to="/student" replace />;
+  }
+
+  if (!requireAdmin && user?.is_admin) {
+    return <Navigate to="/admin" replace />;
+  }
+
+  return children;
+};
+
+// App Router with session_id detection
+function AppRouter() {
+  const location = useLocation();
+  
+  // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
+  // Check URL fragment for session_id synchronously during render
+  if (location.hash?.includes('session_id=')) {
+    return <AuthCallback />;
+  }
 
   return (
-    <div>
-      <header className="App-header">
-        <a
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
-    </div>
+    <Routes>
+      {/* Public Routes */}
+      <Route path="/" element={<Landing />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/verify/:code" element={<VerifyCertificate />} />
+      
+      {/* Admin Routes */}
+      <Route path="/admin" element={
+        <ProtectedRoute requireAdmin={true}>
+          <AdminLayout />
+        </ProtectedRoute>
+      }>
+        <Route index element={<AdminDashboard />} />
+        <Route path="users" element={<AdminUsers />} />
+        <Route path="roles" element={<AdminRoles />} />
+        <Route path="courses" element={<AdminCourses />} />
+        <Route path="courses/:courseId/edit" element={<AdminCourseEdit />} />
+        <Route path="evaluations" element={<AdminEvaluations />} />
+        <Route path="certificates" element={<AdminCertificates />} />
+        <Route path="reports" element={<AdminReports />} />
+        <Route path="branding" element={<AdminBranding />} />
+      </Route>
+      
+      {/* Student Routes */}
+      <Route path="/student" element={
+        <ProtectedRoute requireAdmin={false}>
+          <StudentLayout />
+        </ProtectedRoute>
+      }>
+        <Route index element={<StudentDashboard />} />
+        <Route path="course/:courseId" element={<StudentCourse />} />
+        <Route path="evaluation/:courseId" element={<StudentEvaluation />} />
+        <Route path="certificates" element={<StudentCertificates />} />
+      </Route>
+
+      {/* Fallback */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
-};
+}
 
 function App() {
   return (
-    <div className="App">
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </div>
+    <BrowserRouter>
+      <AuthProvider>
+        <AppRouter />
+        <Toaster position="top-right" richColors />
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 
