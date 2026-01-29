@@ -4,7 +4,7 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { toast } from 'sonner';
-import { Palette, Upload, Save, Loader2, Image, FileSignature } from 'lucide-react';
+import { Palette, Upload, Save, Loader2, Image, FileSignature, Layout } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -12,9 +12,10 @@ const API = `${BACKEND_URL}/api`;
 const AdminBranding = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState({ logo: false, signature: false, footer: false });
+  const [uploading, setUploading] = useState({ logo: false, bannerLogo: false, signature: false, footer: false });
   const [branding, setBranding] = useState({
     logo_url: null,
+    banner_logo_url: null,
     signature_url: null,
     footer_image_url: null,
     primary_color: '#F97316',
@@ -33,6 +34,7 @@ const AdminBranding = () => {
         const data = await response.json();
         setBranding({
           logo_url: data.logo_url || null,
+          banner_logo_url: data.banner_logo_url || null,
           signature_url: data.signature_url || null,
           footer_image_url: data.footer_image_url || null,
           primary_color: data.primary_color || '#F97316',
