@@ -4,11 +4,11 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Badge } from '../../components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Checkbox } from '../../components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { toast } from 'sonner';
-import { Users, Plus, Search, Edit, Trash2, Loader2, UserCheck, UserX } from 'lucide-react';
+import { Users, Plus, Search, Edit, Trash2, Loader2, UserCheck, UserX, RefreshCw } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -26,7 +26,7 @@ const AdminUsers = () => {
     full_name: '',
     rut: '',
     company: '',
-    role_id: ''
+    role_ids: []
   });
 
   useEffect(() => {
@@ -64,6 +64,24 @@ const AdminUsers = () => {
     }
   };
 
+  const initPredefinedRoles = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API}/roles/predefined/init`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        toast.success(data.message);
+        fetchRoles();
+      }
+    } catch (error) {
+      toast.error('Error al inicializar roles');
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem('token');
@@ -79,7 +97,7 @@ const AdminUsers = () => {
           body: JSON.stringify({
             full_name: formData.full_name,
             company: formData.company || null,
-            role_id: formData.role_id || null,
+            role_ids: formData.role_ids,
             is_active: true
           })
         });
@@ -119,13 +137,19 @@ const AdminUsers = () => {
 
   const handleEdit = (user) => {
     setEditingUser(user);
+    // Support both old role_id and new role_ids
+    let userRoleIds = user.role_ids || [];
+    if (!userRoleIds.length && user.role_id) {
+      userRoleIds = [user.role_id];
+    }
+    
     setFormData({
       email: user.email,
       password: '',
       full_name: user.full_name || user.name || '',
       rut: user.rut || '',
       company: user.company || '',
-      role_id: user.role_id || ''
+      role_ids: userRoleIds
     });
     setDialogOpen(true);
   };
@@ -180,13 +204,31 @@ const AdminUsers = () => {
       full_name: '',
       rut: '',
       company: '',
-      role_id: ''
+      role_ids: []
     });
   };
 
-  const getRoleName = (roleId) => {
-    const role = roles.find(r => r.role_id === roleId);
-    return role?.name || 'Sin rol';
+  const toggleRole = (roleId) => {
+    setFormData(prev => ({
+      ...prev,
+      role_ids: prev.role_ids.includes(roleId)
+        ? prev.role_ids.filter(id => id !== roleId)
+        : [...prev.role_ids, roleId]
+    }));
+  };
+
+  const getRoleNames = (user) => {
+    // Support both old role_id and new role_ids
+    let userRoleIds = user.role_ids || [];
+    if (!userRoleIds.length && user.role_id) {
+      userRoleIds = [user.role_id];
+    }
+    
+    if (!userRoleIds.length) return 'Sin rol/actividad';
+    
+    return userRoleIds
+      .map(id => roles.find(r => r.role_id === id)?.name || id)
+      .join(', ');
   };
 
   const filteredUsers = users.filter(user => {
@@ -216,102 +258,127 @@ const AdminUsers = () => {
           </h1>
           <p className="text-slate-600 mt-1">Gestiona los alumnos de la plataforma</p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
-          <DialogTrigger asChild>
-            <Button className="bg-orange-500 hover:bg-orange-600 text-white" data-testid="add-user-btn">
-              <Plus className="w-4 h-4 mr-2" />
-              Nuevo Usuario
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>{editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}</DialogTitle>
-              <DialogDescription>
-                {editingUser ? 'Actualiza los datos del usuario' : 'Ingresa los datos del nuevo usuario'}
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label>Nombre completo *</Label>
-                <Input
-                  value={formData.full_name}
-                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                  required
-                  data-testid="user-fullname-input"
-                />
-              </div>
-              {!editingUser && (
-                <>
-                  <div className="space-y-2">
-                    <Label>RUT *</Label>
-                    <Input
-                      value={formData.rut}
-                      onChange={(e) => setFormData({ ...formData, rut: e.target.value })}
-                      placeholder="12345678-9"
-                      required
-                      data-testid="user-rut-input"
-                    />
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={initPredefinedRoles}
+            className="text-orange-600 border-orange-200 hover:bg-orange-50"
+            data-testid="init-roles-btn"
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Inicializar Roles
+          </Button>
+          <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
+            <DialogTrigger asChild>
+              <Button className="bg-orange-500 hover:bg-orange-600 text-white" data-testid="add-user-btn">
+                <Plus className="w-4 h-4 mr-2" />
+                Nuevo Usuario
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>{editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}</DialogTitle>
+                <DialogDescription>
+                  {editingUser ? 'Actualiza los datos del usuario' : 'Ingresa los datos del nuevo usuario'}
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Nombre completo *</Label>
+                  <Input
+                    value={formData.full_name}
+                    onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                    required
+                    data-testid="user-fullname-input"
+                  />
+                </div>
+                {!editingUser && (
+                  <>
+                    <div className="space-y-2">
+                      <Label>RUT *</Label>
+                      <Input
+                        value={formData.rut}
+                        onChange={(e) => setFormData({ ...formData, rut: e.target.value })}
+                        placeholder="12345678-9"
+                        required
+                        data-testid="user-rut-input"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Email *</Label>
+                      <Input
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        required
+                        data-testid="user-email-input"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Contraseña *</Label>
+                      <Input
+                        type="password"
+                        value={formData.password}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        required
+                        data-testid="user-password-input"
+                      />
+                    </div>
+                  </>
+                )}
+                <div className="space-y-2">
+                  <Label>Empresa</Label>
+                  <Input
+                    value={formData.company}
+                    onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                    data-testid="user-company-input"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Roles/Actividades</Label>
+                  <p className="text-xs text-slate-500 mb-2">Selecciona uno o más roles/actividades</p>
+                  <div className="border rounded-lg p-3 max-h-64 overflow-y-auto space-y-2 bg-slate-50">
+                    {roles.length === 0 ? (
+                      <p className="text-sm text-slate-500 text-center py-4">
+                        No hay roles disponibles. Haz clic en "Inicializar Roles" para crear los roles predefinidos.
+                      </p>
+                    ) : (
+                      roles.map((role) => (
+                        <div key={role.role_id} className="flex items-center space-x-2 p-2 rounded hover:bg-white">
+                          <Checkbox
+                            id={role.role_id}
+                            checked={formData.role_ids.includes(role.role_id)}
+                            onCheckedChange={() => toggleRole(role.role_id)}
+                            data-testid={`role-checkbox-${role.role_id}`}
+                          />
+                          <label
+                            htmlFor={role.role_id}
+                            className="text-sm text-slate-700 cursor-pointer flex-1"
+                          >
+                            {role.name}
+                          </label>
+                        </div>
+                      ))
+                    )}
                   </div>
-                  <div className="space-y-2">
-                    <Label>Email *</Label>
-                    <Input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      required
-                      data-testid="user-email-input"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Contraseña *</Label>
-                    <Input
-                      type="password"
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      required
-                      data-testid="user-password-input"
-                    />
-                  </div>
-                </>
-              )}
-              <div className="space-y-2">
-                <Label>Empresa</Label>
-                <Input
-                  value={formData.company}
-                  onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                  data-testid="user-company-input"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Rol</Label>
-                <Select
-                  value={formData.role_id || "none"}
-                  onValueChange={(value) => setFormData({ ...formData, role_id: value === "none" ? "" : value })}
-                >
-                  <SelectTrigger data-testid="user-role-select">
-                    <SelectValue placeholder="Seleccionar rol" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Sin rol</SelectItem>
-                    {roles.map((role) => (
-                      <SelectItem key={role.role_id} value={role.role_id}>
-                        {role.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => { setDialogOpen(false); resetForm(); }}>
-                  Cancelar
-                </Button>
-                <Button type="submit" className="bg-orange-500 hover:bg-orange-600" data-testid="user-submit-btn">
-                  {editingUser ? 'Actualizar' : 'Crear'}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+                  {formData.role_ids.length > 0 && (
+                    <p className="text-xs text-orange-600 mt-1">
+                      {formData.role_ids.length} rol(es)/actividad(es) seleccionado(s)
+                    </p>
+                  )}
+                </div>
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => { setDialogOpen(false); resetForm(); }}>
+                    Cancelar
+                  </Button>
+                  <Button type="submit" className="bg-orange-500 hover:bg-orange-600" data-testid="user-submit-btn">
+                    {editingUser ? 'Actualizar' : 'Crear'}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Search */}
@@ -339,7 +406,7 @@ const AdminUsers = () => {
                 <TableHead>Usuario</TableHead>
                 <TableHead>RUT</TableHead>
                 <TableHead>Empresa</TableHead>
-                <TableHead>Rol</TableHead>
+                <TableHead>Rol/Actividad</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
@@ -363,9 +430,13 @@ const AdminUsers = () => {
                     <TableCell>{user.rut || '-'}</TableCell>
                     <TableCell>{user.company || '-'}</TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="text-slate-600">
-                        {getRoleName(user.role_id)}
-                      </Badge>
+                      <div className="flex flex-wrap gap-1 max-w-xs">
+                        {getRoleNames(user).split(', ').map((name, idx) => (
+                          <Badge key={idx} variant="outline" className="text-xs text-slate-600">
+                            {name}
+                          </Badge>
+                        ))}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Badge 
