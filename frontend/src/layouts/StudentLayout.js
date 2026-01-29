@@ -84,6 +84,26 @@ const StudentLayout = () => {
               })}
             </nav>
 
+            {/* Logo - Centered */}
+            <Link to="/student" className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-2">
+              {branding?.banner_logo_url ? (
+                <img 
+                  src={`${BACKEND_URL}${branding.banner_logo_url}`} 
+                  alt="Logo" 
+                  className="h-10 max-w-[160px] object-contain"
+                />
+              ) : (
+                <>
+                  <div className="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center">
+                    <BookOpen className="w-6 h-6 text-white" />
+                  </div>
+                  <span className="font-bold text-xl text-slate-900 hidden sm:inline" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                    E-Learning
+                  </span>
+                </>
+              )}
+            </Link>
+
             {/* User Menu */}
             <div className="flex items-center gap-3">
               <DropdownMenu>
