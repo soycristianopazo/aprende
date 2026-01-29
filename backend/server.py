@@ -1461,10 +1461,17 @@ async def setup_admin():
 # Include router and middleware
 app.include_router(api_router)
 
+# Get allowed origins from environment or use defaults
+ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "https://localhost:3000",
+    os.environ.get("FRONTEND_URL", "https://elearn-hub-16.preview.emergentagent.com"),
+]
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
