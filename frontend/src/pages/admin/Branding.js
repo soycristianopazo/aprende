@@ -124,15 +124,15 @@ const AdminBranding = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Logo */}
+        {/* Logo Certificados */}
         <Card className="border-slate-200">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Image className="w-5 h-5 text-orange-500" />
-              Logo de la Plataforma
+              Logo para Certificados
             </CardTitle>
             <CardDescription>
-              Se mostrará en el header y en los certificados
+              Se mostrará en los certificados PDF
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -153,7 +153,7 @@ const AdminBranding = () => {
                   ) : (
                     <>
                       <Upload className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-                      <p className="text-sm text-slate-600">Subir Logo</p>
+                      <p className="text-sm text-slate-600">Subir Logo Certificados</p>
                       <p className="text-xs text-slate-400">PNG o JPG recomendado</p>
                     </>
                   )}
@@ -166,6 +166,53 @@ const AdminBranding = () => {
                 className="hidden"
                 onChange={(e) => handleUpload('logo', e.target.files?.[0])}
                 data-testid="upload-logo-input"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Banner Logo */}
+        <Card className="border-slate-200 border-orange-200 bg-orange-50/30">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Layout className="w-5 h-5 text-orange-500" />
+              Logo del Banner (Plataforma)
+            </CardTitle>
+            <CardDescription>
+              Se mostrará en la navegación de la plataforma y en la landing page
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {branding.banner_logo_url && (
+              <div className="p-4 bg-white rounded-lg flex items-center justify-center border border-slate-200">
+                <img
+                  src={`${BACKEND_URL}${branding.banner_logo_url}`}
+                  alt="Banner Logo"
+                  className="max-h-16 object-contain"
+                />
+              </div>
+            )}
+            <div>
+              <Label htmlFor="banner-logo-upload" className="cursor-pointer">
+                <div className="border-2 border-dashed border-orange-200 rounded-lg p-6 text-center hover:border-orange-400 transition-colors bg-white">
+                  {uploading.bannerLogo ? (
+                    <Loader2 className="w-8 h-8 text-orange-500 animate-spin mx-auto" />
+                  ) : (
+                    <>
+                      <Upload className="w-8 h-8 text-orange-400 mx-auto mb-2" />
+                      <p className="text-sm text-slate-600">Subir Logo del Banner</p>
+                      <p className="text-xs text-slate-400">PNG con fondo transparente recomendado</p>
+                    </>
+                  )}
+                </div>
+              </Label>
+              <input
+                id="banner-logo-upload"
+                type="file"
+                accept=".png,.jpg,.jpeg"
+                className="hidden"
+                onChange={(e) => handleUpload('banner-logo', e.target.files?.[0])}
+                data-testid="upload-banner-logo-input"
               />
             </div>
           </CardContent>
