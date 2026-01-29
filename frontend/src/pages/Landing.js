@@ -77,8 +77,10 @@ const Landing = () => {
                     <BookOpen className="w-6 h-6 text-white" />
                   </div>
                   <span className="font-bold text-xl text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                E-Learning
-              </span>
+                    E-Learning
+                  </span>
+                </>
+              )}
             </div>
             <div className="flex items-center gap-4">
               <Link to="/verify/demo">
