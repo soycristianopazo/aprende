@@ -722,193 +722,154 @@ async def regenerate_certificate(cert_id: str, admin: dict = Depends(require_adm
     certificate = await db.certificates.find_one({"certificate_id": cert_id}, {"_id": 0})
     return certificate
 
-def generate_certificate_html(certificate: dict, branding: dict) -> str:
-    logo_url = branding.get("logo_url", "")
-    signature_url = branding.get("signature_url", "")
-    footer_image_url = branding.get("footer_image_url", "")
+def generate_certificate_pdf(certificate: dict, branding: dict) -> io.BytesIO:
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=1*cm, bottomMargin=1*cm)
+    
     primary_color = branding.get("primary_color", "#F97316")
+    # Convert hex to RGB
+    try:
+        r = int(primary_color[1:3], 16) / 255
+        g = int(primary_color[3:5], 16) / 255
+        b = int(primary_color[5:7], 16) / 255
+        main_color = colors.Color(r, g, b)
+    except:
+        main_color = colors.Color(0.976, 0.451, 0.086)  # Orange default
+    
+    styles = getSampleStyleSheet()
+    
+    title_style = ParagraphStyle(
+        'Title',
+        parent=styles['Heading1'],
+        fontSize=24,
+        textColor=main_color,
+        alignment=TA_CENTER,
+        spaceAfter=20
+    )
+    
+    subtitle_style = ParagraphStyle(
+        'Subtitle',
+        parent=styles['Normal'],
+        fontSize=12,
+        textColor=colors.gray,
+        alignment=TA_CENTER,
+        spaceAfter=30
+    )
+    
+    name_style = ParagraphStyle(
+        'Name',
+        parent=styles['Heading1'],
+        fontSize=28,
+        textColor=colors.black,
+        alignment=TA_CENTER,
+        spaceAfter=10
+    )
+    
+    normal_center = ParagraphStyle(
+        'NormalCenter',
+        parent=styles['Normal'],
+        fontSize=12,
+        alignment=TA_CENTER,
+        spaceAfter=10
+    )
+    
+    course_style = ParagraphStyle(
+        'Course',
+        parent=styles['Heading2'],
+        fontSize=18,
+        textColor=main_color,
+        alignment=TA_CENTER,
+        spaceAfter=30
+    )
+    
+    small_style = ParagraphStyle(
+        'Small',
+        parent=styles['Normal'],
+        fontSize=10,
+        textColor=colors.gray,
+        alignment=TA_CENTER
+    )
     
     issued_date = datetime.fromisoformat(certificate["issued_at"]).strftime("%d/%m/%Y")
     expires_date = datetime.fromisoformat(certificate["expires_at"]).strftime("%d/%m/%Y")
     
-    html = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <style>
-            @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&display=swap');
-            
-            body {{
-                font-family: 'Manrope', sans-serif;
-                margin: 0;
-                padding: 40px;
-                background: white;
-            }}
-            
-            .certificate {{
-                border: 3px solid {primary_color};
-                padding: 40px;
-                max-width: 800px;
-                margin: 0 auto;
-                position: relative;
-            }}
-            
-            .header {{
-                text-align: center;
-                margin-bottom: 30px;
-            }}
-            
-            .logo {{
-                max-height: 80px;
-                margin-bottom: 20px;
-            }}
-            
-            .title {{
-                font-size: 28px;
-                font-weight: 700;
-                color: {primary_color};
-                margin: 0;
-            }}
-            
-            .subtitle {{
-                font-size: 14px;
-                color: #64748B;
-                margin-top: 5px;
-            }}
-            
-            .content {{
-                text-align: center;
-                margin: 40px 0;
-            }}
-            
-            .certify-text {{
-                font-size: 16px;
-                color: #64748B;
-            }}
-            
-            .student-name {{
-                font-size: 32px;
-                font-weight: 700;
-                color: #0F172A;
-                margin: 20px 0;
-            }}
-            
-            .rut {{
-                font-size: 14px;
-                color: #64748B;
-            }}
-            
-            .course-name {{
-                font-size: 20px;
-                font-weight: 600;
-                color: {primary_color};
-                margin: 30px 0 10px;
-            }}
-            
-            .details {{
-                display: flex;
-                justify-content: center;
-                gap: 40px;
-                margin: 30px 0;
-                font-size: 14px;
-                color: #64748B;
-            }}
-            
-            .detail-item {{
-                text-align: center;
-            }}
-            
-            .detail-value {{
-                font-weight: 600;
-                color: #0F172A;
-            }}
-            
-            .signature-section {{
-                margin-top: 40px;
-                text-align: center;
-            }}
-            
-            .signature {{
-                max-height: 60px;
-                margin-bottom: 10px;
-            }}
-            
-            .verification {{
-                margin-top: 30px;
-                padding-top: 20px;
-                border-top: 1px solid #E2E8F0;
-                text-align: center;
-                font-size: 12px;
-                color: #94A3B8;
-            }}
-            
-            .verification-code {{
-                font-family: monospace;
-                font-size: 14px;
-                font-weight: 600;
-                color: #0F172A;
-            }}
-            
-            .footer-image {{
-                max-width: 100%;
-                margin-top: 20px;
-            }}
-        </style>
-    </head>
-    <body>
-        <div class="certificate">
-            <div class="header">
-                {"<img src='" + logo_url + "' class='logo' />" if logo_url else ""}
-                <h1 class="title">CERTIFICADO DE CAPACITACIÓN</h1>
-                <p class="subtitle">E-Learning</p>
-            </div>
-            
-            <div class="content">
-                <p class="certify-text">Se certifica que</p>
-                <p class="student-name">{certificate['user_name']}</p>
-                <p class="rut">RUT: {certificate['user_rut']}</p>
-                
-                <p class="certify-text" style="margin-top: 30px;">Ha completado satisfactoriamente el curso</p>
-                <p class="course-name">{certificate['course_name']}</p>
-                
-                <div class="details">
-                    <div class="detail-item">
-                        <p>Horas capacitadas</p>
-                        <p class="detail-value">{certificate['hours']} horas</p>
-                    </div>
-                    <div class="detail-item">
-                        <p>Tipo de capacitación</p>
-                        <p class="detail-value">{certificate['training_type'].upper()}</p>
-                    </div>
-                    <div class="detail-item">
-                        <p>Fecha de emisión</p>
-                        <p class="detail-value">{issued_date}</p>
-                    </div>
-                    <div class="detail-item">
-                        <p>Vigencia hasta</p>
-                        <p class="detail-value">{expires_date}</p>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="signature-section">
-                {"<img src='" + signature_url + "' class='signature' />" if signature_url else ""}
-                <p style="color: #64748B; font-size: 12px;">Firma autorizada</p>
-            </div>
-            
-            <div class="verification">
-                <p>Código de verificación</p>
-                <p class="verification-code">{certificate['verification_code']}</p>
-                <p>Verifique este certificado en la plataforma</p>
-            </div>
-            
-            {"<img src='" + footer_image_url + "' class='footer-image' />" if footer_image_url else ""}
-        </div>
-    </body>
-    </html>
-    """
-    return html
+    elements = []
+    
+    # Spacer at top
+    elements.append(Spacer(1, 40))
+    
+    # Title
+    elements.append(Paragraph("CERTIFICADO DE CAPACITACIÓN", title_style))
+    elements.append(Paragraph("E-Learning", subtitle_style))
+    
+    elements.append(Spacer(1, 20))
+    
+    # Certify text
+    elements.append(Paragraph("Se certifica que", normal_center))
+    
+    elements.append(Spacer(1, 10))
+    
+    # Student name
+    elements.append(Paragraph(certificate['user_name'], name_style))
+    
+    # RUT
+    elements.append(Paragraph(f"RUT: {certificate['user_rut']}", normal_center))
+    
+    elements.append(Spacer(1, 30))
+    
+    # Course completed text
+    elements.append(Paragraph("Ha completado satisfactoriamente el curso", normal_center))
+    
+    elements.append(Spacer(1, 10))
+    
+    # Course name
+    elements.append(Paragraph(certificate['course_name'], course_style))
+    
+    # Details table
+    details_data = [
+        ['Horas capacitadas', 'Tipo de capacitación', 'Fecha de emisión', 'Vigencia hasta'],
+        [f"{certificate['hours']} horas", certificate['training_type'].upper(), issued_date, expires_date]
+    ]
+    
+    details_table = Table(details_data, colWidths=[3.5*cm, 4*cm, 3.5*cm, 3.5*cm])
+    details_table.setStyle(TableStyle([
+        ('FONTSIZE', (0, 0), (-1, 0), 9),
+        ('FONTSIZE', (0, 1), (-1, 1), 11),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.gray),
+        ('TEXTCOLOR', (0, 1), (-1, 1), colors.black),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 1), (-1, 1), 'Helvetica-Bold'),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+        ('TOPPADDING', (0, 1), (-1, 1), 8),
+    ]))
+    
+    elements.append(details_table)
+    
+    elements.append(Spacer(1, 50))
+    
+    # Signature placeholder
+    elements.append(Paragraph("_____________________________", normal_center))
+    elements.append(Paragraph("Firma autorizada", small_style))
+    
+    elements.append(Spacer(1, 40))
+    
+    # Verification code
+    elements.append(Paragraph("Código de verificación", small_style))
+    
+    code_style = ParagraphStyle(
+        'Code',
+        parent=styles['Normal'],
+        fontSize=14,
+        fontName='Courier-Bold',
+        alignment=TA_CENTER,
+        spaceAfter=5
+    )
+    elements.append(Paragraph(certificate['verification_code'], code_style))
+    elements.append(Paragraph("Verifique este certificado en la plataforma", small_style))
+    
+    doc.build(elements)
+    buffer.seek(0)
+    return buffer
 
 # ==================== BRANDING ROUTES ====================
 
