@@ -247,9 +247,9 @@ const AdminRoles = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            Roles y Mallas Curriculares
+            Roles/Actividades y Mallas Curriculares
           </h1>
-          <p className="text-slate-600 mt-1">Define roles, asigna cursos y configura pre-requisitos</p>
+          <p className="text-slate-600 mt-1">Define roles/actividades, asigna cursos y configura pre-requisitos</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
           <DialogTrigger asChild>
