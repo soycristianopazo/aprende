@@ -996,6 +996,7 @@ async def get_branding():
         branding = {
             "branding_id": "default",
             "logo_url": None,
+            "banner_logo_url": None,
             "signature_url": None,
             "footer_image_url": None,
             "primary_color": "#F97316",
