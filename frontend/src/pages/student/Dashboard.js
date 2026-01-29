@@ -5,8 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../..
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { Progress } from '../../components/ui/progress';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../components/ui/dialog';
 import { toast } from 'sonner';
-import { BookOpen, Award, Clock, PlayCircle, CheckCircle, Loader2, ArrowRight } from 'lucide-react';
+import { BookOpen, Award, Clock, PlayCircle, CheckCircle, Loader2, ArrowRight, Lock, AlertCircle, FolderTree, ChevronRight } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -15,6 +16,7 @@ const StudentDashboard = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(null);
+  const [roadmapOpen, setRoadmapOpen] = useState(false);
 
   useEffect(() => {
     fetchProgress();
@@ -54,7 +56,7 @@ const StudentDashboard = () => {
           ¡Hola, {user?.full_name || user?.name || 'Estudiante'}!
         </h1>
         <p className="text-orange-100 mb-6">
-          Continúa tu formación y obtén tus certificados
+          {progress?.role_name ? `Rol: ${progress.role_name}` : 'Continúa tu formación y obtén tus certificados'}
         </p>
         <div className="flex items-center gap-6">
           <div className="text-center">
@@ -80,14 +82,129 @@ const StudentDashboard = () => {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-slate-700">Progreso de la Malla Curricular</span>
-              <span className="text-sm text-slate-500">
-                {progress?.completed_courses} de {progress?.total_courses} cursos
-              </span>
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-slate-500">
+                  {progress?.completed_courses} de {progress?.total_courses} cursos
+                </span>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setRoadmapOpen(true)}
+                  className="text-orange-600 border-orange-200 hover:bg-orange-50"
+                  data-testid="view-roadmap-btn"
+                >
+                  <FolderTree className="w-4 h-4 mr-2" />
+                  Ver Ruta de Aprendizaje
+                </Button>
+              </div>
             </div>
             <Progress value={progress?.completion_percentage || 0} className="h-3" />
           </CardContent>
         </Card>
       )}
+
+      {/* Roadmap Modal */}
+      <Dialog open={roadmapOpen} onOpenChange={setRoadmapOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FolderTree className="w-5 h-5 text-orange-500" />
+              Tu Ruta de Aprendizaje
+            </DialogTitle>
+            <DialogDescription>
+              {progress?.role_name && `Malla curricular para: ${progress.role_name}`}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="relative py-4">
+            {progress?.courses?.map((item, index) => (
+              <div key={item.course.course_id} className="relative pl-10 pb-8 last:pb-0">
+                {/* Timeline Line */}
+                {index < progress.courses.length - 1 && (
+                  <div className={`absolute left-[18px] top-10 bottom-0 w-0.5 ${
+                    item.is_completed ? 'bg-green-300' : item.is_locked ? 'bg-slate-200' : 'bg-orange-200'
+                  }`}></div>
+                )}
+                
+                {/* Timeline Dot */}
+                <div className={`absolute left-0 top-1 w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shadow-md ${
+                  item.is_completed 
+                    ? 'bg-green-500 text-white' 
+                    : item.is_locked 
+                      ? 'bg-slate-300 text-slate-600' 
+                      : 'bg-orange-500 text-white'
+                }`}>
+                  {item.is_completed ? (
+                    <CheckCircle className="w-5 h-5" />
+                  ) : item.is_locked ? (
+                    <Lock className="w-4 h-4" />
+                  ) : (
+                    item.order
+                  )}
+                </div>
+                
+                {/* Course Card */}
+                <Card className={`border-2 transition-all ${
+                  item.is_completed 
+                    ? 'border-green-200 bg-green-50/50' 
+                    : item.is_locked 
+                      ? 'border-slate-200 bg-slate-50 opacity-75' 
+                      : 'border-orange-200 bg-white hover:shadow-md'
+                }`}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className={`font-semibold ${item.is_locked ? 'text-slate-500' : 'text-slate-900'}`}>
+                            {item.course.name}
+                          </h4>
+                          {item.is_completed && (
+                            <Badge className="bg-green-500">Completado</Badge>
+                          )}
+                          {item.is_locked && (
+                            <Badge variant="secondary" className="bg-slate-200">Bloqueado</Badge>
+                          )}
+                          {!item.is_completed && !item.is_locked && (
+                            <Badge className="bg-orange-500">Disponible</Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-slate-500 mt-1 line-clamp-2">{item.course.description}</p>
+                        
+                        <div className="flex items-center gap-3 mt-3">
+                          <Badge variant="outline" className="text-xs">
+                            <Clock className="w-3 h-3 mr-1" />
+                            {item.course.hours}h
+                          </Badge>
+                          <Badge variant="secondary" className="text-xs capitalize">
+                            {item.course.training_type}
+                          </Badge>
+                        </div>
+                        
+                        {/* Missing Prerequisites Warning */}
+                        {item.is_locked && item.missing_prerequisites?.length > 0 && (
+                          <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                            <p className="text-sm font-medium text-amber-700 flex items-center gap-1">
+                              <AlertCircle className="w-4 h-4" />
+                              Debes completar primero:
+                            </p>
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {item.missing_prerequisites.map(prereq => (
+                                <Badge key={prereq.course_id} className="bg-amber-100 text-amber-700 text-xs">
+                                  {prereq.name}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Courses Grid */}
       <div>
@@ -107,42 +224,87 @@ const StudentDashboard = () => {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {progress.courses.map(({ course, is_completed, certificate }) => (
+            {progress.courses.map((item) => (
               <Card 
-                key={course.course_id} 
-                className={`border-slate-200 hover:shadow-lg transition-all duration-300 ${is_completed ? 'border-green-200 bg-green-50/30' : ''}`}
-                data-testid={`course-card-${course.course_id}`}
+                key={item.course.course_id} 
+                className={`border-slate-200 transition-all duration-300 ${
+                  item.is_completed 
+                    ? 'border-green-200 bg-green-50/30 hover:shadow-lg' 
+                    : item.is_locked 
+                      ? 'border-slate-200 bg-slate-50 opacity-80' 
+                      : 'hover:shadow-lg'
+                }`}
+                data-testid={`course-card-${item.course.course_id}`}
               >
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
-                    <div className="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center">
-                      {is_completed ? (
-                        <CheckCircle className="w-6 h-6 text-green-500" />
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center relative">
+                      {item.is_completed ? (
+                        <div className="w-full h-full rounded-xl bg-green-100 flex items-center justify-center">
+                          <CheckCircle className="w-6 h-6 text-green-500" />
+                        </div>
+                      ) : item.is_locked ? (
+                        <div className="w-full h-full rounded-xl bg-slate-200 flex items-center justify-center">
+                          <Lock className="w-5 h-5 text-slate-500" />
+                        </div>
                       ) : (
-                        <PlayCircle className="w-6 h-6 text-orange-500" />
+                        <div className="w-full h-full rounded-xl bg-orange-100 flex items-center justify-center">
+                          <PlayCircle className="w-6 h-6 text-orange-500" />
+                        </div>
                       )}
+                      {/* Order Badge */}
+                      <div className={`absolute -top-1 -right-1 w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center ${
+                        item.is_completed ? 'bg-green-500 text-white' : item.is_locked ? 'bg-slate-400 text-white' : 'bg-orange-500 text-white'
+                      }`}>
+                        {item.order}
+                      </div>
                     </div>
-                    <Badge className={is_completed ? 'bg-green-500' : 'bg-orange-500'}>
-                      {is_completed ? 'Completado' : 'Pendiente'}
+                    <Badge className={
+                      item.is_completed 
+                        ? 'bg-green-500' 
+                        : item.is_locked 
+                          ? 'bg-slate-400' 
+                          : 'bg-orange-500'
+                    }>
+                      {item.is_completed ? 'Completado' : item.is_locked ? 'Bloqueado' : 'Disponible'}
                     </Badge>
                   </div>
-                  <CardTitle className="text-lg mt-3">{course.name}</CardTitle>
+                  <CardTitle className={`text-lg mt-3 ${item.is_locked ? 'text-slate-500' : ''}`}>
+                    {item.course.name}
+                  </CardTitle>
                   <CardDescription className="line-clamp-2">
-                    {course.description}
+                    {item.course.description}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center gap-4 text-sm text-slate-600 mb-4">
                     <div className="flex items-center gap-1">
                       <Clock className="w-4 h-4" />
-                      {course.hours}h
+                      {item.course.hours}h
                     </div>
                     <Badge variant="outline" className="capitalize">
-                      {course.training_type}
+                      {item.course.training_type}
                     </Badge>
                   </div>
                   
-                  {is_completed && certificate ? (
+                  {/* Locked Course Message */}
+                  {item.is_locked && item.missing_prerequisites?.length > 0 && (
+                    <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                      <p className="text-xs font-medium text-amber-700 flex items-center gap-1 mb-1">
+                        <AlertCircle className="w-3 h-3" />
+                        Completa primero:
+                      </p>
+                      <div className="flex flex-wrap gap-1">
+                        {item.missing_prerequisites.map(prereq => (
+                          <Badge key={prereq.course_id} className="bg-amber-100 text-amber-700 text-xs">
+                            {prereq.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {item.is_completed && item.certificate ? (
                     <div className="space-y-2">
                       <Link to="/student/certificates">
                         <Button variant="outline" className="w-full border-green-200 text-green-600 hover:bg-green-50">
@@ -151,8 +313,13 @@ const StudentDashboard = () => {
                         </Button>
                       </Link>
                     </div>
+                  ) : item.is_locked ? (
+                    <Button className="w-full bg-slate-300 text-slate-600 cursor-not-allowed" disabled>
+                      <Lock className="w-4 h-4 mr-2" />
+                      Curso Bloqueado
+                    </Button>
                   ) : (
-                    <Link to={`/student/course/${course.course_id}`}>
+                    <Link to={`/student/course/${item.course.course_id}`}>
                       <Button className="w-full bg-orange-500 hover:bg-orange-600 text-white">
                         Iniciar Curso
                         <ArrowRight className="w-4 h-4 ml-2" />
