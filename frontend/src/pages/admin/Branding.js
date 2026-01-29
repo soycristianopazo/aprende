@@ -344,60 +344,101 @@ const AdminBranding = () => {
             className="border-4 p-8 rounded-lg bg-white max-w-2xl mx-auto"
             style={{ borderColor: branding.primary_color }}
           >
-            <div className="text-center mb-6">
-              {branding.logo_url && (
+            {/* Logo */}
+            {branding.logo_url && (
+              <div className="text-center mb-6">
                 <img
                   src={`${BACKEND_URL}${branding.logo_url}`}
                   alt="Logo"
-                  className="h-16 object-contain mx-auto mb-4"
+                  className="h-16 object-contain mx-auto"
                 />
-              )}
+              </div>
+            )}
+            
+            {/* Título */}
+            <div className="text-center mb-4">
               <h2 
-                className="text-2xl font-bold"
+                className="text-3xl font-bold mb-4"
                 style={{ color: branding.primary_color }}
               >
-                CERTIFICADO DE CAPACITACIÓN
+                CERTIFICADO
               </h2>
-              <p className="text-slate-500 text-sm">E-Learning</p>
+              <div 
+                className="w-32 h-1 mx-auto rounded"
+                style={{ backgroundColor: branding.primary_color }}
+              />
             </div>
-            <div className="text-center space-y-4">
-              <p className="text-slate-600">Se certifica que</p>
-              <p className="text-2xl font-bold text-slate-900">Juan Pérez González</p>
+            
+            {/* Texto de otorgamiento */}
+            <div className="text-center mt-6 space-y-4">
+              <p className="text-slate-600">
+                SE OTORGA EL PRESENTE CERTIFICADO DE ASISTENCIA Y APROBACIÓN A:
+              </p>
+              <p className="text-2xl font-bold text-slate-900">JUAN PÉREZ GONZÁLEZ</p>
               <p className="text-slate-500">RUT: 12.345.678-9</p>
-              <p className="text-slate-600 mt-4">Ha completado satisfactoriamente el curso</p>
+              
+              <p className="text-slate-600 mt-6">Por haber completado de manera satisfactoria el curso:</p>
               <p 
-                className="text-xl font-semibold"
+                className="text-xl font-bold"
                 style={{ color: branding.primary_color }}
               >
-                Seguridad Industrial
+                SEGURIDAD INDUSTRIAL
+              </p>
+              
+              <p className="text-slate-600 mt-4">
+                Con un total de <span className="font-semibold">8 horas</span> cronológicas. (E-LEARNING)
+              </p>
+              
+              <p className="text-slate-600">
+                Certificación válida hasta el <span className="font-semibold">viernes 15 de enero de 2026</span>.
+              </p>
+              
+              <p className="text-sm text-slate-400 mt-2">
+                Emitido el 15 de enero de 2025.
               </p>
             </div>
-            <div className="mt-8 flex justify-center gap-8 text-sm text-slate-500">
-              <div className="text-center">
-                <p>Horas</p>
-                <p className="font-semibold text-slate-900">8 horas</p>
-              </div>
-              <div className="text-center">
-                <p>Fecha</p>
-                <p className="font-semibold text-slate-900">15/01/2025</p>
-              </div>
-              <div className="text-center">
-                <p>Vigencia</p>
-                <p className="font-semibold text-slate-900">15/01/2026</p>
-              </div>
-            </div>
-            {branding.signature_url && (
-              <div className="mt-8 text-center">
+            
+            {/* Firma */}
+            <div className="mt-8 text-center">
+              {branding.signature_url && (
                 <img
                   src={`${BACKEND_URL}${branding.signature_url}`}
                   alt="Firma"
-                  className="h-12 object-contain mx-auto"
+                  className="h-16 object-contain mx-auto mb-2"
                 />
-                <p className="text-xs text-slate-400 mt-1">Firma autorizada</p>
+              )}
+              <p className="text-slate-500">_______________________________</p>
+              <p className="text-xs text-slate-400 mt-1">Firma Autorizada</p>
+            </div>
+            
+            {/* Línea decorativa */}
+            <div className="mt-6">
+              <div 
+                className="w-32 h-1 mx-auto rounded"
+                style={{ backgroundColor: branding.primary_color }}
+              />
+            </div>
+            
+            {/* Código de verificación */}
+            <div className="mt-4 text-center">
+              <p className="text-xs text-slate-400">Código de verificación:</p>
+              <p className="font-mono font-bold text-slate-700 text-lg">ABC12345</p>
+              <p className="text-xs text-slate-400">Verifique este certificado en la plataforma</p>
+            </div>
+            
+            {/* Footer */}
+            {branding.footer_image_url && (
+              <div className="mt-6">
+                <img
+                  src={`${BACKEND_URL}${branding.footer_image_url}`}
+                  alt="Footer"
+                  className="max-h-12 object-contain mx-auto"
+                />
               </div>
             )}
-            <div className="mt-6 pt-4 border-t border-slate-200 text-center">
-              <p className="text-xs text-slate-400">Código de verificación</p>
+          </div>
+        </CardContent>
+      </Card>
               <p className="font-mono font-semibold text-slate-700">ABC12345</p>
             </div>
             {branding.footer_image_url && (
