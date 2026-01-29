@@ -1469,18 +1469,33 @@ async def export_certificates_csv(admin: dict = Depends(require_admin)):
 
 @api_router.get("/student/progress")
 async def get_student_progress(user: dict = Depends(get_current_user)):
-    # Get courses for user's role
+    """Get student progress - combines courses from all assigned roles without duplicates"""
     courses = []
-    role = None
+    roles = []
+    all_course_ids = set()
     course_order = []
     
-    if user.get("role_id"):
-        role = await db.roles.find_one({"role_id": user["role_id"]}, {"_id": 0})
-        if role:
-            course_ids = role.get("course_ids", [])
-            course_order = role.get("course_order", course_ids)
+    # Get user's role_ids (support both old single role_id and new role_ids array)
+    user_role_ids = user.get("role_ids", [])
+    if not user_role_ids and user.get("role_id"):
+        user_role_ids = [user["role_id"]]
+    
+    if user_role_ids:
+        # Get all roles
+        for role_id in user_role_ids:
+            role = await db.roles.find_one({"role_id": role_id}, {"_id": 0})
+            if role:
+                roles.append(role)
+                # Collect unique course IDs
+                for cid in role.get("course_ids", []):
+                    if cid not in all_course_ids:
+                        all_course_ids.add(cid)
+                        course_order.append(cid)
+        
+        # Fetch all unique courses
+        if all_course_ids:
             courses = await db.courses.find(
-                {"course_id": {"$in": course_ids}, "status": "published"},
+                {"course_id": {"$in": list(all_course_ids)}, "status": "published"},
                 {"_id": 0}
             ).to_list(100)
     else:
@@ -1492,7 +1507,7 @@ async def get_student_progress(user: dict = Depends(get_current_user)):
     
     # Get certificates
     certificates = await db.certificates.find({"user_id": user["user_id"]}, {"_id": 0}).to_list(100)
-    cert_by_course = {c["course_id"]: c for c in certificates}
+    cert_by_course = {c.get("course_id"): c for c in certificates if c.get("course_id")}
     
     # Create course map for quick lookup
     course_map = {c["course_id"]: c for c in courses}
@@ -1541,12 +1556,16 @@ async def get_student_progress(user: dict = Depends(get_current_user)):
     total_courses = len(courses)
     completed_courses = len(completed_ids & {c["course_id"] for c in courses})
     
+    # Build role names string
+    role_names = ", ".join([r.get("name", "") for r in roles]) if roles else None
+    
     return {
         "courses": progress,
         "total_courses": total_courses,
         "completed_courses": completed_courses,
         "completion_percentage": int((completed_courses / total_courses * 100) if total_courses > 0 else 0),
-        "role_name": role.get("name") if role else None
+        "role_names": role_names,
+        "roles": [{"role_id": r["role_id"], "name": r["name"]} for r in roles]
     }
 
 @api_router.get("/roles/{role_id}/curriculum")
