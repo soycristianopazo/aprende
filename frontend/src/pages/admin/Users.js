@@ -285,14 +285,14 @@ const AdminUsers = () => {
               <div className="space-y-2">
                 <Label>Rol</Label>
                 <Select
-                  value={formData.role_id}
-                  onValueChange={(value) => setFormData({ ...formData, role_id: value })}
+                  value={formData.role_id || "none"}
+                  onValueChange={(value) => setFormData({ ...formData, role_id: value === "none" ? "" : value })}
                 >
                   <SelectTrigger data-testid="user-role-select">
                     <SelectValue placeholder="Seleccionar rol" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Sin rol</SelectItem>
+                    <SelectItem value="none">Sin rol</SelectItem>
                     {roles.map((role) => (
                       <SelectItem key={role.role_id} value={role.role_id}>
                         {role.name}
