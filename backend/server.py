@@ -642,74 +642,89 @@ async def submit_evaluation(eval_id: str, data: EvaluationSubmit, user: dict = D
                     {"$set": {"score": score}}
                 )
         
-        # Check if all courses in role are completed
-        if user.get("role_id"):
-            role = await db.roles.find_one({"role_id": user["role_id"]}, {"_id": 0})
-            if role:
-                role_course_ids = set(role.get("course_ids", []))
-                completions = await db.course_completions.find({"user_id": user["user_id"]}, {"_id": 0}).to_list(100)
-                completed_course_ids = {c["course_id"] for c in completions}
+        # Check if all courses in user's roles are completed
+        user_role_ids = user.get("role_ids", [])
+        if not user_role_ids and user.get("role_id"):
+            user_role_ids = [user["role_id"]]
+        
+        if user_role_ids:
+            # Get all unique course IDs from all user's roles
+            all_role_course_ids = set()
+            roles_info = []
+            
+            for role_id in user_role_ids:
+                role = await db.roles.find_one({"role_id": role_id}, {"_id": 0})
+                if role:
+                    roles_info.append(role)
+                    for cid in role.get("course_ids", []):
+                        all_role_course_ids.add(cid)
+            
+            completions = await db.course_completions.find({"user_id": user["user_id"]}, {"_id": 0}).to_list(100)
+            completed_course_ids = {c["course_id"] for c in completions}
+            
+            # Check if all courses from all roles are completed
+            if all_role_course_ids and all_role_course_ids.issubset(completed_course_ids):
+                all_courses_completed = True
                 
-                # Check if all role courses are completed
-                if role_course_ids and role_course_ids.issubset(completed_course_ids):
-                    all_courses_completed = True
+                # Check if certificate already exists for these roles
+                existing_cert = await db.certificates.find_one({
+                    "user_id": user["user_id"],
+                    "role_ids": user_role_ids,
+                    "certificate_type": "role_completion"
+                })
+                
+                if not existing_cert:
+                    # Get all completions for these roles' courses (no duplicates)
+                    role_completions = [c for c in completions if c["course_id"] in all_role_course_ids]
                     
-                    # Check if certificate already exists for this role
-                    existing_cert = await db.certificates.find_one({
+                    # Calculate total hours and average score
+                    total_hours = sum(c.get("hours", 0) for c in role_completions)
+                    avg_score = int(sum(c.get("score", 0) for c in role_completions) / len(role_completions)) if role_completions else 0
+                    
+                    # Find minimum validity from courses
+                    min_validity = 8760  # Default 1 year
+                    for course_id in all_role_course_ids:
+                        c = await db.courses.find_one({"course_id": course_id}, {"_id": 0})
+                        if c and c.get("validity_hours", 8760) < min_validity:
+                            min_validity = c.get("validity_hours", 8760)
+                    
+                    cert_id = f"cert_{uuid.uuid4().hex[:12]}"
+                    verification_code = uuid.uuid4().hex[:8].upper()
+                    issued_at = datetime.now(timezone.utc)
+                    expires_at = issued_at + timedelta(hours=min_validity)
+                    
+                    # Build role names
+                    role_names = ", ".join([r["name"] for r in roles_info])
+                    
+                    cert_doc = {
+                        "certificate_id": cert_id,
+                        "verification_code": verification_code,
+                        "certificate_type": "role_completion",
                         "user_id": user["user_id"],
-                        "role_id": user["role_id"],
-                        "certificate_type": "role_completion"
-                    })
-                    
-                    if not existing_cert:
-                        # Get all completions for this role's courses
-                        role_completions = [c for c in completions if c["course_id"] in role_course_ids]
-                        
-                        # Calculate total hours and average score
-                        total_hours = sum(c.get("hours", 0) for c in role_completions)
-                        avg_score = int(sum(c.get("score", 0) for c in role_completions) / len(role_completions)) if role_completions else 0
-                        
-                        # Find minimum validity from courses
-                        min_validity = 8760  # Default 1 year
-                        for course_id in role_course_ids:
-                            c = await db.courses.find_one({"course_id": course_id}, {"_id": 0})
-                            if c and c.get("validity_hours", 8760) < min_validity:
-                                min_validity = c.get("validity_hours", 8760)
-                        
-                        cert_id = f"cert_{uuid.uuid4().hex[:12]}"
-                        verification_code = uuid.uuid4().hex[:8].upper()
-                        issued_at = datetime.now(timezone.utc)
-                        expires_at = issued_at + timedelta(hours=min_validity)
-                        
-                        cert_doc = {
-                            "certificate_id": cert_id,
-                            "verification_code": verification_code,
-                            "certificate_type": "role_completion",
-                            "user_id": user["user_id"],
-                            "role_id": user["role_id"],
-                            "role_name": role["name"],
-                            "user_name": user.get("full_name") or user.get("name", ""),
-                            "user_rut": user.get("rut", ""),
-                            "user_company": user.get("company", ""),
-                            "total_hours": total_hours,
-                            "average_score": avg_score,
-                            "courses_detail": [
-                                {
-                                    "course_id": c["course_id"],
-                                    "course_name": c.get("course_name", ""),
-                                    "score": c.get("score", 0),
-                                    "hours": c.get("hours", 0),
-                                    "training_type": c.get("training_type", "e-learning")
-                                }
-                                for c in role_completions
-                            ],
-                            "issued_at": issued_at.isoformat(),
-                            "expires_at": expires_at.isoformat(),
-                            "is_valid": True
-                        }
-                        await db.certificates.insert_one(cert_doc)
-                        cert_doc.pop("_id", None)
-                        certificate = cert_doc
+                        "role_ids": user_role_ids,
+                        "role_names": role_names,
+                        "user_name": user.get("full_name") or user.get("name", ""),
+                        "user_rut": user.get("rut", ""),
+                        "user_company": user.get("company", ""),
+                        "total_hours": total_hours,
+                        "average_score": avg_score,
+                        "courses_detail": [
+                            {
+                                "course_id": c["course_id"],
+                                "course_name": c.get("course_name", ""),
+                                "score": c.get("score", 0),
+                                "hours": c.get("hours", 0),
+                                "training_type": c.get("training_type", "e-learning")
+                            }
+                            for c in role_completions
+                        ],
+                        "issued_at": issued_at.isoformat(),
+                        "expires_at": expires_at.isoformat(),
+                        "is_valid": True
+                    }
+                    await db.certificates.insert_one(cert_doc)
+                    cert_doc.pop("_id", None)
+                    certificate = cert_doc
     
     return {
         "score": score,
