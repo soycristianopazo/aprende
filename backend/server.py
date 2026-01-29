@@ -1304,10 +1304,14 @@ async def export_certificates_csv(admin: dict = Depends(require_admin)):
 async def get_student_progress(user: dict = Depends(get_current_user)):
     # Get courses for user's role
     courses = []
+    role = None
+    course_order = []
+    
     if user.get("role_id"):
         role = await db.roles.find_one({"role_id": user["role_id"]}, {"_id": 0})
         if role:
             course_ids = role.get("course_ids", [])
+            course_order = role.get("course_order", course_ids)
             courses = await db.courses.find(
                 {"course_id": {"$in": course_ids}, "status": "published"},
                 {"_id": 0}
@@ -1323,15 +1327,48 @@ async def get_student_progress(user: dict = Depends(get_current_user)):
     certificates = await db.certificates.find({"user_id": user["user_id"]}, {"_id": 0}).to_list(100)
     cert_by_course = {c["course_id"]: c for c in certificates}
     
+    # Create course map for quick lookup
+    course_map = {c["course_id"]: c for c in courses}
+    
+    # Sort courses by order if available
+    if course_order:
+        sorted_courses = []
+        for cid in course_order:
+            if cid in course_map:
+                sorted_courses.append(course_map[cid])
+        # Add any courses not in order list
+        for course in courses:
+            if course["course_id"] not in course_order:
+                sorted_courses.append(course)
+        courses = sorted_courses
+    
     progress = []
-    for course in courses:
+    for idx, course in enumerate(courses):
         is_completed = course["course_id"] in completed_ids
         certificate = cert_by_course.get(course["course_id"])
+        
+        # Check prerequisites
+        prerequisites = course.get("prerequisites", [])
+        missing_prerequisites = []
+        is_locked = False
+        
+        for prereq_id in prerequisites:
+            if prereq_id not in completed_ids:
+                is_locked = True
+                prereq_course = course_map.get(prereq_id)
+                if prereq_course:
+                    missing_prerequisites.append({
+                        "course_id": prereq_id,
+                        "name": prereq_course["name"]
+                    })
         
         progress.append({
             "course": course,
             "is_completed": is_completed,
-            "certificate": certificate
+            "certificate": certificate,
+            "order": idx + 1,
+            "is_locked": is_locked,
+            "missing_prerequisites": missing_prerequisites
         })
     
     total_courses = len(courses)
@@ -1341,7 +1378,54 @@ async def get_student_progress(user: dict = Depends(get_current_user)):
         "courses": progress,
         "total_courses": total_courses,
         "completed_courses": completed_courses,
-        "completion_percentage": int((completed_courses / total_courses * 100) if total_courses > 0 else 0)
+        "completion_percentage": int((completed_courses / total_courses * 100) if total_courses > 0 else 0),
+        "role_name": role.get("name") if role else None
+    }
+
+@api_router.get("/roles/{role_id}/curriculum")
+async def get_role_curriculum(role_id: str):
+    """Get curriculum roadmap for a role with course order and prerequisites"""
+    role = await db.roles.find_one({"role_id": role_id}, {"_id": 0})
+    if not role:
+        raise HTTPException(status_code=404, detail="Role not found")
+    
+    course_ids = role.get("course_ids", [])
+    course_order = role.get("course_order", course_ids)
+    
+    courses = await db.courses.find(
+        {"course_id": {"$in": course_ids}},
+        {"_id": 0}
+    ).to_list(100)
+    
+    course_map = {c["course_id"]: c for c in courses}
+    
+    # Build ordered curriculum with prerequisites info
+    curriculum = []
+    for idx, course_id in enumerate(course_order):
+        course = course_map.get(course_id)
+        if course:
+            prerequisites = course.get("prerequisites", [])
+            prereq_names = []
+            for prereq_id in prerequisites:
+                prereq = course_map.get(prereq_id)
+                if prereq:
+                    prereq_names.append(prereq["name"])
+            
+            curriculum.append({
+                "order": idx + 1,
+                "course_id": course["course_id"],
+                "name": course["name"],
+                "description": course["description"],
+                "hours": course["hours"],
+                "training_type": course["training_type"],
+                "prerequisites": prerequisites,
+                "prerequisite_names": prereq_names
+            })
+    
+    return {
+        "role": role,
+        "curriculum": curriculum,
+        "total_hours": sum(c["hours"] for c in curriculum)
     }
 
 # ==================== SETUP ROUTES ====================
