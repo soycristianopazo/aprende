@@ -74,11 +74,13 @@ class RoleCreate(BaseModel):
     name: str
     description: Optional[str] = None
     course_ids: List[str] = []
+    course_order: List[str] = []  # Ordered list of course_ids for curriculum path
 
 class RoleUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     course_ids: Optional[List[str]] = None
+    course_order: Optional[List[str]] = None
 
 class CourseCreate(BaseModel):
     name: str
