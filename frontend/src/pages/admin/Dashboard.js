@@ -175,18 +175,24 @@ const AdminDashboard = () => {
             <CardDescription>Distribución de alumnos según su rol</CardDescription>
           </CardHeader>
           <CardContent>
-            {stats?.users_by_role && stats.users_by_role.length > 0 ? (
+            {groupedUsersByRole && groupedUsersByRole.length > 0 ? (
               <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={stats.users_by_role}>
+                <BarChart data={groupedUsersByRole}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
                   <XAxis dataKey="role" stroke="#64748B" fontSize={12} />
-                  <YAxis stroke="#64748B" fontSize={12} />
+                  <YAxis 
+                    stroke="#64748B" 
+                    fontSize={12} 
+                    allowDecimals={false}
+                    tickFormatter={(value) => Math.floor(value)}
+                  />
                   <Tooltip 
                     contentStyle={{ 
                       backgroundColor: 'white', 
                       border: '1px solid #E2E8F0',
                       borderRadius: '8px'
-                    }} 
+                    }}
+                    formatter={(value) => [value, 'Usuarios']}
                   />
                   <Bar dataKey="count" fill="#F97316" radius={[4, 4, 0, 0]} />
                 </BarChart>
