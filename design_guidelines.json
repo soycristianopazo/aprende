@@ -1,0 +1,143 @@
+{
+  "typography": {
+    "font_family": {
+      "headings": "Manrope, sans-serif",
+      "body": "Inter, sans-serif",
+      "mono": "JetBrains Mono, monospace"
+    },
+    "weights": {
+      "light": 300,
+      "regular": 400,
+      "medium": 500,
+      "semibold": 600,
+      "bold": 700,
+      "black": 900
+    },
+    "scale": {
+      "h1": "text-4xl md:text-5xl lg:text-6xl tracking-tight font-bold",
+      "h2": "text-3xl md:text-4xl tracking-tight font-semibold",
+      "h3": "text-2xl md:text-3xl font-semibold",
+      "h4": "text-xl md:text-2xl font-medium",
+      "body_lg": "text-lg leading-relaxed",
+      "body_base": "text-base leading-relaxed",
+      "body_sm": "text-sm leading-normal",
+      "caption": "text-xs text-muted-foreground uppercase tracking-wider"
+    }
+  },
+  "colors": {
+    "theme": "light",
+    "palette": {
+      "primary": {
+        "DEFAULT": "#F97316",
+        "foreground": "#FFFFFF",
+        "hover": "#EA580C",
+        "active": "#C2410C",
+        "light": "#FFEDD5"
+      },
+      "secondary": {
+        "DEFAULT": "#F1F5F9",
+        "foreground": "#0F172A"
+      },
+      "background": {
+        "DEFAULT": "#FFFFFF",
+        "subtle": "#F8FAFC",
+        "dark": "#0F172A"
+      },
+      "text": {
+        "primary": "#0F172A",
+        "secondary": "#64748B",
+        "muted": "#94A3B8",
+        "inverted": "#FFFFFF"
+      },
+      "status": {
+        "success": "#10B981",
+        "warning": "#F59E0B",
+        "error": "#EF4444",
+        "info": "#3B82F6"
+      }
+    },
+    "gradients": {
+      "hero": "bg-gradient-to-br from-orange-50 to-white",
+      "primary_btn": "bg-orange-500 hover:bg-orange-600",
+      "card_hover": "hover:shadow-lg hover:border-orange-200 transition-all duration-300"
+    }
+  },
+  "layout": {
+    "container": {
+      "max_width": "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
+      "narrow": "max-w-4xl mx-auto px-4"
+    },
+    "spacing": {
+      "section_py": "py-16 md:py-24",
+      "section_gap": "gap-8 md:gap-12",
+      "card_padding": "p-6 md:p-8"
+    },
+    "grid": {
+      "dashboard": "grid grid-cols-1 md:grid-cols-12 gap-6",
+      "cards": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8"
+    },
+    "radius": {
+      "default": "rounded-lg",
+      "card": "rounded-xl",
+      "button": "rounded-md"
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-orange-500 text-white hover:bg-orange-600 shadow-sm font-medium transition-colors",
+      "secondary": "bg-slate-100 text-slate-900 hover:bg-slate-200 font-medium transition-colors",
+      "outline": "border-2 border-slate-200 text-slate-700 hover:border-orange-500 hover:text-orange-600 bg-transparent font-medium transition-all",
+      "ghost": "text-slate-600 hover:text-orange-600 hover:bg-orange-50 font-medium transition-colors"
+    },
+    "cards": {
+      "base": "bg-white border border-slate-200 shadow-sm hover:shadow-md transition-shadow duration-200",
+      "interactive": "cursor-pointer hover:border-orange-300 hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
+    },
+    "inputs": {
+      "base": "border-slate-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-100 rounded-md transition-all"
+    }
+  },
+  "assets": {
+    "images": {
+      "hero_bg": "https://images.unsplash.com/photo-1759862018199-980a43fe4848?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "landing_hero": "https://images.unsplash.com/photo-1758876019427-e2e5bf9a92c5?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "feature_collaboration": "https://images.unsplash.com/photo-1758518729685-f88df7890776?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "feature_learning": "https://images.pexels.com/photos/7283630/pexels-photo-7283630.jpeg",
+      "login_side": "https://images.unsplash.com/photo-1760611656007-f767a8082758?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "placeholder_course": "https://images.unsplash.com/photo-1606636661692-255650f47ec9?crop=entropy&cs=srgb&fm=jpg&q=85"
+    },
+    "icons": {
+      "library": "lucide-react",
+      "preferred": ["BookOpen", "Users", "Award", "BarChart3", "Settings", "LogOut", "CheckCircle", "PlayCircle", "FileText"]
+    }
+  },
+  "visual_enhancers": {
+    "glassmorphism": "bg-white/80 backdrop-blur-md border border-white/20 shadow-sm",
+    "gradients": {
+      "orange_glow": "bg-gradient-to-r from-orange-500/10 to-orange-500/5",
+      "subtle_fade": "bg-gradient-to-b from-transparent to-slate-50/50"
+    },
+    "shadows": {
+      "soft": "shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]",
+      "glow": "shadow-[0_0_15px_rgba(249,115,22,0.3)]"
+    }
+  },
+  "universal_guidelines": [
+    "Fusion over Imitation: Mix corporate reliability with modern SaaS aesthetics.",
+    "Emotion First: Orange represents energy and growth, but use it surgically. Don't drown the user in it.",
+    "Content is King: Course content must be the hero. UI should recede when learning.",
+    "Negative Space: Use generous padding (p-6, p-8) to prevent 'data density' fatigue in dashboards.",
+    "Contrast: Ensure text is always legible (WCAG AA). Use Slate-900 for text, not pure black.",
+    "Interactive Feedback: Every button and card must have a hover state. No dead clicks."
+  ],
+  "instructions_to_main_agent": [
+    "1. SETUP: Install 'lucide-react' and 'recharts' if not present.",
+    "2. THEME: Configure tailwind.config.js to use the specific Orange (#F97316) as 'primary' and Slate as 'secondary'.",
+    "3. FONTS: Import Manrope and Inter from Google Fonts in index.css.",
+    "4. LAYOUTS: Create distinct layouts for 'Public' (Landing), 'Auth' (Centered Card), 'Admin' (Sidebar + Header), and 'Student' (Top Nav + Container).",
+    "5. COMPONENTS: Customize Shadcn components. Remove default 'ring' styles that clash with the orange theme. Use the 'orange-500' ring for focus states.",
+    "6. DASHBOARD: Use 'recharts' for the Admin analytics. Style the charts to match the orange/slate palette.",
+    "7. CERTIFICATES: Ensure the certificate view is printable. Use a clean, border-heavy design for the certificate component.",
+    "8. TESTING: Add data-testid to all interactive elements (buttons, inputs, course cards)."
+  ]
+}
