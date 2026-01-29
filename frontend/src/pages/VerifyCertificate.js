@@ -15,12 +15,25 @@ const VerifyCertificate = () => {
   const [searchCode, setSearchCode] = useState(code === 'demo' ? '' : code || '');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+  const [branding, setBranding] = useState(null);
 
   useEffect(() => {
+    fetchBranding();
     if (code && code !== 'demo') {
       handleVerify();
     }
   }, [code]);
+
+  const fetchBranding = async () => {
+    try {
+      const response = await fetch(`${API}/branding`);
+      if (response.ok) {
+        setBranding(await response.json());
+      }
+    } catch (error) {
+      console.error('Error fetching branding:', error);
+    }
+  };
 
   const handleVerify = async (e) => {
     if (e) e.preventDefault();
