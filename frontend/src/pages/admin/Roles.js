@@ -260,9 +260,9 @@ const AdminRoles = () => {
           </DialogTrigger>
           <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>{editingRole ? 'Editar Rol' : 'Nuevo Rol'}</DialogTitle>
+              <DialogTitle>{editingRole ? 'Editar Rol/Actividad' : 'Nuevo Rol/Actividad'}</DialogTitle>
               <DialogDescription>
-                Define el rol, selecciona cursos y establece el orden de la malla curricular
+                Define el rol/actividad, selecciona cursos y establece el orden de la malla curricular
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
