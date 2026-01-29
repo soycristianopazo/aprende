@@ -255,7 +255,7 @@ const AdminRoles = () => {
           <DialogTrigger asChild>
             <Button className="bg-orange-500 hover:bg-orange-600 text-white" data-testid="add-role-btn">
               <Plus className="w-4 h-4 mr-2" />
-              Nuevo Rol
+              Nuevo Rol/Actividad
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
