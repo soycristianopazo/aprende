@@ -1047,12 +1047,12 @@ def generate_certificate_pdf(certificate: dict, branding: dict) -> io.BytesIO:
     
     if is_role_cert:
         # Certificado de ROL - con tabla de cursos
-        role_name = certificate.get("role_name", "")
+        role_names = certificate.get("role_names") or certificate.get("role_name", "")
         elements.append(Paragraph(
-            f"Ha completado satisfactoriamente la malla curricular correspondiente al rol:",
+            f"Ha completado satisfactoriamente la malla curricular correspondiente al Rol/Actividad:",
             normal_center
         ))
-        elements.append(Paragraph(f"{role_name.upper()}", role_style))
+        elements.append(Paragraph(f"{role_names.upper()}", role_style))
         
         elements.append(Spacer(1, 6))
         
