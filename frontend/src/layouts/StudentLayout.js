@@ -60,7 +60,7 @@ const StudentLayout = () => {
       {/* Navigation */}
       <header className="sticky top-0 z-50 bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-16 relative">
             {/* Desktop Navigation - Left */}
             <nav className="hidden md:flex items-center gap-1">
               {navItems.map((item) => {
