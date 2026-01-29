@@ -724,7 +724,14 @@ async def regenerate_certificate(cert_id: str, admin: dict = Depends(require_adm
 
 def generate_certificate_pdf(certificate: dict, branding: dict) -> io.BytesIO:
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=1*cm, bottomMargin=1*cm)
+    doc = SimpleDocTemplate(
+        buffer, 
+        pagesize=A4, 
+        topMargin=1.5*cm, 
+        bottomMargin=1.5*cm,
+        leftMargin=2*cm,
+        rightMargin=2*cm
+    )
     
     primary_color = branding.get("primary_color", "#F97316")
     # Convert hex to RGB
@@ -738,134 +745,242 @@ def generate_certificate_pdf(certificate: dict, branding: dict) -> io.BytesIO:
     
     styles = getSampleStyleSheet()
     
+    # Estilos personalizados
     title_style = ParagraphStyle(
-        'Title',
+        'CertTitle',
         parent=styles['Heading1'],
-        fontSize=24,
+        fontSize=32,
         textColor=main_color,
         alignment=TA_CENTER,
-        spaceAfter=20
+        spaceAfter=15,
+        fontName='Helvetica-Bold'
     )
     
     subtitle_style = ParagraphStyle(
-        'Subtitle',
+        'CertSubtitle',
         parent=styles['Normal'],
-        fontSize=12,
-        textColor=colors.gray,
+        fontSize=14,
+        textColor=colors.Color(0.4, 0.4, 0.4),
         alignment=TA_CENTER,
-        spaceAfter=30
+        spaceAfter=25,
+        leading=18
     )
     
     name_style = ParagraphStyle(
-        'Name',
+        'StudentName',
         parent=styles['Heading1'],
-        fontSize=28,
-        textColor=colors.black,
+        fontSize=26,
+        textColor=colors.Color(0.1, 0.1, 0.1),
         alignment=TA_CENTER,
-        spaceAfter=10
+        spaceAfter=5,
+        fontName='Helvetica-Bold',
+        leading=32
+    )
+    
+    rut_style = ParagraphStyle(
+        'StudentRut',
+        parent=styles['Normal'],
+        fontSize=12,
+        textColor=colors.Color(0.3, 0.3, 0.3),
+        alignment=TA_CENTER,
+        spaceAfter=20
     )
     
     normal_center = ParagraphStyle(
         'NormalCenter',
         parent=styles['Normal'],
-        fontSize=12,
+        fontSize=13,
         alignment=TA_CENTER,
-        spaceAfter=10
+        spaceAfter=8,
+        textColor=colors.Color(0.3, 0.3, 0.3),
+        leading=18
     )
     
     course_style = ParagraphStyle(
-        'Course',
+        'CourseName',
         parent=styles['Heading2'],
-        fontSize=18,
+        fontSize=20,
         textColor=main_color,
         alignment=TA_CENTER,
-        spaceAfter=30
+        spaceAfter=15,
+        fontName='Helvetica-Bold'
+    )
+    
+    details_style = ParagraphStyle(
+        'Details',
+        parent=styles['Normal'],
+        fontSize=12,
+        alignment=TA_CENTER,
+        spaceAfter=8,
+        textColor=colors.Color(0.3, 0.3, 0.3)
     )
     
     small_style = ParagraphStyle(
         'Small',
         parent=styles['Normal'],
         fontSize=10,
-        textColor=colors.gray,
+        textColor=colors.Color(0.5, 0.5, 0.5),
         alignment=TA_CENTER
     )
     
-    issued_date = datetime.fromisoformat(certificate["issued_at"]).strftime("%d/%m/%Y")
-    expires_date = datetime.fromisoformat(certificate["expires_at"]).strftime("%d/%m/%Y")
+    code_style = ParagraphStyle(
+        'VerificationCode',
+        parent=styles['Normal'],
+        fontSize=16,
+        fontName='Courier-Bold',
+        alignment=TA_CENTER,
+        spaceAfter=5,
+        textColor=colors.Color(0.2, 0.2, 0.2)
+    )
+    
+    # Formatear fechas en español
+    MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 
+             'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+    DIAS = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo']
+    
+    issued_dt = datetime.fromisoformat(certificate["issued_at"])
+    expires_dt = datetime.fromisoformat(certificate["expires_at"])
+    
+    issued_date = f"{issued_dt.day} de {MESES[issued_dt.month-1]} de {issued_dt.year}"
+    expires_day_name = DIAS[expires_dt.weekday()]
+    expires_date = f"{expires_day_name} {expires_dt.day} de {MESES[expires_dt.month-1]} de {expires_dt.year}"
     
     elements = []
     
-    # Spacer at top
-    elements.append(Spacer(1, 40))
-    
-    # Title
-    elements.append(Paragraph("CERTIFICADO DE CAPACITACIÓN", title_style))
-    elements.append(Paragraph("E-Learning", subtitle_style))
+    # Logo (si existe)
+    logo_url = branding.get("logo_url")
+    if logo_url:
+        try:
+            logo_path = ROOT_DIR / logo_url.replace("/api/files/", "uploads/")
+            if logo_path.exists():
+                logo = RLImage(str(logo_path), width=4*cm, height=2*cm)
+                logo.hAlign = 'CENTER'
+                elements.append(logo)
+                elements.append(Spacer(1, 15))
+        except Exception as e:
+            logger.error(f"Error loading logo: {e}")
     
     elements.append(Spacer(1, 20))
     
-    # Certify text
-    elements.append(Paragraph("Se certifica que", normal_center))
+    # Título principal
+    elements.append(Paragraph("CERTIFICADO", title_style))
     
-    elements.append(Spacer(1, 10))
+    elements.append(Spacer(1, 25))
     
-    # Student name
-    elements.append(Paragraph(certificate['user_name'], name_style))
+    # Línea decorativa
+    line_data = [['', '', '']]
+    line_table = Table(line_data, colWidths=[5*cm, 5*cm, 5*cm])
+    line_table.setStyle(TableStyle([
+        ('LINEBELOW', (1, 0), (1, 0), 2, main_color),
+    ]))
+    elements.append(line_table)
+    
+    elements.append(Spacer(1, 25))
+    
+    # Texto de otorgamiento
+    elements.append(Paragraph(
+        "SE OTORGA EL PRESENTE CERTIFICADO DE ASISTENCIA Y APROBACIÓN A:",
+        subtitle_style
+    ))
+    
+    elements.append(Spacer(1, 15))
+    
+    # Nombre del estudiante
+    elements.append(Paragraph(
+        f"<b>{certificate['user_name'].upper()}</b>",
+        name_style
+    ))
     
     # RUT
-    elements.append(Paragraph(f"RUT: {certificate['user_rut']}", normal_center))
+    rut = certificate.get('user_rut', '')
+    if rut:
+        elements.append(Paragraph(f"RUT: {rut}", rut_style))
     
-    elements.append(Spacer(1, 30))
+    elements.append(Spacer(1, 20))
     
-    # Course completed text
-    elements.append(Paragraph("Ha completado satisfactoriamente el curso", normal_center))
+    # Texto del curso
+    elements.append(Paragraph(
+        "Por haber completado de manera satisfactoria el curso:",
+        normal_center
+    ))
     
     elements.append(Spacer(1, 10))
     
-    # Course name
-    elements.append(Paragraph(certificate['course_name'], course_style))
+    # Nombre del curso
+    elements.append(Paragraph(
+        f"<b>{certificate['course_name'].upper()}</b>",
+        course_style
+    ))
     
-    # Details table
-    details_data = [
-        ['Horas capacitadas', 'Tipo de capacitación', 'Fecha de emisión', 'Vigencia hasta'],
-        [f"{certificate['hours']} horas", certificate['training_type'].upper(), issued_date, expires_date]
-    ]
+    elements.append(Spacer(1, 15))
     
-    details_table = Table(details_data, colWidths=[3.5*cm, 4*cm, 3.5*cm, 3.5*cm])
-    details_table.setStyle(TableStyle([
-        ('FONTSIZE', (0, 0), (-1, 0), 9),
-        ('FONTSIZE', (0, 1), (-1, 1), 11),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.gray),
-        ('TEXTCOLOR', (0, 1), (-1, 1), colors.black),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 1), (-1, 1), 'Helvetica-Bold'),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
-        ('TOPPADDING', (0, 1), (-1, 1), 8),
-    ]))
+    # Detalles del curso
+    training_type = certificate.get('training_type', 'e-learning').upper()
+    hours = certificate.get('hours', 0)
     
-    elements.append(details_table)
+    elements.append(Paragraph(
+        f"Con un total de <b>{hours} horas</b> cronológicas. ({training_type})",
+        details_style
+    ))
     
-    elements.append(Spacer(1, 50))
+    elements.append(Spacer(1, 10))
     
-    # Signature placeholder
-    elements.append(Paragraph("_____________________________", normal_center))
-    elements.append(Paragraph("Firma autorizada", small_style))
+    # Vigencia
+    elements.append(Paragraph(
+        f"Certificación válida hasta el <b>{expires_date}</b>.",
+        details_style
+    ))
+    
+    elements.append(Spacer(1, 10))
+    
+    # Fecha de emisión
+    elements.append(Paragraph(
+        f"Emitido el {issued_date}.",
+        small_style
+    ))
     
     elements.append(Spacer(1, 40))
     
-    # Verification code
-    elements.append(Paragraph("Código de verificación", small_style))
+    # Firma (si existe)
+    signature_url = branding.get("signature_url")
+    if signature_url:
+        try:
+            sig_path = ROOT_DIR / signature_url.replace("/api/files/", "uploads/")
+            if sig_path.exists():
+                signature = RLImage(str(sig_path), width=4*cm, height=2*cm)
+                signature.hAlign = 'CENTER'
+                elements.append(signature)
+        except Exception as e:
+            logger.error(f"Error loading signature: {e}")
     
-    code_style = ParagraphStyle(
-        'Code',
-        parent=styles['Normal'],
-        fontSize=14,
-        fontName='Courier-Bold',
-        alignment=TA_CENTER,
-        spaceAfter=5
-    )
+    # Línea de firma
+    elements.append(Paragraph("_______________________________", normal_center))
+    elements.append(Paragraph("Firma Autorizada", small_style))
+    
+    elements.append(Spacer(1, 30))
+    
+    # Línea decorativa inferior
+    elements.append(line_table)
+    
+    elements.append(Spacer(1, 20))
+    
+    # Código de verificación
+    elements.append(Paragraph("Código de verificación:", small_style))
     elements.append(Paragraph(certificate['verification_code'], code_style))
     elements.append(Paragraph("Verifique este certificado en la plataforma", small_style))
+    
+    # Footer image (si existe)
+    footer_url = branding.get("footer_image_url")
+    if footer_url:
+        try:
+            footer_path = ROOT_DIR / footer_url.replace("/api/files/", "uploads/")
+            if footer_path.exists():
+                elements.append(Spacer(1, 20))
+                footer_img = RLImage(str(footer_path), width=10*cm, height=2*cm)
+                footer_img.hAlign = 'CENTER'
+                elements.append(footer_img)
+        except Exception as e:
+            logger.error(f"Error loading footer: {e}")
     
     doc.build(elements)
     buffer.seek(0)
