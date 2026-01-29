@@ -268,11 +268,11 @@ const AdminRoles = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Nombre del Rol *</Label>
+                  <Label>Nombre del Rol/Actividad *</Label>
                   <Input
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Ej: Operador, Supervisor"
+                    placeholder="Ej: TRABAJO EN ALTURA, OPERADOR GRÚA"
                     required
                     data-testid="role-name-input"
                   />
