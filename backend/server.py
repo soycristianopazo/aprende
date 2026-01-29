@@ -1053,6 +1053,33 @@ async def upload_logo(file: UploadFile = File(...), admin: dict = Depends(requir
     
     return {"logo_url": logo_url}
 
+@api_router.post("/branding/banner-logo")
+async def upload_banner_logo(file: UploadFile = File(...), admin: dict = Depends(require_admin)):
+    if not file.filename.lower().endswith(('.png', '.jpg', '.jpeg')):
+        raise HTTPException(status_code=400, detail="Only PNG/JPG files allowed")
+    
+    filename = f"banner_logo_{uuid.uuid4().hex[:8]}.png"
+    filepath = UPLOAD_DIR / "logos" / filename
+    
+    content = await file.read()
+    with open(filepath, "wb") as f:
+        f.write(content)
+    
+    banner_logo_url = f"/api/files/logos/{filename}"
+    
+    existing = await db.branding.find_one({})
+    if existing:
+        await db.branding.update_one({}, {"$set": {"banner_logo_url": banner_logo_url}})
+    else:
+        await db.branding.insert_one({
+            "branding_id": "default",
+            "banner_logo_url": banner_logo_url,
+            "primary_color": "#F97316",
+            "secondary_color": "#F1F5F9"
+        })
+    
+    return {"banner_logo_url": banner_logo_url}
+
 @api_router.post("/branding/signature")
 async def upload_signature(file: UploadFile = File(...), admin: dict = Depends(require_admin)):
     if not file.filename.lower().endswith(('.png', '.jpg', '.jpeg')):
