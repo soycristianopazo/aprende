@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
@@ -9,14 +9,33 @@ import { Separator } from '../components/ui/separator';
 import { toast } from 'sonner';
 import { BookOpen, Mail, Lock, Loader2 } from 'lucide-react';
 
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
+
 const Login = () => {
   const navigate = useNavigate();
   const { login, loginWithGoogle } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [branding, setBranding] = useState(null);
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
+
+  useEffect(() => {
+    fetchBranding();
+  }, []);
+
+  const fetchBranding = async () => {
+    try {
+      const response = await fetch(`${API}/branding`);
+      if (response.ok) {
+        setBranding(await response.json());
+      }
+    } catch (error) {
+      console.error('Error fetching branding:', error);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -47,13 +66,23 @@ const Login = () => {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex justify-center mb-8">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-12 h-12 rounded-xl bg-orange-500 flex items-center justify-center">
-              <BookOpen className="w-7 h-7 text-white" />
-            </div>
-            <span className="font-bold text-2xl text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
-              E-Learning
-            </span>
+          <Link to="/" className="flex items-center justify-center">
+            {branding?.banner_logo_url ? (
+              <img 
+                src={`${BACKEND_URL}${branding.banner_logo_url}`} 
+                alt="Logo" 
+                className="h-14 max-w-[200px] object-contain"
+              />
+            ) : (
+              <div className="flex items-center gap-2">
+                <div className="w-12 h-12 rounded-xl bg-orange-500 flex items-center justify-center">
+                  <BookOpen className="w-7 h-7 text-white" />
+                </div>
+                <span className="font-bold text-2xl text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                  E-Learning
+                </span>
+              </div>
+            )}
           </Link>
         </div>
 

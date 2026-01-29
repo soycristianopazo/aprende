@@ -17,6 +17,7 @@ const Register = () => {
   const { register } = useAuth();
   const [loading, setLoading] = useState(false);
   const [roles, setRoles] = useState([]);
+  const [branding, setBranding] = useState(null);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -29,7 +30,19 @@ const Register = () => {
 
   useEffect(() => {
     fetchRoles();
+    fetchBranding();
   }, []);
+
+  const fetchBranding = async () => {
+    try {
+      const response = await fetch(`${API}/branding`);
+      if (response.ok) {
+        setBranding(await response.json());
+      }
+    } catch (error) {
+      console.error('Error fetching branding:', error);
+    }
+  };
 
   const fetchRoles = async () => {
     try {
