@@ -796,13 +796,17 @@ async def regenerate_certificate(cert_id: str, admin: dict = Depends(require_adm
 
 def generate_certificate_pdf(certificate: dict, branding: dict) -> io.BytesIO:
     buffer = io.BytesIO()
+    
+    # Usar orientación horizontal para mejor diseño
+    page_width, page_height = landscape(A4)
+    
     doc = SimpleDocTemplate(
         buffer, 
-        pagesize=A4, 
-        topMargin=1.5*cm, 
-        bottomMargin=1.5*cm,
-        leftMargin=2*cm,
-        rightMargin=2*cm
+        pagesize=landscape(A4), 
+        topMargin=0.8*cm, 
+        bottomMargin=0.8*cm,
+        leftMargin=1.2*cm,
+        rightMargin=1.2*cm
     )
     
     primary_color = branding.get("primary_color", "#F97316")
@@ -815,36 +819,43 @@ def generate_certificate_pdf(certificate: dict, branding: dict) -> io.BytesIO:
     except:
         main_color = colors.Color(0.976, 0.451, 0.086)  # Orange default
     
+    # Colores del diseño moderno
+    dark_blue = colors.Color(0.1, 0.15, 0.25)
+    gold = colors.Color(0.85, 0.65, 0.13)
+    light_gray = colors.Color(0.95, 0.95, 0.95)
+    medium_gray = colors.Color(0.5, 0.5, 0.5)
+    
     styles = getSampleStyleSheet()
     
-    # Estilos personalizados
+    # Estilos personalizados modernos
     title_style = ParagraphStyle(
         'CertTitle',
         parent=styles['Heading1'],
-        fontSize=32,
-        textColor=main_color,
+        fontSize=36,
+        textColor=dark_blue,
         alignment=TA_CENTER,
-        spaceAfter=15,
-        fontName='Helvetica-Bold'
+        spaceAfter=8,
+        fontName='Helvetica-Bold',
+        leading=40
     )
     
     subtitle_style = ParagraphStyle(
         'CertSubtitle',
         parent=styles['Normal'],
-        fontSize=14,
-        textColor=colors.Color(0.4, 0.4, 0.4),
+        fontSize=11,
+        textColor=medium_gray,
         alignment=TA_CENTER,
-        spaceAfter=25,
-        leading=18
+        spaceAfter=12,
+        leading=14
     )
     
     name_style = ParagraphStyle(
         'StudentName',
         parent=styles['Heading1'],
-        fontSize=26,
-        textColor=colors.Color(0.1, 0.1, 0.1),
+        fontSize=28,
+        textColor=main_color,
         alignment=TA_CENTER,
-        spaceAfter=5,
+        spaceAfter=4,
         fontName='Helvetica-Bold',
         leading=32
     )
@@ -852,209 +863,299 @@ def generate_certificate_pdf(certificate: dict, branding: dict) -> io.BytesIO:
     rut_style = ParagraphStyle(
         'StudentRut',
         parent=styles['Normal'],
-        fontSize=12,
-        textColor=colors.Color(0.3, 0.3, 0.3),
+        fontSize=10,
+        textColor=medium_gray,
         alignment=TA_CENTER,
-        spaceAfter=20
+        spaceAfter=10
     )
     
     normal_center = ParagraphStyle(
         'NormalCenter',
         parent=styles['Normal'],
-        fontSize=13,
+        fontSize=11,
         alignment=TA_CENTER,
-        spaceAfter=8,
+        spaceAfter=6,
         textColor=colors.Color(0.3, 0.3, 0.3),
-        leading=18
+        leading=14
     )
     
-    course_style = ParagraphStyle(
-        'CourseName',
+    role_style = ParagraphStyle(
+        'RoleName',
         parent=styles['Heading2'],
-        fontSize=20,
-        textColor=main_color,
-        alignment=TA_CENTER,
-        spaceAfter=15,
-        fontName='Helvetica-Bold'
-    )
-    
-    details_style = ParagraphStyle(
-        'Details',
-        parent=styles['Normal'],
-        fontSize=12,
+        fontSize=18,
+        textColor=dark_blue,
         alignment=TA_CENTER,
         spaceAfter=8,
-        textColor=colors.Color(0.3, 0.3, 0.3)
+        fontName='Helvetica-Bold'
     )
     
     small_style = ParagraphStyle(
         'Small',
         parent=styles['Normal'],
-        fontSize=10,
-        textColor=colors.Color(0.5, 0.5, 0.5),
+        fontSize=9,
+        textColor=medium_gray,
         alignment=TA_CENTER
     )
     
     code_style = ParagraphStyle(
         'VerificationCode',
         parent=styles['Normal'],
-        fontSize=16,
+        fontSize=14,
         fontName='Courier-Bold',
         alignment=TA_CENTER,
-        spaceAfter=5,
-        textColor=colors.Color(0.2, 0.2, 0.2)
+        spaceAfter=3,
+        textColor=dark_blue
     )
     
     # Formatear fechas en español
     MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 
              'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
-    DIAS = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo']
     
     issued_dt = datetime.fromisoformat(certificate["issued_at"])
     expires_dt = datetime.fromisoformat(certificate["expires_at"])
     
     issued_date = f"{issued_dt.day} de {MESES[issued_dt.month-1]} de {issued_dt.year}"
-    expires_day_name = DIAS[expires_dt.weekday()]
-    expires_date = f"{expires_day_name} {expires_dt.day} de {MESES[expires_dt.month-1]} de {expires_dt.year}"
+    expires_date = f"{expires_dt.day} de {MESES[expires_dt.month-1]} de {expires_dt.year}"
     
     elements = []
     
-    # Logo (si existe)
+    # ============ CONTENIDO DEL CERTIFICADO ============
+    
+    elements.append(Spacer(1, 5))
+    
+    # Logo centrado (sin distorsión)
     logo_url = branding.get("logo_url")
     if logo_url:
         try:
             logo_path = ROOT_DIR / logo_url.replace("/api/files/", "uploads/")
             if logo_path.exists():
-                logo = RLImage(str(logo_path), width=4*cm, height=2*cm)
-                logo.hAlign = 'CENTER'
-                elements.append(logo)
-                elements.append(Spacer(1, 15))
+                from PIL import Image as PILImage
+                with PILImage.open(str(logo_path)) as img:
+                    orig_width, orig_height = img.size
+                    max_width = 5*cm
+                    max_height = 2.2*cm
+                    # Calcular escala manteniendo proporción
+                    scale = min(max_width / orig_width, max_height / orig_height)
+                    new_width = orig_width * scale
+                    new_height = orig_height * scale
+                    logo = RLImage(str(logo_path), width=new_width, height=new_height)
+                    logo.hAlign = 'CENTER'
+                    elements.append(logo)
+                    elements.append(Spacer(1, 8))
         except Exception as e:
             logger.error(f"Error loading logo: {e}")
     
-    elements.append(Spacer(1, 20))
-    
     # Título principal
-    elements.append(Paragraph("CERTIFICADO", title_style))
+    elements.append(Paragraph("CERTIFICADO DE CAPACITACIÓN", title_style))
     
-    elements.append(Spacer(1, 25))
+    # Línea decorativa dorada
+    line_drawing = Drawing(page_width - 4*cm, 3)
+    line_drawing.add(Line(80, 1.5, page_width - 6*cm, 1.5, strokeColor=gold, strokeWidth=2))
+    line_drawing.hAlign = 'CENTER'
+    elements.append(line_drawing)
     
-    # Línea decorativa
-    line_data = [['', '', '']]
-    line_table = Table(line_data, colWidths=[5*cm, 5*cm, 5*cm])
-    line_table.setStyle(TableStyle([
-        ('LINEBELOW', (1, 0), (1, 0), 2, main_color),
-    ]))
-    elements.append(line_table)
-    
-    elements.append(Spacer(1, 25))
+    elements.append(Spacer(1, 10))
     
     # Texto de otorgamiento
     elements.append(Paragraph(
-        "SE OTORGA EL PRESENTE CERTIFICADO DE ASISTENCIA Y APROBACIÓN A:",
+        "Se certifica que",
         subtitle_style
     ))
     
-    elements.append(Spacer(1, 15))
-    
     # Nombre del estudiante
     elements.append(Paragraph(
-        f"<b>{certificate['user_name'].upper()}</b>",
+        f"{certificate['user_name'].upper()}",
         name_style
     ))
     
-    # RUT
+    # RUT y empresa
     rut = certificate.get('user_rut', '')
+    company = certificate.get('user_company', '')
     if rut:
-        elements.append(Paragraph(f"RUT: {rut}", rut_style))
+        info_text = f"RUT: {rut}"
+        if company:
+            info_text += f" | Empresa: {company}"
+        elements.append(Paragraph(info_text, rut_style))
     
-    elements.append(Spacer(1, 20))
+    # Verificar si es certificado de rol (todos los cursos) o individual
+    is_role_cert = certificate.get("certificate_type") == "role_completion"
     
-    # Texto del curso
+    if is_role_cert:
+        # Certificado de ROL - con tabla de cursos
+        role_name = certificate.get("role_name", "")
+        elements.append(Paragraph(
+            f"Ha completado satisfactoriamente la malla curricular correspondiente al rol:",
+            normal_center
+        ))
+        elements.append(Paragraph(f"{role_name.upper()}", role_style))
+        
+        elements.append(Spacer(1, 6))
+        
+        # Tabla de cursos con porcentajes
+        courses_detail = certificate.get("courses_detail", [])
+        if courses_detail:
+            # Header de la tabla
+            table_data = [["N°", "Curso", "Tipo", "Horas", "Aprobación"]]
+            
+            for idx, course in enumerate(courses_detail, 1):
+                score = course.get("score", 0)
+                score_text = f"{score}%"
+                table_data.append([
+                    str(idx),
+                    course.get("course_name", "")[:40],
+                    course.get("training_type", "e-learning").capitalize(),
+                    f"{course.get('hours', 0)}h",
+                    score_text
+                ])
+            
+            # Fila de totales
+            total_hours = certificate.get("total_hours", 0)
+            avg_score = certificate.get("average_score", 0)
+            table_data.append(["", "TOTAL", "", f"{total_hours}h", f"{avg_score}%"])
+            
+            col_widths = [1*cm, 10*cm, 3*cm, 2*cm, 2.5*cm]
+            course_table = Table(table_data, colWidths=col_widths)
+            
+            course_table.setStyle(TableStyle([
+                # Header
+                ('BACKGROUND', (0, 0), (-1, 0), dark_blue),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 9),
+                ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
+                ('TOPPADDING', (0, 0), (-1, 0), 6),
+                
+                # Body
+                ('FONTNAME', (0, 1), (-1, -2), 'Helvetica'),
+                ('FONTSIZE', (0, 1), (-1, -2), 9),
+                ('ALIGN', (0, 1), (0, -1), 'CENTER'),
+                ('ALIGN', (2, 1), (-1, -1), 'CENTER'),
+                ('VALIGN', (0, 1), (-1, -1), 'MIDDLE'),
+                ('BOTTOMPADDING', (0, 1), (-1, -2), 5),
+                ('TOPPADDING', (0, 1), (-1, -2), 5),
+                
+                # Totals row
+                ('BACKGROUND', (0, -1), (-1, -1), light_gray),
+                ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, -1), (-1, -1), 9),
+                
+                # Borders
+                ('LINEBELOW', (0, 0), (-1, 0), 1, gold),
+                ('LINEABOVE', (0, -1), (-1, -1), 1, dark_blue),
+                ('LINEBELOW', (0, -1), (-1, -1), 1, dark_blue),
+                ('BOX', (0, 0), (-1, -1), 1, dark_blue),
+                
+                # Alternate row colors
+                *[('BACKGROUND', (0, i), (-1, i), light_gray) for i in range(2, len(table_data)-1, 2)]
+            ]))
+            
+            elements.append(course_table)
+        
+        elements.append(Spacer(1, 8))
+    else:
+        # Certificado individual (legacy)
+        elements.append(Paragraph(
+            "Ha completado satisfactoriamente el curso:",
+            normal_center
+        ))
+        
+        course_name = certificate.get('course_name', '')
+        elements.append(Paragraph(f"{course_name.upper()}", role_style))
+        
+        hours = certificate.get('hours', 0)
+        training_type = certificate.get('training_type', 'e-learning').upper()
+        score = certificate.get('score', 0)
+        
+        elements.append(Paragraph(
+            f"Duración: {hours} horas | Modalidad: {training_type} | Aprobación: {score}%",
+            normal_center
+        ))
+        
+        elements.append(Spacer(1, 8))
+    
+    # Vigencia y emisión en línea
     elements.append(Paragraph(
-        "Por haber completado de manera satisfactoria el curso:",
-        normal_center
-    ))
-    
-    elements.append(Spacer(1, 10))
-    
-    # Nombre del curso
-    elements.append(Paragraph(
-        f"<b>{certificate['course_name'].upper()}</b>",
-        course_style
-    ))
-    
-    elements.append(Spacer(1, 15))
-    
-    # Detalles del curso
-    training_type = certificate.get('training_type', 'e-learning').upper()
-    hours = certificate.get('hours', 0)
-    
-    elements.append(Paragraph(
-        f"Con un total de <b>{hours} horas</b> cronológicas. ({training_type})",
-        details_style
-    ))
-    
-    elements.append(Spacer(1, 10))
-    
-    # Vigencia
-    elements.append(Paragraph(
-        f"Certificación válida hasta el <b>{expires_date}</b>.",
-        details_style
-    ))
-    
-    elements.append(Spacer(1, 10))
-    
-    # Fecha de emisión
-    elements.append(Paragraph(
-        f"Emitido el {issued_date}.",
+        f"Emitido el {issued_date} | Válido hasta el {expires_date}",
         small_style
     ))
     
-    elements.append(Spacer(1, 40))
+    elements.append(Spacer(1, 12))
     
-    # Firma (si existe)
+    # Firma centrada
     signature_url = branding.get("signature_url")
     if signature_url:
         try:
             sig_path = ROOT_DIR / signature_url.replace("/api/files/", "uploads/")
             if sig_path.exists():
-                signature = RLImage(str(sig_path), width=4*cm, height=2*cm)
-                signature.hAlign = 'CENTER'
-                elements.append(signature)
+                from PIL import Image as PILImage
+                with PILImage.open(str(sig_path)) as img:
+                    orig_width, orig_height = img.size
+                    max_width = 3.5*cm
+                    max_height = 1.8*cm
+                    scale = min(max_width / orig_width, max_height / orig_height)
+                    new_width = orig_width * scale
+                    new_height = orig_height * scale
+                    signature = RLImage(str(sig_path), width=new_width, height=new_height)
+                    signature.hAlign = 'CENTER'
+                    elements.append(signature)
         except Exception as e:
             logger.error(f"Error loading signature: {e}")
     
-    # Línea de firma
-    elements.append(Paragraph("_______________________________", normal_center))
+    elements.append(Paragraph("_________________________", small_style))
     elements.append(Paragraph("Firma Autorizada", small_style))
     
-    elements.append(Spacer(1, 30))
+    elements.append(Spacer(1, 10))
     
     # Línea decorativa inferior
-    elements.append(line_table)
+    elements.append(line_drawing)
     
-    elements.append(Spacer(1, 20))
+    elements.append(Spacer(1, 6))
     
     # Código de verificación
-    elements.append(Paragraph("Código de verificación:", small_style))
-    elements.append(Paragraph(certificate['verification_code'], code_style))
-    elements.append(Paragraph("Verifique este certificado en la plataforma", small_style))
+    elements.append(Paragraph(f"Código de verificación: {certificate['verification_code']}", code_style))
+    elements.append(Paragraph("Verifique este certificado en nuestra plataforma", small_style))
     
-    # Footer image (si existe)
-    footer_url = branding.get("footer_image_url")
-    if footer_url:
-        try:
-            footer_path = ROOT_DIR / footer_url.replace("/api/files/", "uploads/")
-            if footer_path.exists():
-                elements.append(Spacer(1, 20))
-                footer_img = RLImage(str(footer_path), width=10*cm, height=2*cm)
-                footer_img.hAlign = 'CENTER'
-                elements.append(footer_img)
-        except Exception as e:
-            logger.error(f"Error loading footer: {e}")
+    # Función para dibujar marco moderno
+    def draw_frame(canvas, doc):
+        canvas.saveState()
+        
+        # Marco exterior elegante
+        margin = 0.5*cm
+        canvas.setStrokeColor(dark_blue)
+        canvas.setLineWidth(3)
+        canvas.roundRect(margin, margin, page_width - 2*margin, page_height - 2*margin, 10)
+        
+        # Marco interior dorado
+        inner_margin = 0.8*cm
+        canvas.setStrokeColor(gold)
+        canvas.setLineWidth(1.5)
+        canvas.roundRect(inner_margin, inner_margin, page_width - 2*inner_margin, page_height - 2*inner_margin, 8)
+        
+        # Esquinas decorativas
+        corner_size = 1.5*cm
+        canvas.setStrokeColor(main_color)
+        canvas.setLineWidth(2)
+        
+        # Esquina superior izquierda
+        canvas.line(margin + 0.3*cm, page_height - margin - corner_size, margin + 0.3*cm, page_height - margin - 0.3*cm)
+        canvas.line(margin + 0.3*cm, page_height - margin - 0.3*cm, margin + corner_size, page_height - margin - 0.3*cm)
+        
+        # Esquina superior derecha
+        canvas.line(page_width - margin - 0.3*cm, page_height - margin - corner_size, page_width - margin - 0.3*cm, page_height - margin - 0.3*cm)
+        canvas.line(page_width - margin - corner_size, page_height - margin - 0.3*cm, page_width - margin - 0.3*cm, page_height - margin - 0.3*cm)
+        
+        # Esquina inferior izquierda
+        canvas.line(margin + 0.3*cm, margin + corner_size, margin + 0.3*cm, margin + 0.3*cm)
+        canvas.line(margin + 0.3*cm, margin + 0.3*cm, margin + corner_size, margin + 0.3*cm)
+        
+        # Esquina inferior derecha
+        canvas.line(page_width - margin - 0.3*cm, margin + corner_size, page_width - margin - 0.3*cm, margin + 0.3*cm)
+        canvas.line(page_width - margin - corner_size, margin + 0.3*cm, page_width - margin - 0.3*cm, margin + 0.3*cm)
+        
+        canvas.restoreState()
     
-    doc.build(elements)
+    doc.build(elements, onFirstPage=draw_frame, onLaterPages=draw_frame)
     buffer.seek(0)
     return buffer
 
