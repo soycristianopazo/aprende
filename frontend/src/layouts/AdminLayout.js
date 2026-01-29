@@ -7,13 +7,32 @@ import {
   BookOpen, LayoutDashboard, Users, FolderTree, GraduationCap, 
   ClipboardCheck, Award, BarChart3, Palette, LogOut, Menu, X, ChevronRight
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
 
 const AdminLayout = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [branding, setBranding] = useState(null);
+
+  useEffect(() => {
+    fetchBranding();
+  }, []);
+
+  const fetchBranding = async () => {
+    try {
+      const response = await fetch(`${API}/branding`);
+      if (response.ok) {
+        setBranding(await response.json());
+      }
+    } catch (error) {
+      console.error('Error fetching branding:', error);
+    }
+  };
 
   const menuItems = [
     { path: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
