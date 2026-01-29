@@ -75,8 +75,10 @@ const StudentLayout = () => {
                     <BookOpen className="w-6 h-6 text-white" />
                   </div>
                   <span className="font-bold text-xl text-slate-900 hidden sm:inline" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                E-Learning
-              </span>
+                    E-Learning
+                  </span>
+                </>
+              )}
             </Link>
 
             {/* Desktop Navigation */}
