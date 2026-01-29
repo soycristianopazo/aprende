@@ -88,6 +88,7 @@ class CourseCreate(BaseModel):
     training_type: str = "e-learning"
     video_url: Optional[str] = None
     status: str = "draft"
+    prerequisites: List[str] = []
 
 class CourseUpdate(BaseModel):
     name: Optional[str] = None
@@ -98,6 +99,7 @@ class CourseUpdate(BaseModel):
     video_url: Optional[str] = None
     material_url: Optional[str] = None
     status: Optional[str] = None
+    prerequisites: Optional[List[str]] = None
 
 class QuestionCreate(BaseModel):
     text: str
