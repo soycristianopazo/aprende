@@ -80,13 +80,23 @@ const VerifyCertificate = () => {
       <nav className="border-b border-slate-200 bg-white/80 backdrop-blur-md">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <Link to="/" className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center">
-                <BookOpen className="w-6 h-6 text-white" />
-              </div>
-              <span className="font-bold text-xl text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                E-Learning
-              </span>
+            <Link to="/" className="flex items-center justify-center">
+              {branding?.banner_logo_url ? (
+                <img 
+                  src={`${BACKEND_URL}${branding.banner_logo_url}`} 
+                  alt="Logo" 
+                  className="h-10 max-w-[160px] object-contain"
+                />
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div className="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center">
+                    <BookOpen className="w-6 h-6 text-white" />
+                  </div>
+                  <span className="font-bold text-xl text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                    E-Learning
+                  </span>
+                </div>
+              )}
             </Link>
             <Link to="/login">
               <Button variant="outline" className="border-slate-200 hover:border-orange-500" data-testid="login-btn">
