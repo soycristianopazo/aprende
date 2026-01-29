@@ -33,11 +33,12 @@ Desarrollar una plataforma web autónoma de capacitaciones e-learning que permit
 - [x] Roles: CRUD with course assignment and course_order
 - [x] Courses: CRUD, material upload, prerequisites
 - [x] Evaluations: CRUD, submit with scoring
-- [x] Certificates: generation, verification, PDF download
+- [x] **Certificates: UN SOLO certificado cuando se completan TODOS los cursos del rol**
+- [x] Certificate PDF: Diseño moderno horizontal con marco, tabla de cursos y porcentajes
 - [x] Branding: logo, banner logo, signature, colors
 - [x] Reports: summary, user reports, CSV export
-- [x] **NEW**: GET /api/roles/{role_id}/curriculum - Returns ordered curriculum with prerequisites
-- [x] **NEW**: GET /api/student/progress - Returns is_locked and missing_prerequisites
+- [x] GET /api/roles/{role_id}/curriculum - Returns ordered curriculum with prerequisites
+- [x] GET /api/student/progress - Returns is_locked and missing_prerequisites
 
 ### Frontend Pages
 - [x] Landing page (with banner logo)
