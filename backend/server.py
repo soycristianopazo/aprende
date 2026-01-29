@@ -690,12 +690,10 @@ async def download_certificate_pdf(cert_id: str, user: dict = Depends(get_curren
     # Get branding
     branding = await db.branding.find_one({}, {"_id": 0}) or {}
     
-    html_content = generate_certificate_html(certificate, branding)
-    
-    pdf = HTML(string=html_content).write_pdf()
+    pdf_buffer = generate_certificate_pdf(certificate, branding)
     
     return StreamingResponse(
-        io.BytesIO(pdf),
+        pdf_buffer,
         media_type="application/pdf",
         headers={"Content-Disposition": f"attachment; filename=certificado_{certificate['verification_code']}.pdf"}
     )
