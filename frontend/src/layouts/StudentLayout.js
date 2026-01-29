@@ -4,7 +4,7 @@ import { Button } from '../components/ui/button';
 import { 
   BookOpen, LayoutDashboard, Award, LogOut, Menu, X, User
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,11 +13,30 @@ import {
   DropdownMenuTrigger,
 } from '../components/ui/dropdown-menu';
 
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
+
 const StudentLayout = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [branding, setBranding] = useState(null);
+
+  useEffect(() => {
+    fetchBranding();
+  }, []);
+
+  const fetchBranding = async () => {
+    try {
+      const response = await fetch(`${API}/branding`);
+      if (response.ok) {
+        setBranding(await response.json());
+      }
+    } catch (error) {
+      console.error('Error fetching branding:', error);
+    }
+  };
 
   const navItems = [
     { path: '/student', label: 'Mis Cursos', exact: true },
@@ -44,10 +63,18 @@ const StudentLayout = () => {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link to="/student" className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center">
-                <BookOpen className="w-6 h-6 text-white" />
-              </div>
-              <span className="font-bold text-xl text-slate-900 hidden sm:inline" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              {branding?.banner_logo_url ? (
+                <img 
+                  src={`${BACKEND_URL}${branding.banner_logo_url}`} 
+                  alt="Logo" 
+                  className="h-10 max-w-[160px] object-contain"
+                />
+              ) : (
+                <>
+                  <div className="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center">
+                    <BookOpen className="w-6 h-6 text-white" />
+                  </div>
+                  <span className="font-bold text-xl text-slate-900 hidden sm:inline" style={{ fontFamily: 'Manrope, sans-serif' }}>
                 E-Learning
               </span>
             </Link>
