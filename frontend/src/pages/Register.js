@@ -5,9 +5,9 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Checkbox } from '../components/ui/checkbox';
 import { toast } from 'sonner';
-import { BookOpen, Mail, Lock, User, Building, CreditCard, Loader2 } from 'lucide-react';
+import { BookOpen, Mail, Lock, User, Building, CreditCard, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -18,6 +18,7 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const [roles, setRoles] = useState([]);
   const [branding, setBranding] = useState(null);
+  const [rolesExpanded, setRolesExpanded] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -25,7 +26,7 @@ const Register = () => {
     full_name: '',
     rut: '',
     company: '',
-    role_id: ''
+    role_ids: []
   });
 
   useEffect(() => {
@@ -56,6 +57,15 @@ const Register = () => {
     }
   };
 
+  const toggleRole = (roleId) => {
+    setFormData(prev => ({
+      ...prev,
+      role_ids: prev.role_ids.includes(roleId)
+        ? prev.role_ids.filter(id => id !== roleId)
+        : [...prev.role_ids, roleId]
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -78,7 +88,7 @@ const Register = () => {
         full_name: formData.full_name,
         rut: formData.rut,
         company: formData.company || null,
-        role_id: formData.role_id || null,
+        role_ids: formData.role_ids,
         is_admin: false
       };
 
@@ -91,6 +101,10 @@ const Register = () => {
       setLoading(false);
     }
   };
+
+  const selectedRoleNames = formData.role_ids
+    .map(id => roles.find(r => r.role_id === id)?.name)
+    .filter(Boolean);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-white flex items-center justify-center p-4 py-12">
@@ -205,24 +219,54 @@ const Register = () => {
 
               {roles.length > 0 && (
                 <div className="space-y-2">
-                  <Label htmlFor="role" className="text-slate-700">
-                    Rol (opcional)
+                  <Label className="text-slate-700">
+                    Rol/Actividad (opcional)
                   </Label>
-                  <Select
-                    value={formData.role_id}
-                    onValueChange={(value) => setFormData({ ...formData, role_id: value })}
-                  >
-                    <SelectTrigger className="border-slate-200 focus:border-orange-500" data-testid="role-select">
-                      <SelectValue placeholder="Selecciona un rol" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {roles.map((role) => (
-                        <SelectItem key={role.role_id} value={role.role_id}>
-                          {role.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="border border-slate-200 rounded-lg">
+                    <button
+                      type="button"
+                      onClick={() => setRolesExpanded(!rolesExpanded)}
+                      className="w-full px-3 py-2 flex items-center justify-between text-left text-sm text-slate-600 hover:bg-slate-50 rounded-lg"
+                    >
+                      <span>
+                        {formData.role_ids.length > 0 
+                          ? `${formData.role_ids.length} rol(es) seleccionado(s)`
+                          : 'Seleccionar roles/actividades'}
+                      </span>
+                      {rolesExpanded ? (
+                        <ChevronUp className="w-4 h-4" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4" />
+                      )}
+                    </button>
+                    
+                    {rolesExpanded && (
+                      <div className="border-t border-slate-200 max-h-48 overflow-y-auto p-2 space-y-1">
+                        {roles.map((role) => (
+                          <div key={role.role_id} className="flex items-center space-x-2 p-2 rounded hover:bg-slate-50">
+                            <Checkbox
+                              id={`reg-${role.role_id}`}
+                              checked={formData.role_ids.includes(role.role_id)}
+                              onCheckedChange={() => toggleRole(role.role_id)}
+                              data-testid={`role-checkbox-${role.role_id}`}
+                            />
+                            <label
+                              htmlFor={`reg-${role.role_id}`}
+                              className="text-sm text-slate-700 cursor-pointer flex-1"
+                            >
+                              {role.name}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {selectedRoleNames.length > 0 && (
+                    <p className="text-xs text-orange-600">
+                      Seleccionados: {selectedRoleNames.slice(0, 2).join(', ')}
+                      {selectedRoleNames.length > 2 && ` +${selectedRoleNames.length - 2} más`}
+                    </p>
+                  )}
                 </div>
               )}
 
