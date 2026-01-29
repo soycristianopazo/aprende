@@ -63,8 +63,12 @@ const Landing = () => {
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 glass border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between h-16 relative">
+            {/* Left - Empty for balance */}
+            <div className="w-32 hidden md:block"></div>
+            
+            {/* Center - Logo */}
+            <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-2">
               {branding?.banner_logo_url ? (
                 <img 
                   src={`${BACKEND_URL}${branding.banner_logo_url}`} 
@@ -82,9 +86,11 @@ const Landing = () => {
                 </>
               )}
             </div>
+            
+            {/* Right - Buttons */}
             <div className="flex items-center gap-4">
               <Link to="/verify/demo">
-                <Button variant="ghost" className="text-slate-600 hover:text-orange-600" data-testid="verify-cert-btn">
+                <Button variant="ghost" className="text-slate-600 hover:text-orange-600 hidden md:inline-flex" data-testid="verify-cert-btn">
                   Verificar Certificado
                 </Button>
               </Link>
@@ -94,7 +100,7 @@ const Landing = () => {
                 </Button>
               </Link>
               <Link to="/register">
-                <Button className="bg-orange-500 hover:bg-orange-600 text-white" data-testid="register-btn">
+                <Button className="bg-orange-500 hover:bg-orange-600 text-white hidden sm:inline-flex" data-testid="register-btn">
                   Registrarse
                 </Button>
               </Link>
