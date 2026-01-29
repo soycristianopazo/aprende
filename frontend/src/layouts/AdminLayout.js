@@ -77,12 +77,22 @@ const AdminLayout = () => {
           {/* Logo */}
           <div className="flex items-center justify-between h-16 px-4 border-b border-slate-200">
             <Link to="/admin" className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-lg bg-orange-500 flex items-center justify-center">
-                <BookOpen className="w-5 h-5 text-white" />
-              </div>
-              <span className="font-bold text-lg text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                E-Learning
-              </span>
+              {branding?.banner_logo_url ? (
+                <img 
+                  src={`${BACKEND_URL}${branding.banner_logo_url}`} 
+                  alt="Logo" 
+                  className="h-9 max-w-[140px] object-contain"
+                />
+              ) : (
+                <>
+                  <div className="w-9 h-9 rounded-lg bg-orange-500 flex items-center justify-center">
+                    <BookOpen className="w-5 h-5 text-white" />
+                  </div>
+                  <span className="font-bold text-lg text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                    E-Learning
+                  </span>
+                </>
+              )}
             </Link>
             <Button
               variant="ghost"
