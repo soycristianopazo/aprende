@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Checkbox } from '../components/ui/checkbox';
 import { toast } from 'sonner';
 import { BookOpen, Mail, Lock, User, Building, CreditCard, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import { useBranding } from '../hooks/useBranding';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -17,7 +18,7 @@ const Register = () => {
   const { register } = useAuth();
   const [loading, setLoading] = useState(false);
   const [roles, setRoles] = useState([]);
-  const [branding, setBranding] = useState(null);
+  const branding = useBranding();
   const [rolesExpanded, setRolesExpanded] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -31,19 +32,7 @@ const Register = () => {
 
   useEffect(() => {
     fetchRoles();
-    fetchBranding();
   }, []);
-
-  const fetchBranding = async () => {
-    try {
-      const response = await fetch(`${API}/branding`);
-      if (response.ok) {
-        setBranding(await response.json());
-      }
-    } catch (error) {
-      console.error('Error fetching branding:', error);
-    }
-  };
 
   const fetchRoles = async () => {
     try {
@@ -119,14 +108,11 @@ const Register = () => {
                 className="h-14 max-w-[200px] object-contain"
               />
             ) : (
-              <div className="flex items-center gap-2">
-                <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center">
-                  <BookOpen className="w-7 h-7 text-white" />
-                </div>
-                <span className="font-bold text-2xl text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                  E-Learning
-                </span>
-              </div>
+              <img
+                src="/aptiva-logo.png"
+                alt="Aptiva"
+                className="h-14 max-w-[200px] object-contain"
+              />
             )}
           </Link>
         </div>

@@ -1,29 +1,14 @@
 import { Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { BookOpen, Users, Award, BarChart3, CheckCircle, PlayCircle, ArrowRight } from 'lucide-react';
+import { useBranding } from '../hooks/useBranding';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const Landing = () => {
-  const [branding, setBranding] = useState(null);
-
-  useEffect(() => {
-    fetchBranding();
-  }, []);
-
-  const fetchBranding = async () => {
-    try {
-      const response = await fetch(`${API}/branding`);
-      if (response.ok) {
-        setBranding(await response.json());
-      }
-    } catch (error) {
-      console.error('Error fetching branding:', error);
-    }
-  };
+  const branding = useBranding();
 
   const features = [
     {
@@ -72,14 +57,11 @@ const Landing = () => {
                   className="h-10 max-w-[180px] object-contain"
                 />
               ) : (
-                <>
-                  <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center">
-                    <BookOpen className="w-6 h-6 text-white" />
-                  </div>
-                  <span className="font-bold text-xl text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                    E-Learning
-                  </span>
-                </>
+                <img
+                  src="/aptiva-logo.png"
+                  alt="Aptiva"
+                  className="h-10 max-w-[180px] object-contain"
+                />
               )}
             </div>
             <div className="flex items-center gap-4">
@@ -232,14 +214,11 @@ const Landing = () => {
                   className="h-8 max-w-[140px] object-contain brightness-0 invert"
                 />
               ) : (
-                <>
-                  <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
-                    <BookOpen className="w-5 h-5 text-white" />
-                  </div>
-                  <span className="font-bold text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                    E-Learning Platform
-                  </span>
-                </>
+                <img
+                  src="/aptiva-logo.png"
+                  alt="Aptiva"
+                  className="h-8 max-w-[140px] object-contain brightness-0 invert"
+                />
               )}
             </div>
             <p className="text-slate-400 text-sm">

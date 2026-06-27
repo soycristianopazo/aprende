@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
 import { BookOpen, Search, CheckCircle, XCircle, Award, Calendar, Clock, User, Loader2 } from 'lucide-react';
+import { useBranding } from '../hooks/useBranding';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -15,25 +16,13 @@ const VerifyCertificate = () => {
   const [searchCode, setSearchCode] = useState(code === 'demo' ? '' : code || '');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
-  const [branding, setBranding] = useState(null);
+  const branding = useBranding();
 
   useEffect(() => {
-    fetchBranding();
     if (code && code !== 'demo') {
       handleVerify();
     }
   }, [code]);
-
-  const fetchBranding = async () => {
-    try {
-      const response = await fetch(`${API}/branding`);
-      if (response.ok) {
-        setBranding(await response.json());
-      }
-    } catch (error) {
-      console.error('Error fetching branding:', error);
-    }
-  };
 
   const handleVerify = async (e) => {
     if (e) e.preventDefault();
@@ -88,14 +77,11 @@ const VerifyCertificate = () => {
                   className="h-10 max-w-[160px] object-contain"
                 />
               ) : (
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center">
-                    <BookOpen className="w-6 h-6 text-white" />
-                  </div>
-                  <span className="font-bold text-xl text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                    E-Learning
-                  </span>
-                </div>
+                <img
+                  src="/aptiva-logo.png"
+                  alt="Aptiva"
+                  className="h-10 max-w-[160px] object-contain"
+                />
               )}
             </Link>
             <Link to="/login">

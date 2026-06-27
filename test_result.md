@@ -786,3 +786,157 @@ agent_communication:
       the complete Aptiva logo with black C-shaped arcs + blue squares on transparent background.
       
       🎉 BUG FIX CONFIRMED - Favicon now displays the complete Aptiva logo as intended!
+
+  - task: "Logo flicker bug fix - Aptiva logo appears immediately (no BookOpen fallback)"
+    implemented: true
+    working: true
+    file: "frontend/src/hooks/useBranding.js, frontend/public/aptiva-logo.png, frontend/src/layouts/AdminLayout.js, frontend/src/layouts/StudentLayout.js, frontend/src/pages/Login.js, frontend/src/pages/Register.js, frontend/src/pages/Landing.js, frontend/src/pages/VerifyCertificate.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "user"
+        comment: |
+          BUG REPORT: On login, sidebar, and other pages, the Aptiva logo did NOT appear immediately.
+          First users saw a default fallback (orange/blue "BookOpen + E-Learning" icon block), and only
+          after the backend /api/branding fetch completed, the real Aptiva logo replaced the fallback.
+          
+          ROOT CAUSE: Each page/layout had `useState(null)` for branding and fetched it on mount.
+          While the request was in flight, the fallback "BookOpen + E-Learning" block was shown.
+      - working: true
+        agent: "main"
+        comment: |
+          FIX APPLIED:
+          1. Created `/app/frontend/src/hooks/useBranding.js` — custom hook that reads branding from
+             localStorage synchronously on mount (no flicker after first visit), then refreshes from
+             API in background.
+          2. Saved `/app/frontend/public/aptiva-logo.png` (downloaded from current banner_logo in
+             Supabase Storage) as a static asset.
+          3. Changed all 6 places that showed the fallback to use `<img src="/aptiva-logo.png">` instead
+             of the "BookOpen + E-Learning" block:
+             - src/layouts/AdminLayout.js
+             - src/layouts/StudentLayout.js
+             - src/pages/Login.js
+             - src/pages/Register.js
+             - src/pages/Landing.js (header AND footer)
+             - src/pages/VerifyCertificate.js
+      - working: true
+        agent: "testing"
+        comment: |
+          ✅ LOGO FLICKER BUG FIX VERIFIED - ALL TESTS PASSED (8/8 = 100%)
+          
+          Comprehensive end-to-end verification completed:
+          
+          ✅ TEST 1: First visit (clean localStorage) - Landing page
+                     - Aptiva logo (/aptiva-logo.png) found immediately on first visit
+                     - NO "BookOpen + E-Learning" fallback block present
+                     - .bg-blue-600 svg elements found are CTA buttons (NOT logo fallbacks)
+          
+          ✅ TEST 2: Login page (clean localStorage)
+                     - Aptiva logo found immediately
+                     - NO BookOpen fallback
+          
+          ✅ TEST 3: After admin login - Sidebar logo (AdminLayout)
+                     - Logo shows immediately after login
+                     - After API fetch completes, logo switches to Supabase Storage URL
+                     - NO BookOpen fallback in sidebar
+          
+          ✅ TEST 4: Second visit (cached state) - Reload admin page
+                     - localStorage has 'aptiva_branding' key with cached branding
+                     - Logo appears instantly from cache (no flicker)
+                     - NO BookOpen fallback on reload
+          
+          ✅ TEST 5: Resource check - GET /aptiva-logo.png
+                     - Returns 200 OK with content-type: image/png
+                     - Static asset is accessible
+          
+          ✅ TEST 6: Register page logo verification
+                     - Aptiva logo found immediately
+                     - NO BookOpen fallback
+          
+          ✅ TEST 7: VerifyCertificate page logo verification
+                     - Aptiva logo found immediately
+                     - NO BookOpen fallback
+          
+          ✅ TEST 8: Student layout logo verification
+                     - Logo shows immediately in student header after login
+                     - After API fetch, logo switches to Supabase Storage URL
+                     - NO BookOpen fallback
+          
+          🎉 CRITICAL VERIFICATION: The Aptiva logo now appears IMMEDIATELY on all pages!
+          
+          **BEHAVIOR VERIFIED:**
+          1. **First visit (no cache):** Static `/aptiva-logo.png` shows immediately as fallback
+          2. **After API fetch:** Logo switches to Supabase Storage URL (if branding configured)
+          3. **Subsequent visits:** Logo loads instantly from localStorage cache (no flicker)
+          4. **NO "BookOpen + E-Learning" fallback blocks anywhere**
+          
+          **VISUAL VERIFICATION:**
+          - All screenshots show the Aptiva logo (C-shaped arcs + "Aptiva." text) clearly visible
+          - No orange/blue BookOpen icon blocks present
+          - Logo appears immediately without any flash or delay
+          
+          The bug where users saw a "BookOpen + E-Learning" fallback before the real logo loaded
+          is now COMPLETELY FIXED. The Aptiva logo appears immediately on all pages (Login, Landing,
+          AdminLayout sidebar, StudentLayout header, Register, VerifyCertificate) without any flicker.
+
+metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 7
+  run_ui: true
+
+test_plan:
+  current_focus:
+    - "Logo flicker bug fix - Aptiva logo appears immediately (no BookOpen fallback)"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+  - agent: "user"
+    message: |
+      BUG REPORT: On login, sidebar, and other pages, the Aptiva logo did NOT appear immediately.
+      First users saw a default fallback (orange/blue "BookOpen + E-Learning" icon block), and only
+      after the backend /api/branding fetch completed, the real Aptiva logo replaced the fallback.
+      
+      ROOT CAUSE: Each page/layout had `useState(null)` for branding and fetched it on mount.
+      While the request was in flight, the fallback "BookOpen + E-Learning" block was shown.
+      
+      FIX (already applied):
+      1. Created `/app/frontend/src/hooks/useBranding.js` — custom hook that reads branding from
+         localStorage synchronously on mount (no flicker after first visit), then refreshes from
+         API in background.
+      2. Saved `/app/frontend/public/aptiva-logo.png` as a static asset.
+      3. Changed all 6 places to use `<img src="/aptiva-logo.png">` instead of the "BookOpen + E-Learning" block.
+      
+      Please verify:
+      1. First visit (clean state): Landing page shows Aptiva logo immediately (NOT "BookOpen + E-Learning" block)
+      2. Login page: Aptiva logo visible immediately
+      3. After login as admin: Sidebar logo shows Aptiva logo IMMEDIATELY (no flash)
+      4. Second visit (cached state): Logo appears instantly without flicker
+      5. Resource check: GET /aptiva-logo.png returns 200
+  - agent: "testing"
+    message: |
+      ✅ LOGO FLICKER BUG FIX VERIFIED - 8/8 tests passed (100% success rate)
+      
+      The bug fix is working perfectly! The Aptiva logo now appears IMMEDIATELY on all pages:
+      - Landing page (first visit): Static /aptiva-logo.png shows immediately ✅
+      - Login page: Aptiva logo visible immediately ✅
+      - Admin sidebar: Logo shows immediately after login ✅
+      - Student header: Logo shows immediately after login ✅
+      - Register page: Aptiva logo visible immediately ✅
+      - VerifyCertificate page: Aptiva logo visible immediately ✅
+      - Reload with cache: Logo appears instantly from localStorage ✅
+      - Resource check: /aptiva-logo.png returns 200 OK ✅
+      
+      NO "BookOpen + E-Learning" fallback blocks found anywhere. The logo loading flow works as expected:
+      1. First visit: Static /aptiva-logo.png shows immediately
+      2. After API fetch: Logo switches to Supabase Storage URL (if configured)
+      3. Subsequent visits: Logo loads instantly from localStorage cache
+      
+      Visual verification confirms the Aptiva logo (C-shaped arcs + "Aptiva." text) is clearly
+      visible on all pages without any flash or delay.
+      
+      🎉 BUG FIX COMPLETE - Logo flicker issue resolved!

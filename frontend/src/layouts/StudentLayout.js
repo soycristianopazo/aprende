@@ -4,7 +4,8 @@ import { Button } from '../components/ui/button';
 import { 
   BookOpen, LayoutDashboard, Award, LogOut, Menu, X, User
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useBranding } from '../hooks/useBranding';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,22 +22,7 @@ const StudentLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [branding, setBranding] = useState(null);
-
-  useEffect(() => {
-    fetchBranding();
-  }, []);
-
-  const fetchBranding = async () => {
-    try {
-      const response = await fetch(`${API}/branding`);
-      if (response.ok) {
-        setBranding(await response.json());
-      }
-    } catch (error) {
-      console.error('Error fetching branding:', error);
-    }
-  };
+  const branding = useBranding();
 
   const navItems = [
     { path: '/student', label: 'Mis Cursos', exact: true },
@@ -70,14 +56,11 @@ const StudentLayout = () => {
                   className="h-14 max-w-[200px] object-contain"
                 />
               ) : (
-                <>
-                  <div className="w-12 h-12 rounded-lg bg-blue-600 flex items-center justify-center">
-                    <BookOpen className="w-7 h-7 text-white" />
-                  </div>
-                  <span className="font-bold text-xl text-slate-900 hidden sm:inline" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                    E-Learning
-                  </span>
-                </>
+                <img
+                  src="/aptiva-logo.png"
+                  alt="Aptiva"
+                  className="h-14 max-w-[200px] object-contain"
+                />
               )}
             </Link>
 

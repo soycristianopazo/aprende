@@ -7,7 +7,8 @@ import {
   BookOpen, LayoutDashboard, Users, FolderTree, GraduationCap, 
   ClipboardCheck, Award, BarChart3, Palette, LogOut, Menu, X, ChevronRight
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useBranding } from '../hooks/useBranding';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -17,22 +18,7 @@ const AdminLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [branding, setBranding] = useState(null);
-
-  useEffect(() => {
-    fetchBranding();
-  }, []);
-
-  const fetchBranding = async () => {
-    try {
-      const response = await fetch(`${API}/branding`);
-      if (response.ok) {
-        setBranding(await response.json());
-      }
-    } catch (error) {
-      console.error('Error fetching branding:', error);
-    }
-  };
+  const branding = useBranding();
 
   const menuItems = [
     { path: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
@@ -84,14 +70,11 @@ const AdminLayout = () => {
                   className="h-14 max-w-[230px] w-auto object-contain"
                 />
               ) : (
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center">
-                    <BookOpen className="w-6 h-6 text-white" />
-                  </div>
-                  <span className="font-bold text-lg text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                    E-Learning
-                  </span>
-                </div>
+                <img
+                  src="/aptiva-logo.png"
+                  alt="Aptiva"
+                  className="h-14 max-w-[230px] w-auto object-contain"
+                />
               )}
             </Link>
             <Button
