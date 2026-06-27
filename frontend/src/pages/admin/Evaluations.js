@@ -177,7 +177,7 @@ const AdminEvaluations = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
       </div>
     );
   }
@@ -318,8 +318,8 @@ const AdminEvaluations = () => {
                   <CardContent className="pt-4 space-y-4">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center">
-                          <span className="text-orange-600 font-semibold">{qIndex + 1}</span>
+                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                          <span className="text-blue-700 font-semibold">{qIndex + 1}</span>
                         </div>
                         <Label>Pregunta {qIndex + 1}</Label>
                       </div>
@@ -352,7 +352,7 @@ const AdminEvaluations = () => {
                             name={`correct-${qIndex}`}
                             checked={question.correct_index === oIndex}
                             onChange={() => updateQuestion(qIndex, 'correct_index', oIndex)}
-                            className="w-4 h-4 text-orange-500"
+                            className="w-4 h-4 text-blue-600"
                             data-testid={`option-radio-${qIndex}-${oIndex}`}
                           />
                           <Input
@@ -379,7 +379,7 @@ const AdminEvaluations = () => {
               Cancelar
             </Button>
             <Button 
-              className="bg-orange-500 hover:bg-orange-600"
+              className="bg-blue-600 hover:bg-blue-700"
               onClick={handleSubmit}
               data-testid="save-evaluation-btn"
             >

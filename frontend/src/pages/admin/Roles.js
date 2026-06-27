@@ -237,7 +237,7 @@ const AdminRoles = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
       </div>
     );
   }
@@ -253,7 +253,7 @@ const AdminRoles = () => {
         </div>
         <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
           <DialogTrigger asChild>
-            <Button className="bg-orange-500 hover:bg-orange-600 text-white" data-testid="add-role-btn">
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white" data-testid="add-role-btn">
               <Plus className="w-4 h-4 mr-2" />
               Nuevo Rol/Actividad
             </Button>
@@ -331,7 +331,7 @@ const AdminRoles = () => {
                           key={courseId} 
                           className="flex items-center gap-2 p-2 bg-white rounded border border-slate-200"
                         >
-                          <div className="flex items-center justify-center w-6 h-6 rounded-full bg-orange-100 text-orange-600 text-xs font-bold">
+                          <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">
                             {index + 1}
                           </div>
                           <span className="flex-1 text-sm truncate">{getCourseName(courseId)}</span>
@@ -371,7 +371,7 @@ const AdminRoles = () => {
                 <Button type="button" variant="outline" onClick={() => { setDialogOpen(false); resetForm(); }}>
                   Cancelar
                 </Button>
-                <Button type="submit" className="bg-orange-500 hover:bg-orange-600" data-testid="role-submit-btn">
+                <Button type="submit" className="bg-blue-600 hover:bg-blue-700" data-testid="role-submit-btn">
                   {editingRole ? 'Actualizar' : 'Crear'}
                 </Button>
               </DialogFooter>
@@ -385,7 +385,7 @@ const AdminRoles = () => {
         <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <FolderTree className="w-5 h-5 text-orange-500" />
+              <FolderTree className="w-5 h-5 text-blue-600" />
               Malla Curricular: {selectedRole?.name}
             </DialogTitle>
             <DialogDescription>
@@ -396,14 +396,14 @@ const AdminRoles = () => {
           {curriculumData && (
             <div className="space-y-4">
               {/* Summary */}
-              <div className="flex items-center gap-4 p-4 bg-orange-50 rounded-lg">
+              <div className="flex items-center gap-4 p-4 bg-blue-50 rounded-lg">
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-orange-600">{curriculumData.curriculum.length}</p>
+                  <p className="text-2xl font-bold text-blue-700">{curriculumData.curriculum.length}</p>
                   <p className="text-xs text-slate-600">Cursos</p>
                 </div>
-                <div className="w-px h-10 bg-orange-200"></div>
+                <div className="w-px h-10 bg-blue-200"></div>
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-orange-600">{curriculumData.total_hours}</p>
+                  <p className="text-2xl font-bold text-blue-700">{curriculumData.total_hours}</p>
                   <p className="text-xs text-slate-600">Horas Totales</p>
                 </div>
               </div>
@@ -414,11 +414,11 @@ const AdminRoles = () => {
                   <div key={course.course_id} className="relative pl-8 pb-6 last:pb-0">
                     {/* Timeline Line */}
                     {index < curriculumData.curriculum.length - 1 && (
-                      <div className="absolute left-[15px] top-8 bottom-0 w-0.5 bg-orange-200"></div>
+                      <div className="absolute left-[15px] top-8 bottom-0 w-0.5 bg-blue-200"></div>
                     )}
                     
                     {/* Timeline Dot */}
-                    <div className="absolute left-0 top-1 w-8 h-8 rounded-full bg-orange-500 text-white flex items-center justify-center text-sm font-bold shadow-md">
+                    <div className="absolute left-0 top-1 w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold shadow-md">
                       {course.order}
                     </div>
                     
@@ -474,7 +474,7 @@ const AdminRoles = () => {
                                     type="button"
                                     variant={course.prerequisites.includes(prereqCourse.course_id) ? "default" : "outline"}
                                     size="sm"
-                                    className={`text-xs h-7 ${course.prerequisites.includes(prereqCourse.course_id) ? 'bg-orange-500 hover:bg-orange-600' : ''}`}
+                                    className={`text-xs h-7 ${course.prerequisites.includes(prereqCourse.course_id) ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
                                     onClick={() => {
                                       const newPrereqs = course.prerequisites.includes(prereqCourse.course_id)
                                         ? course.prerequisites.filter(id => id !== prereqCourse.course_id)
@@ -536,7 +536,7 @@ const AdminRoles = () => {
                       title="Ver Malla Curricular"
                       data-testid={`view-curriculum-${role.role_id}`}
                     >
-                      <Eye className="w-4 h-4 text-orange-500" />
+                      <Eye className="w-4 h-4 text-blue-600" />
                     </Button>
                     <Button
                       variant="ghost"
@@ -568,7 +568,7 @@ const AdminRoles = () => {
                     <div className="space-y-1">
                       {(role.course_order || role.course_ids).slice(0, 3).map((courseId, index) => (
                         <div key={courseId} className="flex items-center gap-2 text-sm">
-                          <div className="w-5 h-5 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-xs font-medium">
+                          <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-medium">
                             {index + 1}
                           </div>
                           <span className="text-slate-600 truncate">{getCourseName(courseId)}</span>

@@ -70,7 +70,7 @@ const AdminDashboard = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
       </div>
     );
   }
@@ -94,8 +94,8 @@ const AdminDashboard = () => {
       title: 'Cursos Publicados', 
       value: stats?.published_courses || 0, 
       icon: BookOpen, 
-      color: 'bg-orange-500',
-      bgLight: 'bg-orange-50'
+      color: 'bg-blue-600',
+      bgLight: 'bg-blue-50'
     },
     { 
       title: 'Certificados Válidos', 
@@ -169,7 +169,7 @@ const AdminDashboard = () => {
         <Card className="border-slate-200">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-orange-500" />
+              <TrendingUp className="w-5 h-5 text-blue-600" />
               Usuarios por Rol/Actividad
             </CardTitle>
             <CardDescription>Distribución de alumnos según su rol/actividad</CardDescription>
@@ -194,7 +194,7 @@ const AdminDashboard = () => {
                     }}
                     formatter={(value) => [value, 'Usuarios']}
                   />
-                  <Bar dataKey="count" fill="#F97316" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="count" fill="#2563EB" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -209,7 +209,7 @@ const AdminDashboard = () => {
         <Card className="border-slate-200">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Award className="w-5 h-5 text-orange-500" />
+              <Award className="w-5 h-5 text-blue-600" />
               Estado de Certificados
             </CardTitle>
             <CardDescription>Certificados válidos vs vencidos</CardDescription>
@@ -258,19 +258,19 @@ const AdminDashboard = () => {
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             <div className="text-center p-4 bg-slate-50 rounded-xl">
-              <p className="text-3xl font-bold text-orange-500">{stats?.total_courses || 0}</p>
+              <p className="text-3xl font-bold text-blue-600">{stats?.total_courses || 0}</p>
               <p className="text-sm text-slate-600 mt-1">Total Cursos</p>
             </div>
             <div className="text-center p-4 bg-slate-50 rounded-xl">
-              <p className="text-3xl font-bold text-orange-500">{stats?.total_completions || 0}</p>
+              <p className="text-3xl font-bold text-blue-600">{stats?.total_completions || 0}</p>
               <p className="text-sm text-slate-600 mt-1">Cursos Completados</p>
             </div>
             <div className="text-center p-4 bg-slate-50 rounded-xl">
-              <p className="text-3xl font-bold text-orange-500">{stats?.total_certificates || 0}</p>
+              <p className="text-3xl font-bold text-blue-600">{stats?.total_certificates || 0}</p>
               <p className="text-sm text-slate-600 mt-1">Total Certificados</p>
             </div>
             <div className="text-center p-4 bg-slate-50 rounded-xl">
-              <p className="text-3xl font-bold text-orange-500">{stats?.total_hours_trained || 0}</p>
+              <p className="text-3xl font-bold text-blue-600">{stats?.total_hours_trained || 0}</p>
               <p className="text-sm text-slate-600 mt-1">Horas Totales</p>
             </div>
           </div>

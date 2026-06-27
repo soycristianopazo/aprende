@@ -71,7 +71,7 @@ const StudentLayout = () => {
                 />
               ) : (
                 <>
-                  <div className="w-12 h-12 rounded-lg bg-orange-500 flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-lg bg-blue-600 flex items-center justify-center">
                     <BookOpen className="w-7 h-7 text-white" />
                   </div>
                   <span className="font-bold text-xl text-slate-900 hidden sm:inline" style={{ fontFamily: 'Manrope, sans-serif' }}>
@@ -92,7 +92,7 @@ const StudentLayout = () => {
                     className={`
                       px-4 py-2 rounded-lg font-medium transition-colors
                       ${active 
-                        ? 'bg-orange-50 text-orange-600' 
+                        ? 'bg-blue-50 text-blue-700' 
                         : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                       }
                     `}
@@ -109,11 +109,11 @@ const StudentLayout = () => {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="flex items-center gap-2" data-testid="user-menu-btn">
-                    <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
                       {user?.picture ? (
                         <img src={user.picture} alt="" className="w-8 h-8 rounded-full" />
                       ) : (
-                        <span className="text-orange-600 font-semibold text-sm">
+                        <span className="text-blue-700 font-semibold text-sm">
                           {(user?.full_name || user?.name || 'U')[0].toUpperCase()}
                         </span>
                       )}
@@ -163,7 +163,7 @@ const StudentLayout = () => {
                       className={`
                         px-4 py-2 rounded-lg font-medium transition-colors
                         ${active 
-                          ? 'bg-orange-50 text-orange-600' 
+                          ? 'bg-blue-50 text-blue-700' 
                           : 'text-slate-600 hover:bg-slate-50'
                         }
                       `}

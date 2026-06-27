@@ -75,7 +75,7 @@ const VerifyCertificate = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-white">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
       {/* Navigation */}
       <nav className="border-b border-slate-200 bg-white/80 backdrop-blur-md">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -89,7 +89,7 @@ const VerifyCertificate = () => {
                 />
               ) : (
                 <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center">
                     <BookOpen className="w-6 h-6 text-white" />
                   </div>
                   <span className="font-bold text-xl text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
@@ -99,7 +99,7 @@ const VerifyCertificate = () => {
               )}
             </Link>
             <Link to="/login">
-              <Button variant="outline" className="border-slate-200 hover:border-orange-500" data-testid="login-btn">
+              <Button variant="outline" className="border-slate-200 hover:border-blue-600" data-testid="login-btn">
                 Iniciar Sesión
               </Button>
             </Link>
@@ -109,8 +109,8 @@ const VerifyCertificate = () => {
 
       <div className="max-w-2xl mx-auto px-4 py-12">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-orange-100 flex items-center justify-center mx-auto mb-4">
-            <Award className="w-8 h-8 text-orange-500" />
+          <div className="w-16 h-16 rounded-2xl bg-blue-100 flex items-center justify-center mx-auto mb-4">
+            <Award className="w-8 h-8 text-blue-600" />
           </div>
           <h1 className="text-3xl font-bold text-slate-900 mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
             Verificar Certificado
@@ -129,7 +129,7 @@ const VerifyCertificate = () => {
                 <Input
                   type="text"
                   placeholder="Ej: ABC12345"
-                  className="pl-10 border-slate-200 focus:border-orange-500 focus:ring-orange-500/20 uppercase"
+                  className="pl-10 border-slate-200 focus:border-blue-600 focus:ring-blue-600/20 uppercase"
                   value={searchCode}
                   onChange={(e) => setSearchCode(e.target.value.toUpperCase())}
                   data-testid="verify-code-input"
@@ -137,7 +137,7 @@ const VerifyCertificate = () => {
               </div>
               <Button 
                 type="submit" 
-                className="bg-orange-500 hover:bg-orange-600 text-white"
+                className="bg-blue-600 hover:bg-blue-700 text-white"
                 disabled={loading}
                 data-testid="verify-submit-btn"
               >

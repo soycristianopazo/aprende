@@ -146,7 +146,7 @@ const AdminCourses = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
       </div>
     );
   }
@@ -162,7 +162,7 @@ const AdminCourses = () => {
         </div>
         <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
           <DialogTrigger asChild>
-            <Button className="bg-orange-500 hover:bg-orange-600 text-white" data-testid="add-course-btn">
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white" data-testid="add-course-btn">
               <Plus className="w-4 h-4 mr-2" />
               Nuevo Curso
             </Button>
@@ -248,7 +248,7 @@ const AdminCourses = () => {
                 <Button type="button" variant="outline" onClick={() => { setDialogOpen(false); resetForm(); }}>
                   Cancelar
                 </Button>
-                <Button type="submit" className="bg-orange-500 hover:bg-orange-600" data-testid="course-submit-btn">
+                <Button type="submit" className="bg-blue-600 hover:bg-blue-700" data-testid="course-submit-btn">
                   Crear Curso
                 </Button>
               </DialogFooter>
@@ -298,8 +298,8 @@ const AdminCourses = () => {
                   <TableRow key={course.course_id} data-testid={`course-row-${course.course_id}`}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center">
-                          <PlayCircle className="w-5 h-5 text-orange-500" />
+                        <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                          <PlayCircle className="w-5 h-5 text-blue-600" />
                         </div>
                         <div>
                           <p className="font-medium text-slate-900">{course.name}</p>

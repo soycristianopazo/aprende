@@ -62,7 +62,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-white flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex justify-center mb-8">
@@ -75,7 +75,7 @@ const Login = () => {
               />
             ) : (
               <div className="flex items-center gap-2">
-                <div className="w-12 h-12 rounded-xl bg-orange-500 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center">
                   <BookOpen className="w-7 h-7 text-white" />
                 </div>
                 <span className="font-bold text-2xl text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
@@ -86,7 +86,7 @@ const Login = () => {
           </Link>
         </div>
 
-        <Card className="border-slate-200 shadow-xl shadow-orange-500/5" data-testid="login-card">
+        <Card className="border-slate-200 shadow-xl shadow-blue-600/5" data-testid="login-card">
           <CardHeader className="text-center pb-2">
             <CardTitle className="text-2xl font-bold text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
               Iniciar Sesión
@@ -100,7 +100,7 @@ const Login = () => {
             <Button
               type="button"
               variant="outline"
-              className="w-full border-slate-200 hover:border-orange-500 hover:bg-orange-50 mb-6"
+              className="w-full border-slate-200 hover:border-blue-600 hover:bg-blue-50 mb-6"
               onClick={handleGoogleLogin}
               data-testid="google-login-btn"
             >
@@ -131,7 +131,7 @@ const Login = () => {
                     id="email"
                     type="email"
                     placeholder="tu@email.com"
-                    className="pl-10 border-slate-200 focus:border-orange-500 focus:ring-orange-500/20"
+                    className="pl-10 border-slate-200 focus:border-blue-600 focus:ring-blue-600/20"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     required
@@ -150,7 +150,7 @@ const Login = () => {
                     id="password"
                     type="password"
                     placeholder="••••••••"
-                    className="pl-10 border-slate-200 focus:border-orange-500 focus:ring-orange-500/20"
+                    className="pl-10 border-slate-200 focus:border-blue-600 focus:ring-blue-600/20"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     required
@@ -161,7 +161,7 @@ const Login = () => {
 
               <Button
                 type="submit"
-                className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                 disabled={loading}
                 data-testid="login-submit-btn"
               >
@@ -178,7 +178,7 @@ const Login = () => {
 
             <p className="text-center text-sm text-slate-600 mt-6">
               ¿No tienes cuenta?{' '}
-              <Link to="/register" className="text-orange-600 hover:text-orange-700 font-medium">
+              <Link to="/register" className="text-blue-700 hover:text-blue-800 font-medium">
                 Regístrate aquí
               </Link>
             </p>
@@ -186,7 +186,7 @@ const Login = () => {
         </Card>
 
         <p className="text-center text-xs text-slate-500 mt-6">
-          <Link to="/" className="hover:text-orange-600">
+          <Link to="/" className="hover:text-blue-700">
             ← Volver al inicio
           </Link>
         </p>

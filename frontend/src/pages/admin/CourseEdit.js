@@ -129,7 +129,7 @@ const AdminCourseEdit = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
       </div>
     );
   }
@@ -239,7 +239,7 @@ const AdminCourseEdit = () => {
                 </div>
                 <Button 
                   type="submit" 
-                  className="bg-orange-500 hover:bg-orange-600"
+                  className="bg-blue-600 hover:bg-blue-700"
                   disabled={saving}
                   data-testid="save-course-btn"
                 >
@@ -266,7 +266,7 @@ const AdminCourseEdit = () => {
           <Card className="border-slate-200">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Video className="w-5 h-5 text-orange-500" />
+                <Video className="w-5 h-5 text-blue-600" />
                 Video del Curso
               </CardTitle>
             </CardHeader>
@@ -298,7 +298,7 @@ const AdminCourseEdit = () => {
           <Card className="border-slate-200">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-orange-500" />
+                <FileText className="w-5 h-5 text-blue-600" />
                 Material de Apoyo
               </CardTitle>
             </CardHeader>
@@ -314,7 +314,7 @@ const AdminCourseEdit = () => {
                       href={`${BACKEND_URL}${course.material_url}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-orange-600 hover:text-orange-700 text-sm font-medium"
+                      className="text-blue-700 hover:text-blue-800 text-sm font-medium"
                     >
                       Ver PDF
                     </a>
@@ -325,9 +325,9 @@ const AdminCourseEdit = () => {
               )}
               <div>
                 <Label htmlFor="material-upload" className="cursor-pointer">
-                  <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center hover:border-orange-300 transition-colors">
+                  <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center hover:border-blue-300 transition-colors">
                     {uploading ? (
-                      <Loader2 className="w-8 h-8 text-orange-500 animate-spin mx-auto" />
+                      <Loader2 className="w-8 h-8 text-blue-600 animate-spin mx-auto" />
                     ) : (
                       <>
                         <Upload className="w-8 h-8 text-slate-400 mx-auto mb-2" />

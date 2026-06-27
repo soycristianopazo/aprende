@@ -129,7 +129,7 @@ const AdminCertificates = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
       </div>
     );
   }
@@ -144,10 +144,10 @@ const AdminCertificates = () => {
       </div>
 
       {/* Search by RUT */}
-      <Card className="border-slate-200 border-orange-200 bg-orange-50/50">
+      <Card className="border-slate-200 border-blue-200 bg-blue-50/50">
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
-            <Search className="w-5 h-5 text-orange-500" />
+            <Search className="w-5 h-5 text-blue-600" />
             Buscar por RUT
           </CardTitle>
           <CardDescription>
@@ -165,7 +165,7 @@ const AdminCertificates = () => {
             />
             <Button 
               onClick={searchByRut}
-              className="bg-orange-500 hover:bg-orange-600"
+              className="bg-blue-600 hover:bg-blue-700"
               data-testid="rut-search-btn"
             >
               Buscar
@@ -199,7 +199,7 @@ const AdminCertificates = () => {
                           size="icon"
                           onClick={() => handleDownload(cert.certificate_id)}
                         >
-                          <Download className="w-4 h-4 text-orange-500" />
+                          <Download className="w-4 h-4 text-blue-600" />
                         </Button>
                       </div>
                     </div>
@@ -301,7 +301,7 @@ const AdminCertificates = () => {
                           title="Regenerar certificado"
                           data-testid={`regenerate-cert-${cert.certificate_id}`}
                         >
-                          <RefreshCw className="w-4 h-4 text-orange-500" />
+                          <RefreshCw className="w-4 h-4 text-blue-600" />
                         </Button>
                       </div>
                     </TableCell>

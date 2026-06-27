@@ -18,7 +18,7 @@ const AdminBranding = () => {
     banner_logo_url: null,
     signature_url: null,
     footer_image_url: null,
-    primary_color: '#F97316',
+    primary_color: '#2563EB',
     secondary_color: '#F1F5F9',
     footer_text: ''
   });
@@ -37,7 +37,7 @@ const AdminBranding = () => {
           banner_logo_url: data.banner_logo_url || null,
           signature_url: data.signature_url || null,
           footer_image_url: data.footer_image_url || null,
-          primary_color: data.primary_color || '#F97316',
+          primary_color: data.primary_color || '#2563EB',
           secondary_color: data.secondary_color || '#F1F5F9',
           footer_text: data.footer_text || ''
         });
@@ -109,7 +109,7 @@ const AdminBranding = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
       </div>
     );
   }
@@ -128,7 +128,7 @@ const AdminBranding = () => {
         <Card className="border-slate-200">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Image className="w-5 h-5 text-orange-500" />
+              <Image className="w-5 h-5 text-blue-600" />
               Logo para Certificados
             </CardTitle>
             <CardDescription>
@@ -147,9 +147,9 @@ const AdminBranding = () => {
             )}
             <div>
               <Label htmlFor="logo-upload" className="cursor-pointer">
-                <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center hover:border-orange-300 transition-colors">
+                <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center hover:border-blue-300 transition-colors">
                   {uploading.logo ? (
-                    <Loader2 className="w-8 h-8 text-orange-500 animate-spin mx-auto" />
+                    <Loader2 className="w-8 h-8 text-blue-600 animate-spin mx-auto" />
                   ) : (
                     <>
                       <Upload className="w-8 h-8 text-slate-400 mx-auto mb-2" />
@@ -172,10 +172,10 @@ const AdminBranding = () => {
         </Card>
 
         {/* Banner Logo */}
-        <Card className="border-slate-200 border-orange-200 bg-orange-50/30">
+        <Card className="border-slate-200 border-blue-200 bg-blue-50/30">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Layout className="w-5 h-5 text-orange-500" />
+              <Layout className="w-5 h-5 text-blue-600" />
               Logo del Banner (Plataforma)
             </CardTitle>
             <CardDescription>
@@ -194,12 +194,12 @@ const AdminBranding = () => {
             )}
             <div>
               <Label htmlFor="banner-logo-upload" className="cursor-pointer">
-                <div className="border-2 border-dashed border-orange-200 rounded-lg p-6 text-center hover:border-orange-400 transition-colors bg-white">
+                <div className="border-2 border-dashed border-blue-200 rounded-lg p-6 text-center hover:border-blue-400 transition-colors bg-white">
                   {uploading.bannerLogo ? (
-                    <Loader2 className="w-8 h-8 text-orange-500 animate-spin mx-auto" />
+                    <Loader2 className="w-8 h-8 text-blue-600 animate-spin mx-auto" />
                   ) : (
                     <>
-                      <Upload className="w-8 h-8 text-orange-400 mx-auto mb-2" />
+                      <Upload className="w-8 h-8 text-blue-400 mx-auto mb-2" />
                       <p className="text-sm text-slate-600">Subir Logo del Banner</p>
                       <p className="text-xs text-slate-400">PNG con fondo transparente recomendado</p>
                     </>
@@ -222,7 +222,7 @@ const AdminBranding = () => {
         <Card className="border-slate-200">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <FileSignature className="w-5 h-5 text-orange-500" />
+              <FileSignature className="w-5 h-5 text-blue-600" />
               Firma Institucional
             </CardTitle>
             <CardDescription>
@@ -241,9 +241,9 @@ const AdminBranding = () => {
             )}
             <div>
               <Label htmlFor="signature-upload" className="cursor-pointer">
-                <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center hover:border-orange-300 transition-colors">
+                <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center hover:border-blue-300 transition-colors">
                   {uploading.signature ? (
-                    <Loader2 className="w-8 h-8 text-orange-500 animate-spin mx-auto" />
+                    <Loader2 className="w-8 h-8 text-blue-600 animate-spin mx-auto" />
                   ) : (
                     <>
                       <Upload className="w-8 h-8 text-slate-400 mx-auto mb-2" />
@@ -269,7 +269,7 @@ const AdminBranding = () => {
         <Card className="border-slate-200">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Image className="w-5 h-5 text-orange-500" />
+              <Image className="w-5 h-5 text-blue-600" />
               Imagen de Pie (Certificado)
             </CardTitle>
             <CardDescription>
@@ -288,9 +288,9 @@ const AdminBranding = () => {
             )}
             <div>
               <Label htmlFor="footer-upload" className="cursor-pointer">
-                <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center hover:border-orange-300 transition-colors">
+                <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center hover:border-blue-300 transition-colors">
                   {uploading.footer ? (
-                    <Loader2 className="w-8 h-8 text-orange-500 animate-spin mx-auto" />
+                    <Loader2 className="w-8 h-8 text-blue-600 animate-spin mx-auto" />
                   ) : (
                     <>
                       <Upload className="w-8 h-8 text-slate-400 mx-auto mb-2" />
@@ -316,7 +316,7 @@ const AdminBranding = () => {
         <Card className="border-slate-200">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Palette className="w-5 h-5 text-orange-500" />
+              <Palette className="w-5 h-5 text-blue-600" />
               Colores de la Plataforma
             </CardTitle>
             <CardDescription>
@@ -362,7 +362,7 @@ const AdminBranding = () => {
             </div>
             <Button 
               onClick={handleSaveColors}
-              className="bg-orange-500 hover:bg-orange-600 w-full"
+              className="bg-blue-600 hover:bg-blue-700 w-full"
               disabled={saving}
               data-testid="save-branding-btn"
             >

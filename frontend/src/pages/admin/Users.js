@@ -244,7 +244,7 @@ const AdminUsers = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
       </div>
     );
   }
@@ -262,7 +262,7 @@ const AdminUsers = () => {
           <Button 
             variant="outline" 
             onClick={initPredefinedRoles}
-            className="text-orange-600 border-orange-200 hover:bg-orange-50"
+            className="text-blue-700 border-blue-200 hover:bg-blue-50"
             data-testid="init-roles-btn"
           >
             <RefreshCw className="w-4 h-4 mr-2" />
@@ -270,7 +270,7 @@ const AdminUsers = () => {
           </Button>
           <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
             <DialogTrigger asChild>
-              <Button className="bg-orange-500 hover:bg-orange-600 text-white" data-testid="add-user-btn">
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white" data-testid="add-user-btn">
                 <Plus className="w-4 h-4 mr-2" />
                 Nuevo Usuario
               </Button>
@@ -362,7 +362,7 @@ const AdminUsers = () => {
                     )}
                   </div>
                   {formData.role_ids.length > 0 && (
-                    <p className="text-xs text-orange-600 mt-1">
+                    <p className="text-xs text-blue-700 mt-1">
                       {formData.role_ids.length} rol(es)/actividad(es) seleccionado(s)
                     </p>
                   )}
@@ -371,7 +371,7 @@ const AdminUsers = () => {
                   <Button type="button" variant="outline" onClick={() => { setDialogOpen(false); resetForm(); }}>
                     Cancelar
                   </Button>
-                  <Button type="submit" className="bg-orange-500 hover:bg-orange-600" data-testid="user-submit-btn">
+                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700" data-testid="user-submit-btn">
                     {editingUser ? 'Actualizar' : 'Crear'}
                   </Button>
                 </DialogFooter>

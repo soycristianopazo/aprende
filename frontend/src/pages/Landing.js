@@ -73,7 +73,7 @@ const Landing = () => {
                 />
               ) : (
                 <>
-                  <div className="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center">
                     <BookOpen className="w-6 h-6 text-white" />
                   </div>
                   <span className="font-bold text-xl text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
@@ -84,17 +84,17 @@ const Landing = () => {
             </div>
             <div className="flex items-center gap-4">
               <Link to="/verify/demo">
-                <Button variant="ghost" className="text-slate-600 hover:text-orange-600" data-testid="verify-cert-btn">
+                <Button variant="ghost" className="text-slate-600 hover:text-blue-700" data-testid="verify-cert-btn">
                   Verificar Certificado
                 </Button>
               </Link>
               <Link to="/login">
-                <Button variant="outline" className="border-slate-200 hover:border-orange-500 hover:text-orange-600" data-testid="login-btn">
+                <Button variant="outline" className="border-slate-200 hover:border-blue-600 hover:text-blue-700" data-testid="login-btn">
                   Iniciar Sesión
                 </Button>
               </Link>
               <Link to="/register">
-                <Button className="bg-orange-500 hover:bg-orange-600 text-white" data-testid="register-btn">
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white" data-testid="register-btn">
                   Registrarse
                 </Button>
               </Link>
@@ -104,16 +104,16 @@ const Landing = () => {
       </nav>
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 bg-gradient-to-br from-orange-50 to-white">
+      <section className="pt-32 pb-20 bg-gradient-to-br from-blue-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="animate-slide-up">
-              <span className="inline-block px-4 py-1.5 rounded-full bg-orange-100 text-orange-600 text-sm font-medium mb-6">
+              <span className="inline-block px-4 py-1.5 rounded-full bg-blue-100 text-blue-700 text-sm font-medium mb-6">
                 Plataforma de Capacitación E-Learning
               </span>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-slate-900 tracking-tight mb-6" style={{ fontFamily: 'Manrope, sans-serif' }}>
                 Capacita a tu equipo de forma{' '}
-                <span className="text-orange-500">eficiente</span>
+                <span className="text-blue-600">eficiente</span>
               </h1>
               <p className="text-lg text-slate-600 mb-8 leading-relaxed">
                 Gestiona cursos, evaluaciones y certificaciones de manera automatizada. 
@@ -121,24 +121,24 @@ const Landing = () => {
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link to="/register">
-                  <Button size="lg" className="bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-500/25 gap-2" data-testid="hero-register-btn">
+                  <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/25 gap-2" data-testid="hero-register-btn">
                     Comenzar Ahora
                     <ArrowRight className="w-5 h-5" />
                   </Button>
                 </Link>
                 <Link to="/login">
-                  <Button size="lg" variant="outline" className="border-slate-200 hover:border-orange-500" data-testid="hero-login-btn">
+                  <Button size="lg" variant="outline" className="border-slate-200 hover:border-blue-600" data-testid="hero-login-btn">
                     Ya tengo cuenta
                   </Button>
                 </Link>
               </div>
             </div>
             <div className="relative animate-slide-up stagger-2">
-              <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 to-orange-500/5 rounded-3xl transform rotate-3"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 to-blue-600/5 rounded-3xl transform rotate-3"></div>
               <img
                 src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&q=80"
                 alt="Team learning"
-                className="relative rounded-3xl shadow-2xl shadow-orange-500/10"
+                className="relative rounded-3xl shadow-2xl shadow-blue-600/10"
               />
             </div>
           </div>
@@ -161,12 +161,12 @@ const Landing = () => {
             {features.map((feature, index) => (
               <Card 
                 key={index} 
-                className="bg-white border border-slate-200 shadow-sm hover:shadow-lg hover:border-orange-200 transition-all duration-300 card-hover"
+                className="bg-white border border-slate-200 shadow-sm hover:shadow-lg hover:border-blue-200 transition-all duration-300 card-hover"
                 data-testid={`feature-card-${index}`}
               >
                 <CardContent className="p-6">
-                  <div className="w-12 h-12 rounded-lg bg-orange-100 flex items-center justify-center mb-4">
-                    <feature.icon className="w-6 h-6 text-orange-500" />
+                  <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center mb-4">
+                    <feature.icon className="w-6 h-6 text-blue-600" />
                   </div>
                   <h3 className="text-xl font-semibold text-slate-900 mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
                     {feature.title}
@@ -192,7 +192,7 @@ const Landing = () => {
               { value: "CSV", label: "Exportable" }
             ].map((stat, index) => (
               <div key={index} className="text-center">
-                <div className="text-4xl md:text-5xl font-bold text-orange-500 mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                <div className="text-4xl md:text-5xl font-bold text-blue-600 mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
                   {stat.value}
                 </div>
                 <div className="text-slate-600">{stat.label}</div>
@@ -203,16 +203,16 @@ const Landing = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-orange-500 to-orange-600">
+      <section className="py-20 bg-gradient-to-br from-blue-600 to-blue-700">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-6" style={{ fontFamily: 'Manrope, sans-serif' }}>
             ¿Listo para comenzar?
           </h2>
-          <p className="text-lg text-orange-100 mb-8">
+          <p className="text-lg text-blue-100 mb-8">
             Registra tu cuenta y comienza a capacitar a tu equipo hoy mismo.
           </p>
           <Link to="/register">
-            <Button size="lg" variant="secondary" className="bg-white text-orange-600 hover:bg-orange-50 shadow-lg gap-2" data-testid="cta-register-btn">
+            <Button size="lg" variant="secondary" className="bg-white text-blue-700 hover:bg-blue-50 shadow-lg gap-2" data-testid="cta-register-btn">
               Crear Cuenta Gratis
               <ArrowRight className="w-5 h-5" />
             </Button>
@@ -233,7 +233,7 @@ const Landing = () => {
                 />
               ) : (
                 <>
-                  <div className="w-8 h-8 rounded-lg bg-orange-500 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
                     <BookOpen className="w-5 h-5 text-white" />
                   </div>
                   <span className="font-bold text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>

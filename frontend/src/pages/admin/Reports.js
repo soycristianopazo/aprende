@@ -82,7 +82,7 @@ const AdminReports = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
       </div>
     );
   }
@@ -179,8 +179,8 @@ const AdminReports = () => {
                 <p className="text-sm text-slate-600">Horas Capacitadas</p>
                 <p className="text-3xl font-bold text-slate-900">{stats?.total_hours_trained || 0}</p>
               </div>
-              <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center">
-                <Clock className="w-6 h-6 text-orange-500" />
+              <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
+                <Clock className="w-6 h-6 text-blue-600" />
               </div>
             </div>
           </CardContent>
@@ -209,7 +209,7 @@ const AdminReports = () => {
                       borderRadius: '8px'
                     }} 
                   />
-                  <Bar dataKey="count" fill="#F97316" radius={[4, 4, 0, 0]} name="Usuarios" />
+                  <Bar dataKey="count" fill="#2563EB" radius={[4, 4, 0, 0]} name="Usuarios" />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -313,7 +313,7 @@ const AdminReports = () => {
                     <tr key={user.user_id} className="border-b border-slate-100">
                       <td className="py-3 px-4">
                         <span className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-medium ${
-                          index < 3 ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-600'
+                          index < 3 ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'
                         }`}>
                           {index + 1}
                         </span>
@@ -328,7 +328,7 @@ const AdminReports = () => {
                       <td className="py-3 px-4 text-slate-600">{user.role_name}</td>
                       <td className="py-3 px-4 text-right font-medium text-slate-900">{user.certificates_count}</td>
                       <td className="py-3 px-4 text-right">
-                        <span className="font-bold text-orange-500">{user.total_hours_trained}h</span>
+                        <span className="font-bold text-blue-600">{user.total_hours_trained}h</span>
                       </td>
                     </tr>
                   ))}

@@ -57,7 +57,7 @@ const StudentCourse = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
       </div>
     );
   }
@@ -81,7 +81,7 @@ const StudentCourse = () => {
       </div>
 
       {/* Course Info */}
-      <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl p-8 text-white">
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-8 text-white">
         <div className="flex items-start justify-between">
           <div>
             <Badge variant="secondary" className="bg-white/20 text-white mb-3 capitalize">
@@ -90,10 +90,10 @@ const StudentCourse = () => {
             <h1 className="text-3xl font-bold mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
               {course.name}
             </h1>
-            <p className="text-orange-100 max-w-2xl">{course.description}</p>
+            <p className="text-blue-100 max-w-2xl">{course.description}</p>
           </div>
           <div className="text-right">
-            <div className="flex items-center gap-2 text-orange-100">
+            <div className="flex items-center gap-2 text-blue-100">
               <Clock className="w-5 h-5" />
               <span className="text-xl font-semibold">{course.hours} horas</span>
             </div>
@@ -109,7 +109,7 @@ const StudentCourse = () => {
             <Card className="border-slate-200 overflow-hidden">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <PlayCircle className="w-5 h-5 text-orange-500" />
+                  <PlayCircle className="w-5 h-5 text-blue-600" />
                   Video del Curso
                 </CardTitle>
               </CardHeader>
@@ -142,7 +142,7 @@ const StudentCourse = () => {
             <Card className="border-slate-200">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-orange-500" />
+                  <FileText className="w-5 h-5 text-blue-600" />
                   Material de Apoyo
                 </CardTitle>
               </CardHeader>
@@ -176,10 +176,10 @@ const StudentCourse = () => {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Evaluation CTA */}
-          <Card className="border-slate-200 border-orange-200 bg-orange-50/50">
+          <Card className="border-slate-200 border-blue-200 bg-blue-50/50">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Award className="w-5 h-5 text-orange-500" />
+                <Award className="w-5 h-5 text-blue-600" />
                 Evaluación
               </CardTitle>
               <CardDescription>
@@ -189,7 +189,7 @@ const StudentCourse = () => {
             <CardContent>
               {hasEvaluation ? (
                 <Link to={`/student/evaluation/${courseId}`}>
-                  <Button className="w-full bg-orange-500 hover:bg-orange-600 text-white" data-testid="start-evaluation-btn">
+                  <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white" data-testid="start-evaluation-btn">
                     <CheckCircle className="w-4 h-4 mr-2" />
                     Rendir Evaluación
                   </Button>

@@ -85,7 +85,7 @@ const AdminLayout = () => {
                 />
               ) : (
                 <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center">
                     <BookOpen className="w-6 h-6 text-white" />
                   </div>
                   <span className="font-bold text-lg text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
@@ -117,13 +117,13 @@ const AdminLayout = () => {
                     className={`
                       flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors
                       ${active 
-                        ? 'bg-orange-50 text-orange-600' 
+                        ? 'bg-blue-50 text-blue-700' 
                         : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                       }
                     `}
                     data-testid={`nav-${item.label.toLowerCase().replace(' ', '-')}`}
                   >
-                    <item.icon className={`w-5 h-5 ${active ? 'text-orange-500' : ''}`} />
+                    <item.icon className={`w-5 h-5 ${active ? 'text-blue-600' : ''}`} />
                     <span className="font-medium">{item.label}</span>
                     {active && <ChevronRight className="w-4 h-4 ml-auto" />}
                   </Link>
@@ -135,8 +135,8 @@ const AdminLayout = () => {
           {/* User Info */}
           <div className="p-4 border-t border-slate-200">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
-                <span className="text-orange-600 font-semibold">
+              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                <span className="text-blue-700 font-semibold">
                   {(user?.full_name || user?.name || 'A')[0].toUpperCase()}
                 </span>
               </div>

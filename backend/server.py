@@ -872,7 +872,7 @@ def generate_certificate_pdf(certificate: dict, branding: dict) -> io.BytesIO:
         rightMargin=1.2*cm
     )
     
-    primary_color = branding.get("primary_color", "#F97316")
+    primary_color = branding.get("primary_color", "#2563EB")
     # Convert hex to RGB
     try:
         r = int(primary_color[1:3], 16) / 255
@@ -1234,7 +1234,7 @@ async def get_branding():
             "banner_logo_url": None,
             "signature_url": None,
             "footer_image_url": None,
-            "primary_color": "#F97316",
+            "primary_color": "#2563EB",
             "secondary_color": "#F1F5F9"
         }
     return branding
@@ -1252,7 +1252,7 @@ async def update_branding(data: BrandingUpdate, admin: dict = Depends(require_ad
             "logo_url": None,
             "signature_url": None,
             "footer_image_url": None,
-            "primary_color": "#F97316",
+            "primary_color": "#2563EB",
             "secondary_color": "#F1F5F9",
             **update_data
         }
@@ -1280,7 +1280,7 @@ async def upload_logo(file: UploadFile = File(...), admin: dict = Depends(requir
         await db.branding.insert_one({
             "id": "default",
             "logo_url": logo_url,
-            "primary_color": "#F97316",
+            "primary_color": "#2563EB",
             "secondary_color": "#F1F5F9"
         })
     
@@ -1305,7 +1305,7 @@ async def upload_banner_logo(file: UploadFile = File(...), admin: dict = Depends
         await db.branding.insert_one({
             "id": "default",
             "banner_logo_url": banner_logo_url,
-            "primary_color": "#F97316",
+            "primary_color": "#2563EB",
             "secondary_color": "#F1F5F9"
         })
     
@@ -1330,7 +1330,7 @@ async def upload_signature(file: UploadFile = File(...), admin: dict = Depends(r
         await db.branding.insert_one({
             "id": "default",
             "signature_url": signature_url,
-            "primary_color": "#F97316",
+            "primary_color": "#2563EB",
             "secondary_color": "#F1F5F9"
         })
     
@@ -1355,7 +1355,7 @@ async def upload_footer(file: UploadFile = File(...), admin: dict = Depends(requ
         await db.branding.insert_one({
             "id": "default",
             "footer_image_url": footer_image_url,
-            "primary_color": "#F97316",
+            "primary_color": "#2563EB",
             "secondary_color": "#F1F5F9"
         })
     

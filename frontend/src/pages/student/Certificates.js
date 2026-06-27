@@ -74,7 +74,7 @@ const StudentCertificates = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
       </div>
     );
   }
@@ -110,7 +110,7 @@ const StudentCertificates = () => {
           {roleCertificates.length > 0 && (
             <div>
               <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                <FolderTree className="w-5 h-5 text-orange-500" />
+                <FolderTree className="w-5 h-5 text-blue-600" />
                 Certificados de Malla Curricular
               </h2>
               <div className="grid grid-cols-1 gap-6">
@@ -167,7 +167,7 @@ const StudentCertificates = () => {
                                       <td className="py-2 px-3 text-slate-700">{course.course_name}</td>
                                       <td className="py-2 px-3 text-center text-slate-600">{course.hours}h</td>
                                       <td className="py-2 px-3 text-center">
-                                        <span className={`font-medium ${course.score >= 80 ? 'text-green-600' : 'text-orange-600'}`}>
+                                        <span className={`font-medium ${course.score >= 80 ? 'text-green-600' : 'text-blue-700'}`}>
                                           {course.score}%
                                         </span>
                                       </td>

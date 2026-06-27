@@ -110,7 +110,7 @@ const StudentEvaluation = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
       </div>
     );
   }
@@ -209,7 +209,7 @@ const StudentEvaluation = () => {
                 </Button>
               ) : result.attempts_remaining > 0 ? (
                 <Button
-                  className="bg-orange-500 hover:bg-orange-600"
+                  className="bg-blue-600 hover:bg-blue-700"
                   onClick={() => {
                     setResult(null);
                     setCurrentQuestion(0);
@@ -283,7 +283,7 @@ const StudentEvaluation = () => {
             onClick={() => setCurrentQuestion(index)}
             className={`w-10 h-10 rounded-lg font-medium transition-colors ${
               currentQuestion === index
-                ? 'bg-orange-500 text-white'
+                ? 'bg-blue-600 text-white'
                 : answers[index] !== null
                   ? 'bg-green-100 text-green-700 border border-green-200'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -299,7 +299,7 @@ const StudentEvaluation = () => {
       <Card className="border-slate-200">
         <CardHeader>
           <CardTitle className="flex items-center gap-3">
-            <span className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-semibold">
+            <span className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-semibold">
               {currentQuestion + 1}
             </span>
             Pregunta {currentQuestion + 1} de {totalQuestions}
@@ -318,7 +318,7 @@ const StudentEvaluation = () => {
                   <RadioGroupItem
                     value={optionIndex.toString()}
                     id={`option-${optionIndex}`}
-                    className="border-slate-300 text-orange-500"
+                    className="border-slate-300 text-blue-600"
                     data-testid={`option-${currentQuestion}-${optionIndex}`}
                   />
                   <Label
@@ -345,7 +345,7 @@ const StudentEvaluation = () => {
             
             {currentQuestion === totalQuestions - 1 ? (
               <Button
-                className="bg-orange-500 hover:bg-orange-600"
+                className="bg-blue-600 hover:bg-blue-700"
                 onClick={handleSubmit}
                 disabled={submitting}
                 data-testid="submit-evaluation-btn"

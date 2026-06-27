@@ -107,7 +107,7 @@ const Register = () => {
     .filter(Boolean);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-white flex items-center justify-center p-4 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center p-4 py-12">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex justify-center mb-8">
@@ -120,7 +120,7 @@ const Register = () => {
               />
             ) : (
               <div className="flex items-center gap-2">
-                <div className="w-12 h-12 rounded-xl bg-orange-500 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center">
                   <BookOpen className="w-7 h-7 text-white" />
                 </div>
                 <span className="font-bold text-2xl text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
@@ -131,7 +131,7 @@ const Register = () => {
           </Link>
         </div>
 
-        <Card className="border-slate-200 shadow-xl shadow-orange-500/5" data-testid="register-card">
+        <Card className="border-slate-200 shadow-xl shadow-blue-600/5" data-testid="register-card">
           <CardHeader className="text-center pb-2">
             <CardTitle className="text-2xl font-bold text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
               Crear Cuenta
@@ -152,7 +152,7 @@ const Register = () => {
                     id="full_name"
                     type="text"
                     placeholder="Juan Pérez"
-                    className="pl-10 border-slate-200 focus:border-orange-500 focus:ring-orange-500/20"
+                    className="pl-10 border-slate-200 focus:border-blue-600 focus:ring-blue-600/20"
                     value={formData.full_name}
                     onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                     required
@@ -171,7 +171,7 @@ const Register = () => {
                     id="rut"
                     type="text"
                     placeholder="12345678-9"
-                    className="pl-10 border-slate-200 focus:border-orange-500 focus:ring-orange-500/20"
+                    className="pl-10 border-slate-200 focus:border-blue-600 focus:ring-blue-600/20"
                     value={formData.rut}
                     onChange={(e) => setFormData({ ...formData, rut: e.target.value })}
                     required
@@ -190,7 +190,7 @@ const Register = () => {
                     id="email"
                     type="email"
                     placeholder="tu@email.com"
-                    className="pl-10 border-slate-200 focus:border-orange-500 focus:ring-orange-500/20"
+                    className="pl-10 border-slate-200 focus:border-blue-600 focus:ring-blue-600/20"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     required
@@ -209,7 +209,7 @@ const Register = () => {
                     id="company"
                     type="text"
                     placeholder="Mi Empresa S.A."
-                    className="pl-10 border-slate-200 focus:border-orange-500 focus:ring-orange-500/20"
+                    className="pl-10 border-slate-200 focus:border-blue-600 focus:ring-blue-600/20"
                     value={formData.company}
                     onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                     data-testid="company-input"
@@ -262,7 +262,7 @@ const Register = () => {
                     )}
                   </div>
                   {selectedRoleNames.length > 0 && (
-                    <p className="text-xs text-orange-600">
+                    <p className="text-xs text-blue-700">
                       Seleccionados: {selectedRoleNames.slice(0, 2).join(', ')}
                       {selectedRoleNames.length > 2 && ` +${selectedRoleNames.length - 2} más`}
                     </p>
@@ -280,7 +280,7 @@ const Register = () => {
                     id="password"
                     type="password"
                     placeholder="••••••••"
-                    className="pl-10 border-slate-200 focus:border-orange-500 focus:ring-orange-500/20"
+                    className="pl-10 border-slate-200 focus:border-blue-600 focus:ring-blue-600/20"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     required
@@ -299,7 +299,7 @@ const Register = () => {
                     id="confirmPassword"
                     type="password"
                     placeholder="••••••••"
-                    className="pl-10 border-slate-200 focus:border-orange-500 focus:ring-orange-500/20"
+                    className="pl-10 border-slate-200 focus:border-blue-600 focus:ring-blue-600/20"
                     value={formData.confirmPassword}
                     onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                     required
@@ -310,7 +310,7 @@ const Register = () => {
 
               <Button
                 type="submit"
-                className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                 disabled={loading}
                 data-testid="register-submit-btn"
               >
@@ -327,7 +327,7 @@ const Register = () => {
 
             <p className="text-center text-sm text-slate-600 mt-6">
               ¿Ya tienes cuenta?{' '}
-              <Link to="/login" className="text-orange-600 hover:text-orange-700 font-medium">
+              <Link to="/login" className="text-blue-700 hover:text-blue-800 font-medium">
                 Inicia sesión
               </Link>
             </p>
@@ -335,7 +335,7 @@ const Register = () => {
         </Card>
 
         <p className="text-center text-xs text-slate-500 mt-6">
-          <Link to="/" className="hover:text-orange-600">
+          <Link to="/" className="hover:text-blue-700">
             ← Volver al inicio
           </Link>
         </p>

@@ -43,7 +43,7 @@ const StudentDashboard = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
       </div>
     );
   }
@@ -51,27 +51,27 @@ const StudentDashboard = () => {
   return (
     <div className="space-y-8" data-testid="student-dashboard">
       {/* Welcome Header */}
-      <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl p-8 text-white">
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-8 text-white">
         <h1 className="text-3xl font-bold mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
           ¡Hola, {user?.full_name || user?.name || 'Estudiante'}!
         </h1>
-        <p className="text-orange-100 mb-6">
+        <p className="text-blue-100 mb-6">
           {progress?.role_names ? `Rol/Actividad: ${progress.role_names}` : 'Continúa tu formación y obtén tus certificados'}
         </p>
         <div className="flex items-center gap-6">
           <div className="text-center">
             <p className="text-3xl font-bold">{progress?.completed_courses || 0}</p>
-            <p className="text-orange-200 text-sm">Completados</p>
+            <p className="text-blue-200 text-sm">Completados</p>
           </div>
-          <div className="w-px h-12 bg-orange-400"></div>
+          <div className="w-px h-12 bg-blue-400"></div>
           <div className="text-center">
             <p className="text-3xl font-bold">{progress?.total_courses || 0}</p>
-            <p className="text-orange-200 text-sm">Total Cursos</p>
+            <p className="text-blue-200 text-sm">Total Cursos</p>
           </div>
-          <div className="w-px h-12 bg-orange-400"></div>
+          <div className="w-px h-12 bg-blue-400"></div>
           <div className="text-center">
             <p className="text-3xl font-bold">{progress?.completion_percentage || 0}%</p>
-            <p className="text-orange-200 text-sm">Progreso</p>
+            <p className="text-blue-200 text-sm">Progreso</p>
           </div>
         </div>
       </div>
@@ -90,7 +90,7 @@ const StudentDashboard = () => {
                   variant="outline" 
                   size="sm" 
                   onClick={() => setRoadmapOpen(true)}
-                  className="text-orange-600 border-orange-200 hover:bg-orange-50"
+                  className="text-blue-700 border-blue-200 hover:bg-blue-50"
                   data-testid="view-roadmap-btn"
                 >
                   <FolderTree className="w-4 h-4 mr-2" />
@@ -108,7 +108,7 @@ const StudentDashboard = () => {
         <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <FolderTree className="w-5 h-5 text-orange-500" />
+              <FolderTree className="w-5 h-5 text-blue-600" />
               Tu Ruta de Aprendizaje
             </DialogTitle>
             <DialogDescription>
@@ -122,7 +122,7 @@ const StudentDashboard = () => {
                 {/* Timeline Line */}
                 {index < progress.courses.length - 1 && (
                   <div className={`absolute left-[18px] top-10 bottom-0 w-0.5 ${
-                    item.is_completed ? 'bg-green-300' : item.is_locked ? 'bg-slate-200' : 'bg-orange-200'
+                    item.is_completed ? 'bg-green-300' : item.is_locked ? 'bg-slate-200' : 'bg-blue-200'
                   }`}></div>
                 )}
                 
@@ -132,7 +132,7 @@ const StudentDashboard = () => {
                     ? 'bg-green-500 text-white' 
                     : item.is_locked 
                       ? 'bg-slate-300 text-slate-600' 
-                      : 'bg-orange-500 text-white'
+                      : 'bg-blue-600 text-white'
                 }`}>
                   {item.is_completed ? (
                     <CheckCircle className="w-5 h-5" />
@@ -149,7 +149,7 @@ const StudentDashboard = () => {
                     ? 'border-green-200 bg-green-50/50' 
                     : item.is_locked 
                       ? 'border-slate-200 bg-slate-50 opacity-75' 
-                      : 'border-orange-200 bg-white hover:shadow-md'
+                      : 'border-blue-200 bg-white hover:shadow-md'
                 }`}>
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
@@ -165,7 +165,7 @@ const StudentDashboard = () => {
                             <Badge variant="secondary" className="bg-slate-200">Bloqueado</Badge>
                           )}
                           {!item.is_completed && !item.is_locked && (
-                            <Badge className="bg-orange-500">Disponible</Badge>
+                            <Badge className="bg-blue-600">Disponible</Badge>
                           )}
                         </div>
                         <p className="text-sm text-slate-500 mt-1 line-clamp-2">{item.course.description}</p>
@@ -248,13 +248,13 @@ const StudentDashboard = () => {
                           <Lock className="w-5 h-5 text-slate-500" />
                         </div>
                       ) : (
-                        <div className="w-full h-full rounded-xl bg-orange-100 flex items-center justify-center">
-                          <PlayCircle className="w-6 h-6 text-orange-500" />
+                        <div className="w-full h-full rounded-xl bg-blue-100 flex items-center justify-center">
+                          <PlayCircle className="w-6 h-6 text-blue-600" />
                         </div>
                       )}
                       {/* Order Badge */}
                       <div className={`absolute -top-1 -right-1 w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center ${
-                        item.is_completed ? 'bg-green-500 text-white' : item.is_locked ? 'bg-slate-400 text-white' : 'bg-orange-500 text-white'
+                        item.is_completed ? 'bg-green-500 text-white' : item.is_locked ? 'bg-slate-400 text-white' : 'bg-blue-600 text-white'
                       }`}>
                         {item.order}
                       </div>
@@ -264,7 +264,7 @@ const StudentDashboard = () => {
                         ? 'bg-green-500' 
                         : item.is_locked 
                           ? 'bg-slate-400' 
-                          : 'bg-orange-500'
+                          : 'bg-blue-600'
                     }>
                       {item.is_completed ? 'Completado' : item.is_locked ? 'Bloqueado' : 'Disponible'}
                     </Badge>
@@ -320,7 +320,7 @@ const StudentDashboard = () => {
                     </Button>
                   ) : (
                     <Link to={`/student/course/${item.course.course_id}`}>
-                      <Button className="w-full bg-orange-500 hover:bg-orange-600 text-white">
+                      <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
                         Iniciar Curso
                         <ArrowRight className="w-4 h-4 ml-2" />
                       </Button>
