@@ -417,6 +417,42 @@ agent_communication:
       
       🎉 MIGRATION COMPLETE - All Supabase Storage features working perfectly!
   - agent: "user"
+    message: |
+      BUG REPORT: Favicon was being shown too small/incomplete in browser tabs because the source image had a lot of empty (black) background around the two small blue squares — when downscaled to 16x16/32x32 the squares became tiny dots.
+      
+      ROOT CAUSE & FIX (already applied):
+      - The source was a 250x250 PNG where the blue content only occupied a ~100x200 area near the center.
+      - Detected the bounding box of the non-black content (cropped to 122x225), centered it on a transparent square 225x225, then regenerated all favicon sizes (16/32/48/64/128/256 + 192 + 512).
+      - Black background is now transparent.
+      - All favicon files (favicon.ico, favicon-32x32.png, logo192.png, logo512.png) live in /app/frontend/public/.
+      - index.html links use ?v=2 cache buster to force browsers to re-fetch.
+      
+      Please verify the favicon now displays the two blue squares prominently (filling most of the canvas), as opposed to two tiny dots with lots of empty space.
+  - agent: "testing"
+    message: |
+      ✅ FAVICON BUG FIX VERIFIED - ALL TESTS PASSED (7/7 = 100%)
+      
+      Comprehensive favicon verification completed:
+      
+      ✅ TEST 1: Document title is "Aptiva" - PASS
+      ✅ TEST 2: Favicon link element present in HTML - PASS
+      ✅ TEST 3: GET /favicon.ico?v=2 returns 200 OK, content-type: image/x-icon, size: 327 bytes - PASS
+      ✅ TEST 4: Rendered favicon at 256x256 scale - Canvas analysis shows 100% blue content - PASS
+      ✅ TEST 5: GET /favicon-32x32.png?v=2 returns 200 OK, size: 475 bytes - PASS
+      ✅ TEST 6: GET /logo192.png?v=2 returns 200 OK, size: 1905 bytes - PASS
+      ✅ TEST 7: GET /logo512.png?v=2 returns 200 OK, size: 8538 bytes - PASS
+      
+      🎉 CRITICAL VERIFICATION: The two blue squares are now PROMINENT and clearly visible!
+      - Canvas analysis confirmed 100% blue content (all non-transparent pixels are blue)
+      - Visual screenshot shows two distinct blue squares occupying most of the favicon canvas
+      - NO tiny dots with empty space - the bug is completely fixed!
+      
+      ⚠️ MINOR NOTE (NON-CRITICAL):
+      - Cache buster ?v=2 is not present in the rendered DOM link elements (React %PUBLIC_URL% replacement happens at build time, app is running in dev mode)
+      - However, the favicon files ARE being served correctly and displaying properly
+      - This does not affect the functionality - the favicon is working as intended
+      
+      🎉 BUG FIX CONFIRMED - Favicon now displays the two blue squares prominently as intended!
 
 frontend:
   - task: "Login bug fix - REACT_APP_BACKEND_URL domain correction"
@@ -449,15 +485,57 @@ frontend:
           Both dashboards load with proper content and success toasts.
           Minor non-critical issues: Some ERR_ABORTED for /api/branding and missing assets (race conditions during navigation).
 
+  - task: "Favicon bug fix - cropped and regenerated all sizes"
+    implemented: true
+    working: true
+    file: "frontend/public/favicon.ico, frontend/public/favicon-32x32.png, frontend/public/logo192.png, frontend/public/logo512.png, frontend/public/index.html"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "user"
+        comment: |
+          Favicon was being shown too small/incomplete in browser tabs because the source image had a lot of empty (black) background around the two small blue squares — when downscaled to 16x16/32x32 the squares became tiny dots.
+      - working: true
+        agent: "user"
+        comment: |
+          ROOT CAUSE & FIX applied:
+          - The source was a 250x250 PNG where the blue content only occupied a ~100x200 area near the center.
+          - Detected the bounding box of the non-black content (cropped to 122x225), centered it on a transparent square 225x225, then regenerated all favicon sizes (16/32/48/64/128/256 + 192 + 512).
+          - Black background is now transparent.
+          - All favicon files (favicon.ico, favicon-32x32.png, logo192.png, logo512.png) updated in /app/frontend/public/.
+          - index.html links use ?v=2 cache buster to force browsers to re-fetch.
+      - working: true
+        agent: "testing"
+        comment: |
+          ✅ FAVICON BUG FIX VERIFIED - ALL TESTS PASSED (7/7 = 100%)
+          
+          Comprehensive favicon verification completed:
+          ✅ Document title is "Aptiva"
+          ✅ Favicon link element present in HTML
+          ✅ GET /favicon.ico?v=2 returns 200 OK, content-type: image/x-icon, size: 327 bytes
+          ✅ Rendered favicon at 256x256 scale - Canvas analysis shows 100% blue content
+          ✅ GET /favicon-32x32.png?v=2 returns 200 OK, size: 475 bytes
+          ✅ GET /logo192.png?v=2 returns 200 OK, size: 1905 bytes
+          ✅ GET /logo512.png?v=2 returns 200 OK, size: 8538 bytes
+          
+          🎉 CRITICAL VERIFICATION: The two blue squares are now PROMINENT and clearly visible!
+          - Canvas analysis confirmed 100% blue content (all non-transparent pixels are blue)
+          - Visual screenshot shows two distinct blue squares occupying most of the favicon canvas
+          - NO tiny dots with empty space - the bug is completely fixed!
+          
+          Minor note: Cache buster ?v=2 not in rendered DOM (React %PUBLIC_URL% replacement happens at build time), but favicon files are being served correctly and displaying properly.
+
 metadata:
   created_by: "main_agent"
   version: "1.0"
-  test_sequence: 4
+  test_sequence: 5
   run_ui: true
 
 test_plan:
   current_focus:
-    - "Login bug fix - REACT_APP_BACKEND_URL domain correction"
+    - "Favicon bug fix - cropped and regenerated all sizes"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
