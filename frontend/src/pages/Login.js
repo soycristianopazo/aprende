@@ -31,7 +31,9 @@ const Login = () => {
       const user = await login(formData.email, formData.password);
       toast.success('¡Bienvenido!');
       
-      if (user.is_admin) {
+      if (user.is_super_admin) {
+        navigate('/superadmin');
+      } else if (user.is_admin) {
         navigate('/admin');
       } else {
         navigate('/student');

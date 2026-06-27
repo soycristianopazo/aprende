@@ -23,6 +23,10 @@ import AdminCertificates from "./pages/admin/Certificates";
 import AdminReports from "./pages/admin/Reports";
 import AdminBranding from "./pages/admin/Branding";
 
+// SuperAdmin Pages
+import SuperAdminDashboard from "./pages/superadmin/Dashboard";
+import SuperAdminCompanies from "./pages/superadmin/Companies";
+
 // Student Pages
 import StudentDashboard from "./pages/student/Dashboard";
 import StudentCourse from "./pages/student/Course";
@@ -32,12 +36,13 @@ import StudentCertificates from "./pages/student/Certificates";
 // Layouts
 import AdminLayout from "./layouts/AdminLayout";
 import StudentLayout from "./layouts/StudentLayout";
+import SuperAdminLayout from "./layouts/SuperAdminLayout";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 // Protected Route Component
-const ProtectedRoute = ({ children, requireAdmin = false }) => {
+const ProtectedRoute = ({ children, requireAdmin = false, requireSuperAdmin = false }) => {
   const { user, isAuthenticated, loading } = useAuth();
   const location = useLocation();
 
@@ -53,11 +58,21 @@ const ProtectedRoute = ({ children, requireAdmin = false }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (requireAdmin && !user?.is_admin) {
+  // Super admin landing
+  if (requireSuperAdmin && !user?.is_super_admin) {
+    return <Navigate to={user?.is_admin ? "/admin" : "/student"} replace />;
+  }
+
+  if (requireAdmin && !user?.is_admin && !user?.is_super_admin) {
     return <Navigate to="/student" replace />;
   }
 
-  if (!requireAdmin && user?.is_admin) {
+  // If user is super_admin and visiting non-superadmin route, send them home
+  if (!requireSuperAdmin && user?.is_super_admin && location.pathname !== '/' && !location.pathname.startsWith('/superadmin')) {
+    return <Navigate to="/superadmin" replace />;
+  }
+
+  if (!requireAdmin && !requireSuperAdmin && user?.is_admin) {
     return <Navigate to="/admin" replace />;
   }
 
@@ -82,6 +97,16 @@ function AppRouter() {
       <Route path="/register" element={<Register />} />
       <Route path="/verify/:code" element={<VerifyCertificate />} />
       
+      {/* SuperAdmin Routes */}
+      <Route path="/superadmin" element={
+        <ProtectedRoute requireSuperAdmin={true}>
+          <SuperAdminLayout />
+        </ProtectedRoute>
+      }>
+        <Route index element={<SuperAdminDashboard />} />
+        <Route path="companies" element={<SuperAdminCompanies />} />
+      </Route>
+
       {/* Admin Routes */}
       <Route path="/admin" element={
         <ProtectedRoute requireAdmin={true}>
