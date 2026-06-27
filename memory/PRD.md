@@ -67,6 +67,15 @@ Vendor / dueño del producto: **DoSoft**.
 - Footers: "© <year> DoSoft · Aptiva — Gestión de Competencias, Capacitaciones y Storage".
 
 ## What's Been Implemented (CHANGELOG)
+### 2026-02 — Fase 4 (Módulo Competencias)
+- [x] DB migration aditiva: tabla `competencies`, tabla `worker_competencies`, columnas `activities.competency_ids[]` y `courses.grants_competency_ids[]` (ver `/app/backend/migration_f4_competencies.sql`).
+- [x] Backend: CRUD `/api/competencies`, linkage activity↔competency vía `PUT /api/activities/{id}`, `POST /api/worker-competencies/{user_id}/upload` (multipart con archivo opcional + expiry auto-calculado), `GET /api/worker-competencies/{user_id}`, `DELETE /api/worker-competencies/{id}`, `GET /api/my-competencies` (unión requeridas+adquiridas).
+- [x] Hook auto-grant: al aprobar evaluación de un curso con `grants_competency_ids`, se crea/actualiza la `worker_competency` con `source='course'` y expiry calculado desde `validity_months`.
+- [x] Frontend Admin: páginas `/admin/competencies` (CRUD), `/admin/worker-competencies` (matriz por trabajador con upload + badges), edición de actividades con multi-select de competencias, edición de cursos con sección "Competencias que otorga".
+- [x] Frontend Trabajador: `/student/my-competencies` con tarjetas resumen y badges de estado (Vigente/Por vencer/Vencida/Pendiente).
+- [x] Nav actualizado: Admin sidebar incluye Competencias + Matriz Competencias. Student nav: Mi Ruta Aptiva · Mis Competencias · Mi Expediente · Mis Constancias.
+- [x] Tests: 6/6 backend pytest passing (`/app/backend/tests/test_f4_competencies.py`). Frontend smoke verificado por testing agent.
+
 ### 2026-02 — F3.4 (Worker storage view)
 - [x] Endpoint `/api/my-documents` ya existía y devuelve tipos requeridos + archivos subidos del trabajador (scoped por área/actividad).
 - [x] Nueva página `/student/my-documents` ("Mi Expediente") con:
@@ -104,7 +113,8 @@ Vendor / dueño del producto: **DoSoft**.
 ## Prioritized Backlog
 
 ### P0 — Próximo
-- **Fase 4 — Módulo Competencias** (siguiente).
+- **Fase 5 — Motor "Ruta Aptiva"**: combinar área + actividad + competencias requeridas para auto-armar el plan de capacitación de cada trabajador (la matriz ya está; falta la UI del trabajador que muestre solo los cursos que efectivamente faltan para acreditar sus competencias).
+- Seed: dejar al menos un curso publicado con `grants_competency_ids` + evaluación para poder ejercer el auto-grant end-to-end.
 
 ### P1
 - **Fase 4 — Módulo Competencias**:
