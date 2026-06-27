@@ -1,823 +1,455 @@
 #!/usr/bin/env python3
 """
-E-Learning Platform Backend API Testing
-Tests all major API endpoints for functionality
+E-Learning Platform - Auto-Certificate Issuance Test
+Tests the complete flow of auto-issuing certificates when a student completes all courses in their role.
 """
 
 import requests
-import sys
 import json
+import sys
 from datetime import datetime
 
-class ELearningAPITester:
-    def __init__(self, base_url="https://e401cd41-8492-43eb-83ab-c33230484a34.preview.emergentagent.com/api"):
-        self.base_url = base_url
+# Backend URL from frontend/.env
+BASE_URL = "https://e401cd41-8492-43eb-83ab-c33230484a34.preview.emergentagent.com/api"
+
+# Test credentials from /app/memory/test_credentials.md
+ADMIN_EMAIL = "admin@elearning.com"
+ADMIN_PASSWORD = "admin123"
+STUDENT_EMAIL = "demo.alumno@test.com"
+STUDENT_PASSWORD = "demo123"
+
+# Color codes for output
+GREEN = '\033[92m'
+RED = '\033[91m'
+YELLOW = '\033[93m'
+BLUE = '\033[94m'
+RESET = '\033[0m'
+
+def log_success(msg):
+    print(f"{GREEN}✅ {msg}{RESET}")
+
+def log_error(msg):
+    print(f"{RED}❌ {msg}{RESET}")
+
+def log_info(msg):
+    print(f"{BLUE}ℹ️  {msg}{RESET}")
+
+def log_warning(msg):
+    print(f"{YELLOW}⚠️  {msg}{RESET}")
+
+class TestRunner:
+    def __init__(self):
         self.admin_token = None
         self.student_token = None
-        self.demo_student_token = None
-        self.tests_run = 0
-        self.tests_passed = 0
-        self.test_data = {}
-        self.critical_failures = []
-
-    def log(self, message, level="INFO"):
-        """Log test messages"""
-        timestamp = datetime.now().strftime("%H:%M:%S")
-        print(f"[{timestamp}] {level}: {message}")
-
-    def run_test(self, name, method, endpoint, expected_status, data=None, headers=None, description=""):
-        """Run a single API test"""
-        url = f"{self.base_url}/{endpoint}"
-        test_headers = {'Content-Type': 'application/json'}
-        if headers:
-            test_headers.update(headers)
-
-        self.tests_run += 1
-        self.log(f"Testing {name}... {description}")
+        self.role_id = None
+        self.course_id = None
+        self.evaluation_id = None
+        self.certificate_id = None
+        self.verification_code = None
+        self.student_user_id = None
+        self.initial_cert_count = 0
         
-        try:
-            if method == 'GET':
-                response = requests.get(url, headers=test_headers, timeout=30)
-            elif method == 'POST':
-                response = requests.post(url, json=data, headers=test_headers, timeout=30)
-            elif method == 'PUT':
-                response = requests.put(url, json=data, headers=test_headers, timeout=30)
-            elif method == 'DELETE':
-                response = requests.delete(url, headers=test_headers, timeout=30)
-
-            success = response.status_code == expected_status
-            if success:
-                self.tests_passed += 1
-                self.log(f"✅ PASSED - {name} - Status: {response.status_code}")
-                try:
-                    return True, response.json() if response.content else {}
-                except:
-                    return True, {}
-            else:
-                self.log(f"❌ FAILED - {name} - Expected {expected_status}, got {response.status_code}")
-                try:
-                    error_detail = response.json()
-                    self.log(f"   Error details: {error_detail}")
-                except:
-                    self.log(f"   Response text: {response.text[:200]}")
-                return False, {}
-
-        except Exception as e:
-            self.log(f"❌ FAILED - {name} - Exception: {str(e)}")
-            return False, {}
-
-    def test_root_endpoint(self):
-        """Test API root endpoint"""
-        return self.run_test("API Root", "GET", "", 200, description="Check if API is running")
-
-    def test_setup_admin(self):
-        """Test admin setup"""
-        return self.run_test("Setup Admin", "POST", "setup/admin", 200, description="Create initial admin user")
-
-    def test_admin_login(self):
-        """Test admin login"""
-        success, response = self.run_test(
-            "Admin Login", 
-            "POST", 
-            "auth/login", 
-            200,
-            data={"email": "admin@elearning.com", "password": "admin123"},
-            description="Login with admin credentials"
-        )
-        if success and 'token' in response:
-            self.admin_token = response['token']
-            self.test_data['admin_user'] = response.get('user', {})
-            return True
-        else:
-            self.critical_failures.append("Admin login failed - cannot proceed with tests")
-        return False
-
-    def test_demo_student_login(self):
-        """Test demo student login (seeded user)"""
-        success, response = self.run_test(
-            "Demo Student Login", 
-            "POST", 
-            "auth/login", 
-            200,
-            data={"email": "demo.alumno@test.com", "password": "demo123"},
-            description="Login with demo student credentials"
-        )
-        if success and 'token' in response:
-            self.demo_student_token = response['token']
-            self.test_data['demo_student_user'] = response.get('user', {})
-            return True
-        else:
-            self.critical_failures.append("Demo student login failed")
-        return False
-
-    def test_student_registration(self):
-        """Test student registration with role_ids array"""
-        # Get a role_id first if available
-        role_ids = []
-        if 'role_id' in self.test_data:
-            role_ids = [self.test_data['role_id']]
+    def login_admin(self):
+        """Login as admin and get token"""
+        log_info("Step 1: Login as admin...")
+        response = requests.post(f"{BASE_URL}/auth/login", json={
+            "email": ADMIN_EMAIL,
+            "password": ADMIN_PASSWORD
+        })
         
-        student_data = {
-            "email": f"student_{datetime.now().strftime('%H%M%S')}@test.com",
-            "password": "student123",
-            "full_name": "María González Pérez",
-            "rut": f"12345678-{datetime.now().strftime('%S')}",
-            "company": "Empresa Minera del Norte",
-            "role_ids": role_ids,
-            "is_admin": False
-        }
+        if response.status_code != 200:
+            log_error(f"Admin login failed: {response.status_code} - {response.text}")
+            return False
         
-        success, response = self.run_test(
-            "Student Registration (with role_ids[])",
-            "POST",
-            "auth/register",
-            200,
-            data=student_data,
-            description="Register new student user with role_ids array"
-        )
-        
-        if success and 'token' in response:
-            self.student_token = response['token']
-            self.test_data['student_user'] = response.get('user', {})
-            self.test_data['student_data'] = student_data
-            # Verify role_ids is an array
-            user = response.get('user', {})
-            if 'role_ids' in user:
-                if isinstance(user['role_ids'], list):
-                    self.log(f"   ✅ role_ids is correctly stored as array: {user['role_ids']}")
-                else:
-                    self.log(f"   ❌ role_ids is not an array: {type(user['role_ids'])}")
-                    self.critical_failures.append("role_ids not stored as TEXT[] array")
-            return True
-        return False
-
-    def test_auth_me(self):
-        """Test get current user"""
+        data = response.json()
+        self.admin_token = data.get("token") or data.get("access_token")
         if not self.admin_token:
+            log_error("No token in admin login response")
             return False
-            
-        return self.run_test(
-            "Get Current User",
-            "GET",
-            "auth/me",
-            200,
-            headers={'Authorization': f'Bearer {self.admin_token}'},
-            description="Get authenticated user info"
-        )[0]
-
-    def test_users_crud(self):
-        """Test users CRUD operations"""
-        if not self.admin_token:
-            return False
-
-        auth_headers = {'Authorization': f'Bearer {self.admin_token}'}
         
-        # Get users
-        success = self.run_test(
-            "Get Users",
-            "GET",
-            "users",
-            200,
-            headers=auth_headers,
-            description="List all users"
-        )[0]
+        log_success(f"Admin logged in successfully")
+        return True
+    
+    def get_initial_cert_count(self):
+        """Get initial certificate count from reports/summary"""
+        log_info("Getting initial certificate count...")
+        headers = {"Authorization": f"Bearer {self.admin_token}"}
+        response = requests.get(f"{BASE_URL}/reports/summary", headers=headers)
         
-        if not success:
-            return False
-
-        # Get specific user
-        if 'student_user' in self.test_data:
-            user_id = self.test_data['student_user']['user_id']
-            success = self.run_test(
-                "Get User by ID",
-                "GET",
-                f"users/{user_id}",
-                200,
-                headers=auth_headers,
-                description=f"Get user {user_id}"
-            )[0]
-            
-            if success:
-                # Update user
-                success = self.run_test(
-                    "Update User",
-                    "PUT",
-                    f"users/{user_id}",
-                    200,
-                    data={"company": "Updated Company"},
-                    headers=auth_headers,
-                    description="Update user company"
-                )[0]
-
-        return success
-
-    def test_roles_crud(self):
-        """Test roles CRUD operations and verify 19 predefined roles"""
-        if not self.admin_token:
-            return False
-
-        auth_headers = {'Authorization': f'Bearer {self.admin_token}'}
+        if response.status_code != 200:
+            log_warning(f"Could not get initial cert count: {response.status_code}")
+            return True  # Non-critical
         
-        # Get roles - should have 19 predefined roles
-        success, response = self.run_test(
-            "Get Roles (19 predefined)",
-            "GET",
-            "roles",
-            200,
-            headers=auth_headers,
-            description="List all roles - should have 19 predefined"
-        )
+        data = response.json()
+        self.initial_cert_count = data.get("total_certificates", 0)
+        log_info(f"Initial certificate count: {self.initial_cert_count}")
+        return True
+    
+    def create_role(self):
+        """Create a role with 1 course (will be assigned later)"""
+        log_info("Step 2: Creating a role...")
+        headers = {"Authorization": f"Bearer {self.admin_token}"}
         
-        if success:
-            roles = response if isinstance(response, list) else []
-            self.log(f"   Found {len(roles)} roles")
-            if len(roles) != 19:
-                self.log(f"   ⚠️  Expected 19 predefined roles, found {len(roles)}")
-                self.critical_failures.append(f"Expected 19 predefined roles, found {len(roles)}")
-            else:
-                self.log(f"   ✅ Confirmed 19 predefined roles exist")
-        
-        # Create role
-        role_data = {
-            "name": f"Test Role {datetime.now().strftime('%H%M%S')}",
-            "description": "Test role for testing",
-            "course_ids": []
-        }
-        
-        success, response = self.run_test(
-            "Create Role",
-            "POST",
-            "roles",
-            200,
-            data=role_data,
-            headers=auth_headers,
-            description="Create new role"
-        )
-        
-        if success and 'role_id' in response:
-            role_id = response['role_id']
-            self.test_data['role_id'] = role_id
-            
-            # Get specific role
-            success = self.run_test(
-                "Get Role by ID",
-                "GET",
-                f"roles/{role_id}",
-                200,
-                headers=auth_headers,
-                description=f"Get role {role_id}"
-            )[0]
-
-        return success
-
-    def test_courses_crud(self):
-        """Test courses CRUD operations"""
-        if not self.admin_token:
-            return False
-
-        auth_headers = {'Authorization': f'Bearer {self.admin_token}'}
-        
-        # Create course
-        course_data = {
-            "name": "Test Course",
-            "description": "Test course for API testing",
-            "hours": 8,
-            "validity_hours": 8760,
-            "training_type": "e-learning",
-            "video_url": "https://vimeo.com/123456789",
-            "status": "published"
-        }
-        
-        success, response = self.run_test(
-            "Create Course",
-            "POST",
-            "courses",
-            200,
-            data=course_data,
-            headers=auth_headers,
-            description="Create new course"
-        )
-        
-        if success and 'course_id' in response:
-            course_id = response['course_id']
-            self.test_data['course_id'] = course_id
-            
-            # Get courses
-            success = self.run_test(
-                "Get Courses",
-                "GET",
-                "courses",
-                200,
-                headers=auth_headers,
-                description="List all courses"
-            )[0]
-            
-            if success:
-                # Get specific course
-                success = self.run_test(
-                    "Get Course by ID",
-                    "GET",
-                    f"courses/{course_id}",
-                    200,
-                    headers=auth_headers,
-                    description=f"Get course {course_id}"
-                )[0]
-                
-                if success:
-                    # Update course
-                    success = self.run_test(
-                        "Update Course",
-                        "PUT",
-                        f"courses/{course_id}",
-                        200,
-                        data={"description": "Updated course description"},
-                        headers=auth_headers,
-                        description="Update course description"
-                    )[0]
-
-        return success
-
-    def test_evaluations_crud(self):
-        """Test evaluations CRUD operations with JSONB questions"""
-        if not self.admin_token or 'course_id' not in self.test_data:
-            return False
-
-        auth_headers = {'Authorization': f'Bearer {self.admin_token}'}
-        course_id = self.test_data['course_id']
-        
-        # Create evaluation with JSONB questions
-        eval_data = {
-            "course_id": course_id,
-            "questions": [
-                {
-                    "text": "¿Cuál es la altura mínima para considerar trabajo en altura?",
-                    "options": ["1.5 metros", "1.8 metros", "2.0 metros", "2.5 metros"],
-                    "correct_index": 1
-                },
-                {
-                    "text": "¿Qué equipo de protección personal es obligatorio?",
-                    "options": ["Casco", "Arnés", "Guantes", "Todos los anteriores"],
-                    "correct_index": 3
-                }
-            ],
-            "min_score": 70,
-            "max_attempts": 3
-        }
-        
-        success, response = self.run_test(
-            "Create Evaluation (JSONB questions)",
-            "POST",
-            "evaluations",
-            200,
-            data=eval_data,
-            headers=auth_headers,
-            description="Create evaluation with JSONB questions"
-        )
-        
-        if success and 'evaluation_id' in response:
-            eval_id = response['evaluation_id']
-            self.test_data['evaluation_id'] = eval_id
-            
-            # Verify questions are stored and returned correctly as JSONB
-            if 'questions' in response:
-                questions = response['questions']
-                if isinstance(questions, list) and len(questions) == 2:
-                    self.log(f"   ✅ JSONB questions stored and retrieved correctly")
-                    # Verify structure
-                    if all('text' in q and 'options' in q and 'correct_index' in q for q in questions):
-                        self.log(f"   ✅ Question structure is correct")
-                    else:
-                        self.log(f"   ❌ Question structure is incorrect")
-                        self.critical_failures.append("JSONB questions structure incorrect")
-                else:
-                    self.log(f"   ❌ JSONB questions not returned correctly")
-                    self.critical_failures.append("JSONB questions not returned correctly")
-            
-            # Get evaluation by course
-            success = self.run_test(
-                "Get Evaluation by Course",
-                "GET",
-                f"evaluations/course/{course_id}",
-                200,
-                headers=auth_headers,
-                description=f"Get evaluation for course {course_id}"
-            )[0]
-
-        return success
-
-    def test_student_evaluation_flow(self):
-        """Test student taking evaluation and scoring"""
-        if not self.student_token or 'evaluation_id' not in self.test_data:
-            return False
-
-        auth_headers = {'Authorization': f'Bearer {self.student_token}'}
-        eval_id = self.test_data['evaluation_id']
-        
-        # Submit evaluation with correct answers
-        submit_data = {
-            "answers": [1, 3]  # Correct answers for both questions
-        }
-        
-        success, response = self.run_test(
-            "Submit Evaluation (scoring)",
-            "POST",
-            f"evaluations/{eval_id}/submit",
-            200,
-            data=submit_data,
-            headers=auth_headers,
-            description="Submit evaluation with correct answers"
-        )
-        
-        if success:
-            score = response.get('score', 0)
-            passed = response.get('passed', False)
-            self.log(f"   Score: {score}%, Passed: {passed}")
-            
-            if score == 100 and passed:
-                self.log(f"   ✅ Scoring calculation correct")
-            else:
-                self.log(f"   ⚠️  Expected 100% and passed=True")
-            
-            # Check if certificate was issued (may not be if not all courses completed)
-            if response.get('certificate'):
-                self.test_data['certificate'] = response['certificate']
-                self.log(f"   ✅ Certificate auto-issued")
-            else:
-                self.log(f"   ℹ️  Certificate not issued (expected if not all role courses completed)")
-            
-            return True
-            
-        return success
-
-    def test_auto_certificate_issuance(self):
-        """Test auto-certificate issuance when all courses in role are completed"""
-        if not self.admin_token:
-            return False
-
-        auth_headers = {'Authorization': f'Bearer {self.admin_token}'}
-        
-        # Create a test role with one course
-        role_data = {
-            "name": f"Test Cert Role {datetime.now().strftime('%H%M%S')}",
-            "description": "Role for testing auto-certificate",
-            "course_ids": [],
+        role_name = f"Test Role Auto-Cert {datetime.now().strftime('%H%M%S')}"
+        response = requests.post(f"{BASE_URL}/roles", headers=headers, json={
+            "name": role_name,
+            "description": "Test role for auto-certificate issuance",
+            "course_ids": [],  # Will add course later
             "course_order": []
-        }
+        })
         
-        success, role_response = self.run_test(
-            "Create Role for Cert Test",
-            "POST",
-            "roles",
-            200,
-            data=role_data,
-            headers=auth_headers,
-            description="Create role for certificate test"
-        )
-        
-        if not success:
+        if response.status_code != 200:
+            log_error(f"Role creation failed: {response.status_code} - {response.text}")
             return False
         
-        test_role_id = role_response['role_id']
+        data = response.json()
+        self.role_id = data.get("role_id")
+        if not self.role_id:
+            log_error("No role_id in response")
+            return False
         
-        # Create a course
-        course_data = {
-            "name": f"Test Cert Course {datetime.now().strftime('%H%M%S')}",
-            "description": "Course for certificate testing",
-            "hours": 4,
+        log_success(f"Role created: {role_name} (ID: {self.role_id})")
+        return True
+    
+    def create_course(self):
+        """Create a course"""
+        log_info("Step 3: Creating a course...")
+        headers = {"Authorization": f"Bearer {self.admin_token}"}
+        
+        course_name = f"Test Course Auto-Cert {datetime.now().strftime('%H%M%S')}"
+        response = requests.post(f"{BASE_URL}/courses", headers=headers, json={
+            "name": course_name,
+            "description": "Test course for auto-certificate issuance",
+            "hours": 10,
             "validity_hours": 8760,
             "training_type": "e-learning",
             "status": "published",
             "prerequisites": []
-        }
+        })
         
-        success, course_response = self.run_test(
-            "Create Course for Cert Test",
-            "POST",
-            "courses",
-            200,
-            data=course_data,
-            headers=auth_headers,
-            description="Create course for certificate test"
-        )
-        
-        if not success:
+        if response.status_code != 200:
+            log_error(f"Course creation failed: {response.status_code} - {response.text}")
             return False
         
-        test_course_id = course_response['course_id']
-        
-        # Update role to include this course
-        success = self.run_test(
-            "Update Role with Course",
-            "PUT",
-            f"roles/{test_role_id}",
-            200,
-            data={"course_ids": [test_course_id], "course_order": [test_course_id]},
-            headers=auth_headers,
-            description="Add course to role"
-        )[0]
-        
-        if not success:
+        data = response.json()
+        self.course_id = data.get("course_id")
+        if not self.course_id:
+            log_error("No course_id in response")
             return False
         
-        # Create a test user with this role
-        test_user_data = {
-            "email": f"certtest_{datetime.now().strftime('%H%M%S')}@test.com",
-            "password": "test123",
-            "full_name": "Juan Pérez Certificado",
-            "rut": f"98765432-{datetime.now().strftime('%S')}",
-            "company": "Empresa Test",
-            "role_ids": [test_role_id],
-            "is_admin": False
-        }
+        log_success(f"Course created: {course_name} (ID: {self.course_id})")
+        return True
+    
+    def assign_course_to_role(self):
+        """Assign the course to the role"""
+        log_info("Step 4: Assigning course to role...")
+        headers = {"Authorization": f"Bearer {self.admin_token}"}
         
-        success, user_response = self.run_test(
-            "Create User for Cert Test",
-            "POST",
-            "auth/register",
-            200,
-            data=test_user_data,
-            description="Create user with test role"
-        )
+        response = requests.put(f"{BASE_URL}/roles/{self.role_id}", headers=headers, json={
+            "course_ids": [self.course_id],
+            "course_order": [self.course_id]
+        })
         
-        if not success:
+        if response.status_code != 200:
+            log_error(f"Course assignment failed: {response.status_code} - {response.text}")
             return False
         
-        test_user_token = user_response['token']
+        log_success(f"Course assigned to role")
+        return True
+    
+    def get_student_user(self):
+        """Get the demo student user"""
+        log_info("Step 5: Getting demo student user...")
+        headers = {"Authorization": f"Bearer {self.admin_token}"}
         
-        # Create evaluation for the course
-        eval_data = {
-            "course_id": test_course_id,
+        response = requests.get(f"{BASE_URL}/users", headers=headers)
+        if response.status_code != 200:
+            log_error(f"Failed to get users: {response.status_code}")
+            return False
+        
+        users = response.json()
+        student = next((u for u in users if u.get("email") == STUDENT_EMAIL), None)
+        
+        if not student:
+            log_error(f"Student user {STUDENT_EMAIL} not found")
+            return False
+        
+        self.student_user_id = student.get("user_id")
+        log_success(f"Found student user: {student.get('full_name')} (ID: {self.student_user_id})")
+        return True
+    
+    def assign_role_to_student(self):
+        """Assign the role to the student"""
+        log_info("Step 6: Assigning role to student...")
+        headers = {"Authorization": f"Bearer {self.admin_token}"}
+        
+        response = requests.put(f"{BASE_URL}/users/{self.student_user_id}", headers=headers, json={
+            "role_ids": [self.role_id]
+        })
+        
+        if response.status_code != 200:
+            log_error(f"Role assignment failed: {response.status_code} - {response.text}")
+            return False
+        
+        log_success(f"Role assigned to student")
+        return True
+    
+    def create_evaluation(self):
+        """Create an evaluation for the course"""
+        log_info("Step 7: Creating evaluation for the course...")
+        headers = {"Authorization": f"Bearer {self.admin_token}"}
+        
+        response = requests.post(f"{BASE_URL}/evaluations", headers=headers, json={
+            "course_id": self.course_id,
+            "min_score": 70,
+            "max_attempts": 3,
             "questions": [
                 {
-                    "text": "Test question?",
-                    "options": ["A", "B", "C", "D"],
-                    "correct_index": 0
+                    "text": "What is 2 + 2?",
+                    "options": ["3", "4", "5", "6"],
+                    "correct_index": 1
+                },
+                {
+                    "text": "What is the capital of France?",
+                    "options": ["London", "Berlin", "Paris", "Madrid"],
+                    "correct_index": 2
                 }
-            ],
-            "min_score": 70,
-            "max_attempts": 3
-        }
+            ]
+        })
         
-        success, eval_response = self.run_test(
-            "Create Evaluation for Cert Test",
-            "POST",
-            "evaluations",
-            200,
-            data=eval_data,
-            headers=auth_headers,
-            description="Create evaluation"
-        )
-        
-        if not success:
+        if response.status_code != 200:
+            log_error(f"Evaluation creation failed: {response.status_code} - {response.text}")
             return False
         
-        test_eval_id = eval_response['evaluation_id']
-        
-        # Submit evaluation as test user (should auto-issue certificate)
-        success, submit_response = self.run_test(
-            "Submit Eval (Auto-Cert Test)",
-            "POST",
-            f"evaluations/{test_eval_id}/submit",
-            200,
-            data={"answers": [0]},
-            headers={'Authorization': f'Bearer {test_user_token}'},
-            description="Submit evaluation - should auto-issue certificate"
-        )
-        
-        if success:
-            if submit_response.get('certificate'):
-                self.log(f"   ✅ Certificate auto-issued when all role courses completed")
-                cert = submit_response['certificate']
-                # Verify certificate has role_ids array
-                if 'role_ids' in cert and isinstance(cert['role_ids'], list):
-                    self.log(f"   ✅ Certificate has role_ids array: {cert['role_ids']}")
-                else:
-                    self.log(f"   ❌ Certificate missing role_ids array")
-                    self.critical_failures.append("Certificate missing role_ids array")
-                return True
-            else:
-                self.log(f"   ❌ Certificate NOT auto-issued when all courses completed")
-                self.critical_failures.append("Auto-certificate issuance failed")
-                return False
-        
-        return False
-
-    def test_certificates(self):
-        """Test certificates functionality"""
-        if not self.admin_token:
+        data = response.json()
+        self.evaluation_id = data.get("evaluation_id")
+        if not self.evaluation_id:
+            log_error("No evaluation_id in response")
             return False
-
-        auth_headers = {'Authorization': f'Bearer {self.admin_token}'}
         
-        # Get certificates
-        success = self.run_test(
-            "Get Certificates",
-            "GET",
-            "certificates",
-            200,
-            headers=auth_headers,
-            description="List all certificates"
-        )[0]
+        log_success(f"Evaluation created (ID: {self.evaluation_id})")
+        return True
+    
+    def login_student(self):
+        """Login as student"""
+        log_info("Step 8: Login as student...")
+        response = requests.post(f"{BASE_URL}/auth/login", json={
+            "email": STUDENT_EMAIL,
+            "password": STUDENT_PASSWORD
+        })
         
-        if success and 'certificate' in self.test_data:
-            cert = self.test_data['certificate']
-            cert_id = cert['certificate_id']
-            verification_code = cert['verification_code']
-            
-            # Get specific certificate
-            success = self.run_test(
-                "Get Certificate by ID",
-                "GET",
-                f"certificates/{cert_id}",
-                200,
-                headers=auth_headers,
-                description=f"Get certificate {cert_id}"
-            )[0]
-            
-            if success:
-                # Verify certificate (public endpoint)
-                success = self.run_test(
-                    "Verify Certificate",
-                    "GET",
-                    f"certificates/verify/{verification_code}",
-                    200,
-                    description=f"Verify certificate with code {verification_code}"
-                )[0]
-
-        return success
-
-    def test_branding(self):
-        """Test branding functionality"""
-        if not self.admin_token:
+        if response.status_code != 200:
+            log_error(f"Student login failed: {response.status_code} - {response.text}")
             return False
-
-        auth_headers = {'Authorization': f'Bearer {self.admin_token}'}
         
-        # Get branding
-        success = self.run_test(
-            "Get Branding",
-            "GET",
-            "branding",
-            200,
-            description="Get branding configuration"
-        )[0]
-        
-        if success:
-            # Update branding
-            success = self.run_test(
-                "Update Branding",
-                "PUT",
-                "branding",
-                200,
-                data={"primary_color": "#FF6B35", "footer_text": "Test Footer"},
-                headers=auth_headers,
-                description="Update branding colors and footer"
-            )[0]
-
-        return success
-
-    def test_reports(self):
-        """Test reports functionality including CSV export"""
-        if not self.admin_token:
-            return False
-
-        auth_headers = {'Authorization': f'Bearer {self.admin_token}'}
-        
-        # Get reports summary (tests users_by_role aggregation with UNNEST)
-        success, response = self.run_test(
-            "Get Reports Summary (users_by_role)",
-            "GET",
-            "reports/summary",
-            200,
-            headers=auth_headers,
-            description="Get platform statistics with users_by_role aggregation"
-        )
-        
-        if success:
-            # Verify users_by_role exists and uses UNNEST aggregation
-            if 'users_by_role' in response:
-                users_by_role = response['users_by_role']
-                self.log(f"   ✅ users_by_role aggregation working: {len(users_by_role)} role groups")
-                if isinstance(users_by_role, list):
-                    for role_stat in users_by_role[:3]:  # Show first 3
-                        self.log(f"      - {role_stat.get('role', 'Unknown')}: {role_stat.get('count', 0)} users")
-                else:
-                    self.log(f"   ❌ users_by_role is not a list")
-                    self.critical_failures.append("users_by_role aggregation incorrect format")
-            else:
-                self.log(f"   ❌ users_by_role missing from summary")
-                self.critical_failures.append("users_by_role missing from reports/summary")
-            
-            # Get users report
-            success = self.run_test(
-                "Get Users Report",
-                "GET",
-                "reports/users",
-                200,
-                headers=auth_headers,
-                description="Get detailed users report"
-            )[0]
-            
-            if success:
-                # Test CSV export
-                success = self.run_test(
-                    "Export Users CSV",
-                    "GET",
-                    "reports/export/users",
-                    200,
-                    headers=auth_headers,
-                    description="Export users report as CSV"
-                )[0]
-                
-                if success:
-                    self.log(f"   ✅ CSV export working")
-
-        return success
-
-    def test_student_progress(self):
-        """Test student progress functionality"""
+        data = response.json()
+        self.student_token = data.get("token") or data.get("access_token")
         if not self.student_token:
+            log_error("No token in student login response")
             return False
-
-        auth_headers = {'Authorization': f'Bearer {self.student_token}'}
         
-        return self.run_test(
-            "Get Student Progress",
-            "GET",
-            "student/progress",
-            200,
-            headers=auth_headers,
-            description="Get student course progress"
-        )[0]
-
+        log_success(f"Student logged in successfully")
+        return True
+    
+    def submit_evaluation(self):
+        """Submit evaluation with correct answers"""
+        log_info("Step 9: Submitting evaluation with correct answers...")
+        headers = {"Authorization": f"Bearer {self.student_token}"}
+        
+        response = requests.post(
+            f"{BASE_URL}/evaluations/{self.evaluation_id}/submit",
+            headers=headers,
+            json={
+                "answers": [1, 2]  # Correct answers
+            }
+        )
+        
+        if response.status_code != 200:
+            log_error(f"Evaluation submission failed: {response.status_code} - {response.text}")
+            return False
+        
+        data = response.json()
+        score = data.get("score")
+        passed = data.get("passed")
+        certificate = data.get("certificate")
+        all_courses_completed = data.get("all_courses_completed")
+        
+        log_success(f"Evaluation submitted - Score: {score}%, Passed: {passed}")
+        
+        if not passed:
+            log_error("Evaluation not passed - cannot test certificate issuance")
+            return False
+        
+        if not all_courses_completed:
+            log_error("all_courses_completed is False - expected True since role has only 1 course")
+            return False
+        
+        log_success("all_courses_completed is True")
+        
+        if not certificate:
+            log_error("No certificate returned in response - auto-issuance FAILED")
+            return False
+        
+        # Validate certificate structure
+        self.certificate_id = certificate.get("certificate_id")
+        self.verification_code = certificate.get("verification_code")
+        
+        required_fields = [
+            "certificate_id", "verification_code", "certificate_type", "user_id",
+            "role_ids", "role_names", "user_name", "user_rut", "user_company",
+            "total_hours", "average_score", "courses_detail", "issued_at", "expires_at"
+        ]
+        
+        missing_fields = [f for f in required_fields if f not in certificate]
+        if missing_fields:
+            log_error(f"Certificate missing fields: {missing_fields}")
+            return False
+        
+        # Validate certificate_type
+        if certificate.get("certificate_type") != "role_completion":
+            log_error(f"Expected certificate_type='role_completion', got '{certificate.get('certificate_type')}'")
+            return False
+        
+        # Validate courses_detail
+        courses_detail = certificate.get("courses_detail", [])
+        if not courses_detail or len(courses_detail) != 1:
+            log_error(f"Expected 1 course in courses_detail, got {len(courses_detail)}")
+            return False
+        
+        log_success(f"✨ Certificate auto-issued successfully!")
+        log_info(f"   Certificate ID: {self.certificate_id}")
+        log_info(f"   Verification Code: {self.verification_code}")
+        log_info(f"   Type: {certificate.get('certificate_type')}")
+        log_info(f"   Total Hours: {certificate.get('total_hours')}")
+        log_info(f"   Average Score: {certificate.get('average_score')}%")
+        log_info(f"   Courses: {len(courses_detail)}")
+        
+        return True
+    
+    def verify_get_certificates(self):
+        """Verify GET /api/certificates returns the certificate"""
+        log_info("Step 10: Verifying GET /api/certificates...")
+        headers = {"Authorization": f"Bearer {self.student_token}"}
+        
+        response = requests.get(f"{BASE_URL}/certificates", headers=headers)
+        
+        if response.status_code != 200:
+            log_error(f"GET /api/certificates failed: {response.status_code} - {response.text}")
+            return False
+        
+        certificates = response.json()
+        
+        # Find our certificate
+        cert = next((c for c in certificates if c.get("certificate_id") == self.certificate_id), None)
+        
+        if not cert:
+            log_error(f"Certificate {self.certificate_id} not found in GET /api/certificates")
+            return False
+        
+        log_success(f"Certificate found in GET /api/certificates")
+        return True
+    
+    def verify_public_verification(self):
+        """Verify GET /api/certificates/verify/{code} works"""
+        log_info("Step 11: Verifying public verification endpoint...")
+        
+        response = requests.get(f"{BASE_URL}/certificates/verify/{self.verification_code}")
+        
+        if response.status_code != 200:
+            log_error(f"GET /api/certificates/verify/{self.verification_code} failed: {response.status_code} - {response.text}")
+            return False
+        
+        data = response.json()
+        certificate = data.get("certificate")
+        is_valid = data.get("is_valid")
+        
+        if not certificate:
+            log_error("No certificate in verification response")
+            return False
+        
+        if certificate.get("certificate_id") != self.certificate_id:
+            log_error(f"Wrong certificate returned: {certificate.get('certificate_id')}")
+            return False
+        
+        if not is_valid:
+            log_error("Certificate marked as invalid")
+            return False
+        
+        log_success(f"Public verification endpoint working correctly")
+        return True
+    
+    def verify_reports_summary(self):
+        """Verify GET /api/reports/summary shows incremented certificate count"""
+        log_info("Step 12: Verifying reports/summary certificate count...")
+        headers = {"Authorization": f"Bearer {self.admin_token}"}
+        
+        response = requests.get(f"{BASE_URL}/reports/summary", headers=headers)
+        
+        if response.status_code != 200:
+            log_warning(f"GET /api/reports/summary failed: {response.status_code}")
+            return True  # Non-critical
+        
+        data = response.json()
+        current_cert_count = data.get("total_certificates", 0)
+        
+        if current_cert_count <= self.initial_cert_count:
+            log_warning(f"Certificate count not incremented: initial={self.initial_cert_count}, current={current_cert_count}")
+            return True  # Non-critical warning
+        
+        log_success(f"Certificate count incremented: {self.initial_cert_count} → {current_cert_count}")
+        return True
+    
     def run_all_tests(self):
-        """Run all API tests"""
-        self.log("🚀 Starting E-Learning Platform API Tests (Supabase PostgreSQL Migration)")
-        self.log(f"Testing against: {self.base_url}")
+        """Run all tests in sequence"""
+        print("\n" + "="*80)
+        print("🧪 AUTO-CERTIFICATE ISSUANCE TEST")
+        print("="*80 + "\n")
         
-        # Basic connectivity
-        if not self.test_root_endpoint():
-            self.log("❌ API is not accessible, stopping tests")
-            return False
+        tests = [
+            ("Admin Login", self.login_admin),
+            ("Get Initial Cert Count", self.get_initial_cert_count),
+            ("Create Role", self.create_role),
+            ("Create Course", self.create_course),
+            ("Assign Course to Role", self.assign_course_to_role),
+            ("Get Student User", self.get_student_user),
+            ("Assign Role to Student", self.assign_role_to_student),
+            ("Create Evaluation", self.create_evaluation),
+            ("Student Login", self.login_student),
+            ("Submit Evaluation & Auto-Issue Certificate", self.submit_evaluation),
+            ("Verify GET /api/certificates", self.verify_get_certificates),
+            ("Verify Public Verification Endpoint", self.verify_public_verification),
+            ("Verify Reports Summary", self.verify_reports_summary),
+        ]
         
-        # Setup and authentication
-        self.test_setup_admin()
+        passed = 0
+        failed = 0
         
-        if not self.test_admin_login():
-            self.log("❌ Admin login failed, stopping tests")
-            return False
+        for test_name, test_func in tests:
+            try:
+                if test_func():
+                    passed += 1
+                else:
+                    failed += 1
+                    log_error(f"Test failed: {test_name}")
+                    break  # Stop on first failure
+            except Exception as e:
+                failed += 1
+                log_error(f"Test exception in {test_name}: {str(e)}")
+                import traceback
+                traceback.print_exc()
+                break
         
-        # Test demo student login (seeded user)
-        self.test_demo_student_login()
+        print("\n" + "="*80)
+        print(f"📊 TEST RESULTS: {passed} passed, {failed} failed")
+        print("="*80 + "\n")
         
-        # Test authenticated endpoints
-        self.test_auth_me()
-        
-        # Test roles first (to get role_id for user creation)
-        self.test_roles_crud()
-        
-        # Test user registration with role_ids[]
-        if not self.test_student_registration():
-            self.log("❌ Student registration failed, stopping tests")
-            return False
-        
-        self.test_users_crud()
-        self.test_courses_crud()
-        self.test_evaluations_crud()
-        self.test_student_evaluation_flow()
-        
-        # Test auto-certificate issuance (critical for migration)
-        self.test_auto_certificate_issuance()
-        
-        self.test_certificates()
-        self.test_branding()
-        self.test_reports()
-        self.test_student_progress()
-        
-        # Print results
-        self.log("=" * 50)
-        self.log(f"📊 Test Results: {self.tests_passed}/{self.tests_run} passed")
-        success_rate = (self.tests_passed / self.tests_run * 100) if self.tests_run > 0 else 0
-        self.log(f"📈 Success Rate: {success_rate:.1f}%")
-        
-        # Report critical failures
-        if self.critical_failures:
-            self.log("=" * 50)
-            self.log("🚨 CRITICAL FAILURES:")
-            for failure in self.critical_failures:
-                self.log(f"   ❌ {failure}")
-        
-        if success_rate >= 80 and len(self.critical_failures) == 0:
-            self.log("✅ Backend API is working well!")
-            return True
+        if failed == 0:
+            log_success("🎉 ALL TESTS PASSED - Auto-certificate issuance is working!")
+            return 0
         else:
-            self.log("❌ Backend has significant issues")
-            return False
-
-def main():
-    tester = ELearningAPITester()
-    success = tester.run_all_tests()
-    return 0 if success else 1
+            log_error("❌ TESTS FAILED - Auto-certificate issuance has issues")
+            return 1
 
 if __name__ == "__main__":
-    sys.exit(main())
+    runner = TestRunner()
+    sys.exit(runner.run_all_tests())

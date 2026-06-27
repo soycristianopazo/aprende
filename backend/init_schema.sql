@@ -123,14 +123,25 @@ CREATE TABLE certificates (
     verification_code TEXT UNIQUE NOT NULL,
     user_id           TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
     user_name         TEXT,
-    rut               TEXT,
-    role_id           TEXT,                       -- legacy
-    role_name         TEXT,                       -- legacy
+    rut               TEXT,                       -- legacy alias
+    user_rut          TEXT,
+    user_company      TEXT,
+    role_id           TEXT,                       -- legacy single role
+    role_name         TEXT,                       -- legacy single role
     role_ids          TEXT[] NOT NULL DEFAULT '{}',
     role_names        TEXT[] NOT NULL DEFAULT '{}',
+    -- Single-course certificate fields (legacy/partial)
+    course_id         TEXT,
+    course_name       TEXT,
+    score             INTEGER,
+    training_type     TEXT,
+    -- Role-completion certificate aggregates
+    certificate_type  TEXT DEFAULT 'role_completion',
     course_grades     JSONB NOT NULL DEFAULT '[]'::jsonb,
     courses_detail    JSONB NOT NULL DEFAULT '[]'::jsonb,
     hours             INTEGER NOT NULL DEFAULT 0,
+    total_hours       INTEGER NOT NULL DEFAULT 0,
+    average_score     INTEGER NOT NULL DEFAULT 0,
     validity_hours    INTEGER NOT NULL DEFAULT 0,
     issued_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     expires_at        TIMESTAMPTZ,

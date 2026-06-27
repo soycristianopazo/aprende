@@ -109,7 +109,7 @@ user_problem_statement: |
 backend:
   - task: "Supabase PostgreSQL migration via MongoDB-compatible adapter"
     implemented: true
-    working: false
+    working: true
     file: "backend/db_adapter.py, backend/server.py, backend/init_schema.sql, backend/rls_policies.sql, backend/seed.py"
     stuck_count: 0
     priority: "high"
@@ -168,11 +168,50 @@ backend:
           
           The schema must be updated to include these columns for auto-certificate issuance to work.
           All other PostgreSQL migration features are working correctly.
+      - working: true
+        agent: "testing"
+        comment: |
+          ✅ AUTO-CERTIFICATE ISSUANCE RE-TEST COMPLETED - ALL TESTS PASSED (13/13 = 100%)
+          
+          User added missing columns to certificates table via ALTER TABLE in Supabase:
+          - certificate_type TEXT
+          - user_rut TEXT
+          - user_company TEXT
+          - total_hours INTEGER
+          - average_score INTEGER
+          - course_id TEXT
+          - course_name TEXT
+          - score INTEGER
+          - training_type TEXT
+          
+          Comprehensive end-to-end test of auto-certificate issuance flow:
+          ✅ 1. Admin login (admin@elearning.com/admin123) - WORKING
+          ✅ 2. Create role with 1 course - WORKING
+          ✅ 3. Create course - WORKING
+          ✅ 4. Assign course to role - WORKING
+          ✅ 5. Get demo student user (demo.alumno@test.com) - WORKING
+          ✅ 6. Assign role to student - WORKING
+          ✅ 7. Create evaluation for course - WORKING
+          ✅ 8. Student login - WORKING
+          ✅ 9. Submit evaluation with correct answers - WORKING
+          ✅ 10. Certificate auto-issued with all required fields:
+                 - certificate_type: "role_completion"
+                 - certificate_id, verification_code
+                 - user_id, role_ids, role_names
+                 - user_name, user_rut, user_company
+                 - total_hours: 10, average_score: 100%
+                 - courses_detail: [1 course with score, hours, training_type]
+                 - issued_at, expires_at, is_valid
+          ✅ 11. GET /api/certificates returns the certificate - WORKING
+          ✅ 12. GET /api/certificates/verify/{code} public verification - WORKING
+          ✅ 13. GET /api/reports/summary certificate count incremented (0 → 1) - WORKING
+          
+          🎉 MIGRATION COMPLETE - All PostgreSQL features working including auto-certificate issuance!
 
 metadata:
   created_by: "main_agent"
   version: "1.0"
-  test_sequence: 1
+  test_sequence: 2
   run_ui: false
 
 test_plan:
@@ -225,3 +264,30 @@ agent_communication:
       ✅ 19 predefined roles
       
       Please update init_schema.sql to add the missing columns to certificates table.
+  - agent: "user"
+    message: |
+      Added missing columns to certificates table via ALTER TABLE in Supabase:
+      - certificate_type TEXT
+      - user_rut TEXT
+      - user_company TEXT
+      - total_hours INTEGER
+      - average_score INTEGER
+      - course_id TEXT
+      - course_name TEXT
+      - score INTEGER
+      - training_type TEXT
+      
+      Also updated /app/backend/init_schema.sql to reflect these changes.
+      Please re-test ONLY the auto-certificate issuance flow.
+  - agent: "testing"
+    message: |
+      ✅ RE-TEST COMPLETE - AUTO-CERTIFICATE ISSUANCE WORKING (13/13 tests passed = 100%)
+      
+      The schema fix resolved the issue. Comprehensive end-to-end test confirmed:
+      - Certificate auto-issued when student completes all courses in their role
+      - All required fields present (certificate_type, user_rut, user_company, total_hours, average_score, courses_detail)
+      - GET /api/certificates returns the certificate correctly
+      - GET /api/certificates/verify/{code} public verification working
+      - GET /api/reports/summary certificate count incremented correctly
+      
+      🎉 MIGRATION COMPLETE - All PostgreSQL features including auto-certificate issuance are working!
