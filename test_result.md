@@ -101,3 +101,127 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+user_problem_statement: |
+  Migrate the e-learning platform's database from MongoDB to a relational database
+  using Supabase (PostgreSQL). Keep the custom JWT auth and the existing API
+  contracts. Backend should connect via the Supabase transaction pooler.
+
+backend:
+  - task: "Supabase PostgreSQL migration via MongoDB-compatible adapter"
+    implemented: true
+    working: false
+    file: "backend/db_adapter.py, backend/server.py, backend/init_schema.sql, backend/rls_policies.sql, backend/seed.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: |
+          Migrated DB from MongoDB (motor) to Supabase PostgreSQL. Added init_schema.sql with 9 tables
+          (users, roles, courses, evaluations, evaluation_attempts, course_completions, certificates,
+          branding, user_sessions) using TEXT[] arrays and JSONB for nested data. Added rls_policies.sql
+          enabling RLS with defensive policies (public read for verification + published courses + branding;
+          deny all else). Backend connects as `postgres` role which bypasses RLS. Created db_adapter.py
+          that mimics motor API (find_one/find/insert_one/update_one/delete_one/count_documents/aggregate)
+          backed by asyncpg with statement_cache_size=0 for transaction pooler compatibility.
+          server.py only changed in 3 spots (imports, db init, aggregate replaced with SQL JOIN over
+          unnest(role_ids)). Seeded admin@elearning.com/admin123 + demo.alumno@test.com/demo123 + 19
+          predefined roles. Smoke-tested via curl: /api/, /api/auth/login (admin+student), /api/auth/me,
+          /api/roles (19), /api/users (2), /api/reports/summary, /api/branding, POST /api/courses — all OK.
+      - working: false
+        agent: "testing"
+        comment: |
+          Comprehensive end-to-end testing completed (31/32 tests passed = 96.9% success rate).
+          
+          ✅ WORKING FEATURES:
+          1. Auth: Login with admin@elearning.com/admin123 and demo.alumno@test.com/demo123 - WORKING
+          2. GET /api/auth/me - returns user info correctly - WORKING
+          3. GET /api/roles - returns exactly 19 predefined roles - WORKING
+          4. POST /api/users with role_ids[] array - TEXT[] array stored and retrieved correctly - WORKING
+          5. Users CRUD (GET/PUT/DELETE) - all operations working - WORKING
+          6. GET /api/users/search/rut/{rut} - RUT search working with certificates and completions - WORKING
+          7. Courses CRUD with prerequisites TEXT[] array - all operations working - WORKING
+          8. POST /api/evaluations with JSONB questions - questions stored and retrieved correctly - WORKING
+          9. POST /api/evaluations/{id}/submit - scoring calculation 100% accurate - WORKING
+          10. GET/PUT /api/branding - singleton update working correctly - WORKING
+          11. GET /api/reports/summary - users_by_role aggregation with UNNEST working - WORKING
+          12. GET /api/reports/users - detailed report working - WORKING
+          13. GET /api/reports/export/users - CSV export working with UTF-8 BOM - WORKING
+          14. GET /api/certificates/verify/{code} - public verification endpoint working - WORKING
+          15. Datetime handling - PG datetime correctly converted to ISO strings - WORKING
+          16. TEXT[] arrays (role_ids, prerequisites, course_ids) - all working correctly - WORKING
+          17. JSONB columns (questions, answers, courses_detail) - all working correctly - WORKING
+          
+          ❌ CRITICAL ISSUE - Schema Incomplete:
+          - Auto-certificate issuance FAILS with 500 error: "column certificate_type does not exist"
+          - The certificates table schema in init_schema.sql is missing several columns that server.py expects:
+            * certificate_type (TEXT) - used to distinguish "role_completion" vs single course certs
+            * user_rut (TEXT) - schema has "rut" but code uses "user_rut"
+            * user_company (TEXT) - code tries to insert this field
+            * total_hours (INTEGER) - schema has "hours" but code uses "total_hours"
+            * average_score (INTEGER) - missing from schema
+            * course_id (TEXT) - for legacy single-course certificates
+            * course_name (TEXT) - for legacy single-course certificates
+            * score (INTEGER) - for legacy single-course certificates
+            * training_type (TEXT) - for legacy single-course certificates
+          
+          The schema must be updated to include these columns for auto-certificate issuance to work.
+          All other PostgreSQL migration features are working correctly.
+
+metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 1
+  run_ui: false
+
+test_plan:
+  current_focus:
+    - "Supabase PostgreSQL migration via MongoDB-compatible adapter"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+  - agent: "main"
+    message: |
+      Migración completa de MongoDB -> Supabase PostgreSQL terminada.
+      Por favor probar end-to-end:
+        1. Auth: register/login (admin@elearning.com/admin123 + demo.alumno@test.com/demo123), /me, logout.
+        2. Users CRUD (admin only) + búsqueda por RUT.
+        3. Roles CRUD (deberían existir 19 roles predefinidos).
+        4. Courses CRUD con prerequisites (TEXT[] en PG).
+        5. Evaluations CRUD + submit con scoring (questions stored in JSONB).
+        6. Course completions y emisión automática de certificado cuando se completan todos los cursos del rol.
+        7. Branding GET/PUT (singleton: id='default').
+        8. Reports: /api/reports/summary, /api/reports/users (incluye CSV export).
+        9. Certificate verification público por código.
+      No tocar la subida de archivos a Supabase Storage todavía (pendiente de keys del usuario);
+      por ahora los uploads siguen a disco local en /app/backend/uploads/.
+  - agent: "testing"
+    message: |
+      Testing completed with 96.9% success rate (31/32 tests passed).
+      
+      CRITICAL ISSUE FOUND: Auto-certificate issuance fails with 500 error due to incomplete schema.
+      The certificates table in init_schema.sql is missing these columns that server.py tries to insert:
+        - certificate_type TEXT (to distinguish role_completion vs single course)
+        - user_rut TEXT (code uses this, schema has "rut")
+        - user_company TEXT
+        - total_hours INTEGER (code uses this, schema has "hours")
+        - average_score INTEGER
+        - course_id TEXT (for legacy single-course certs)
+        - course_name TEXT (for legacy single-course certs)
+        - score INTEGER (for legacy single-course certs)
+        - training_type TEXT (for legacy single-course certs)
+      
+      All other PostgreSQL features working perfectly:
+      ✅ TEXT[] arrays (role_ids, prerequisites, course_ids)
+      ✅ JSONB columns (questions, answers, courses_detail)
+      ✅ Datetime ISO string conversion
+      ✅ users_by_role aggregation with UNNEST
+      ✅ All CRUD operations
+      ✅ CSV exports
+      ✅ RUT search
+      ✅ 19 predefined roles
+      
+      Please update init_schema.sql to add the missing columns to certificates table.

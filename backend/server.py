@@ -2,7 +2,6 @@ from fastapi import FastAPI, APIRouter, HTTPException, Depends, UploadFile, File
 from fastapi.responses import FileResponse, StreamingResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
@@ -26,10 +25,8 @@ from reportlab.graphics.shapes import Drawing, Line
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+# PostgreSQL (Supabase) connection via MongoDB-compatible adapter
+from db_adapter import db, close_pool, ping as db_ping
 
 # JWT Config
 JWT_SECRET = os.environ.get('JWT_SECRET', 'elearning_secret_key_2024_secure')
@@ -1408,20 +1405,27 @@ async def get_reports_summary(admin: dict = Depends(require_admin)):
         else:
             expired_certificates += 1
     
-    # Get users by role
-    pipeline = [
-        {"$match": {"is_admin": False}},
-        {"$group": {"_id": "$role_id", "count": {"$sum": 1}}}
-    ]
+    # Get users by role (uses role_ids[] - unnest array)
     users_by_role = []
-    async for doc in db.users.aggregate(pipeline):
-        role_id = doc["_id"]
-        role_name = "Sin rol"
-        if role_id:
-            role = await db.roles.find_one({"role_id": role_id}, {"_id": 0, "name": 1})
-            if role:
-                role_name = role["name"]
-        users_by_role.append({"role": role_name, "count": doc["count"]})
+    from db_adapter import get_pool
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            """
+            SELECT COALESCE(r.role_id, NULL) AS role_id,
+                   COALESCE(r.name, 'Sin rol') AS role_name,
+                   COUNT(*) AS count
+            FROM users u
+            LEFT JOIN LATERAL UNNEST(
+                CASE WHEN array_length(u.role_ids, 1) > 0 THEN u.role_ids ELSE ARRAY[NULL]::TEXT[] END
+            ) AS rid ON TRUE
+            LEFT JOIN roles r ON r.role_id = rid
+            WHERE u.is_admin = FALSE
+            GROUP BY r.role_id, r.name
+            """
+        )
+    for r in rows:
+        users_by_role.append({"role": r["role_name"] or "Sin rol", "count": r["count"]})
     
     # Get course completions stats
     completions = await db.course_completions.count_documents({})
@@ -1728,4 +1732,4 @@ app.add_middleware(
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
-    client.close()
+    await close_pool()
