@@ -1,18 +1,23 @@
 # Test Credentials
 
-## E-Learning Platform (Supabase PostgreSQL)
+## Aptiva Platform (Multi-tenant, Supabase PostgreSQL)
 
-| Role | Email | Password |
-|---|---|---|
-| Administrator | `admin@elearning.com` | `admin123` |
-| Demo Student | `demo.alumno@test.com` | `demo123` |
+| Rol | Email | Password | Empresa |
+|---|---|---|---|
+| **SuperAdmin** (global) | `superadmin@aptiva.com` | `superadmin123` | — |
+| **Admin** Aptiva Demo | `admin@aptivademo.com` | `admin123` | Aptiva Demo |
+| **Trabajador** Aptiva Demo | `trabajador@aptivademo.com` | `trabajador123` | Aptiva Demo |
 
-## Database
-- Engine: PostgreSQL 17.6 on Supabase
-- Project ref: `jnqdgknthzslhbfsmjtq`
-- Connection pooler: `aws-1-us-west-2.pooler.supabase.com:6543` (transaction mode)
-- Backend connects via `db_adapter.py` (MongoDB-style API over asyncpg)
-- RLS enabled with defensive policies (backend uses `postgres` role which bypasses RLS)
+## Multi-tenant
+- `companies` es la raíz multi-tenant. Cada tabla tiene `company_id`.
+- SuperAdmin crea empresas y un admin para cada una.
+- Admin gestiona usuarios/áreas/actividades/cursos/documentos de su empresa.
+- Trabajadores solo ven datos de su empresa.
 
 ## Seed
-Run `python3 /app/backend/seed.py` to (idempotently) recreate admin + demo student + 19 predefined roles + branding singleton.
+Run `python3 /app/backend/seed.py` (idempotent):
+- 1 SuperAdmin global
+- 1 empresa demo "Aptiva Demo" + admin + trabajador
+- 3 áreas: Operaciones Mina, Mantenimiento, Administración
+- 3 actividades: Trabajo en Altura, Conducción, Soldadura
+- 4 tipos de documento (Contrato, Examen Pre-ocupacional, Certificado Altura, Licencia Conducir)

@@ -55,31 +55,28 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
     full_name: str
-    rut: Optional[str] = None
+    rut: str
     company: Optional[str] = None
-    area_ids: List[str] = []
-    activity_ids: List[str] = []
+    role_ids: List[str] = []  # Multiple roles/activities
     is_admin: bool = False
 
 class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     company: Optional[str] = None
-    area_ids: Optional[List[str]] = None
-    activity_ids: Optional[List[str]] = None
+    role_ids: Optional[List[str]] = None  # Multiple roles/activities
     is_active: Optional[bool] = None
-    is_admin: Optional[bool] = None
 
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
-class ActivityCreate(BaseModel):
+class RoleCreate(BaseModel):
     name: str
     description: Optional[str] = None
     course_ids: List[str] = []
     course_order: List[str] = []  # Ordered list of course_ids for curriculum path
 
-class ActivityUpdate(BaseModel):
+class RoleUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     course_ids: Optional[List[str]] = None
@@ -220,13 +217,35 @@ def scoped_filter(user: dict, extra: Optional[dict] = None) -> dict:
 
 @api_router.post("/auth/register")
 async def register(user_data: UserCreate):
-    """Public register is DEPRECATED in multi-tenant mode.
-    Users are created by company admin via /api/users or POST /api/users/bulk-import.
-    Kept for backward compat: if no company_id is provided, returns 403."""
-    raise HTTPException(
-        status_code=403,
-        detail="Self-registration disabled. Ask your company administrator to create your account."
-    )
+    existing = await db.users.find_one({"email": user_data.email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    existing_rut = await db.users.find_one({"rut": user_data.rut})
+    if existing_rut:
+        raise HTTPException(status_code=400, detail="RUT already registered")
+    
+    user_id = f"user_{uuid.uuid4().hex[:12]}"
+    user_doc = {
+        "user_id": user_id,
+        "email": user_data.email,
+        "password_hash": hash_password(user_data.password),
+        "full_name": user_data.full_name,
+        "rut": user_data.rut,
+        "company": user_data.company,
+        "role_ids": user_data.role_ids,  # Multiple roles
+        "is_admin": user_data.is_admin,
+        "is_active": True,
+        "picture": None,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.users.insert_one(user_doc)
+    
+    token = create_token(user_id, user_data.is_admin)
+    user_doc.pop("password_hash")
+    user_doc.pop("_id", None)
+    
+    return {"token": token, "user": user_doc}
 
 @api_router.post("/auth/login")
 async def login(credentials: UserLogin, response: Response):
@@ -343,44 +362,14 @@ async def logout(request: Request, response: Response):
 
 # ==================== USER ROUTES ====================
 
-@api_router.post("/users")
-async def create_user(data: UserCreate, admin: dict = Depends(require_admin)):
-    """Admin creates a worker (or another admin) in their own company."""
-    company_id = admin.get("company_id")
-    if not company_id and not admin.get("is_super_admin"):
-        raise HTTPException(400, "Company scope required")
-    if await db.users.find_one({"email": data.email}):
-        raise HTTPException(400, "Email already registered")
-    if data.rut and await db.users.find_one({"company_id": company_id, "rut": data.rut}):
-        raise HTTPException(400, "RUT already registered in this company")
-    user_id = f"user_{uuid.uuid4().hex[:12]}"
-    doc = {
-        "user_id": user_id,
-        "company_id": company_id,
-        "email": data.email,
-        "password_hash": hash_password(data.password),
-        "full_name": data.full_name,
-        "rut": data.rut,
-        "company": data.company,
-        "is_super_admin": False,
-        "is_admin": data.is_admin,
-        "is_active": True,
-        "area_ids": data.area_ids,
-        "activity_ids": data.activity_ids,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-    }
-    await db.users.insert_one(doc)
-    doc.pop("password_hash", None)
-    return doc
-
 @api_router.get("/users")
 async def get_users(admin: dict = Depends(require_admin)):
-    users = await db.users.find(scoped_filter(admin, {"is_super_admin": {"$ne": True}}), {"_id": 0, "password_hash": 0}).to_list(1000)
+    users = await db.users.find({}, {"_id": 0, "password_hash": 0}).to_list(1000)
     return users
 
 @api_router.get("/users/{user_id}")
 async def get_user(user_id: str, admin: dict = Depends(require_admin)):
-    user = await db.users.find_one(scoped_filter(admin, {"user_id": user_id}), {"_id": 0, "password_hash": 0})
+    user = await db.users.find_one({"user_id": user_id}, {"_id": 0, "password_hash": 0})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
@@ -391,21 +380,18 @@ async def update_user(user_id: str, data: UserUpdate, admin: dict = Depends(requ
     if not update_data:
         raise HTTPException(status_code=400, detail="No update data provided")
     
-    # Make sure target user is within admin's company
-    existing = await db.users.find_one(scoped_filter(admin, {"user_id": user_id}))
-    if not existing:
+    result = await db.users.update_one({"user_id": user_id}, {"$set": update_data})
+    if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="User not found")
     
-    result = await db.users.update_one({"user_id": user_id}, {"$set": update_data})
     user = await db.users.find_one({"user_id": user_id}, {"_id": 0, "password_hash": 0})
     return user
 
 @api_router.delete("/users/{user_id}")
 async def delete_user(user_id: str, admin: dict = Depends(require_admin)):
-    existing = await db.users.find_one(scoped_filter(admin, {"user_id": user_id}))
-    if not existing:
+    result = await db.users.delete_one({"user_id": user_id})
+    if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="User not found")
-    await db.users.delete_one({"user_id": user_id})
     return {"message": "User deleted"}
 
 @api_router.get("/users/search/rut/{rut}")
@@ -428,89 +414,101 @@ async def search_user_by_rut(rut: str, admin: dict = Depends(require_admin)):
 
 # ==================== ROLE ROUTES ====================
 
-# Predefined activity names (admin may seed these via POST /api/activities/predefined/init)
+# Predefined roles/activities
 PREDEFINED_ROLES = [
-    "TRABAJO EN ALTURA", "ARMADO DE ANDAMIOS", "OPERADOR PLATAFORMAS MÓVILES MOTORIZADAS",
-    "OPERADOR GRÚA", "RIGGER", "IZAJE",
+    "TRABAJO EN ALTURA",
+    "ARMADO DE ANDAMIOS",
+    "OPERADOR PLATAFORMAS MÓVILES MOTORIZADAS",
+    "OPERADOR GRÚA",
+    "RIGGER",
+    "IZAJE",
     "OPERADOR EQUIPO EXCAVACIÓN Y MOVIMIENTO DE TIERRA",
-    "ESPACIOS CONFINADOS", "SOLDADOR",
+    "ESPACIOS CONFINADOS",
+    "SOLDADOR",
     "ACTIVIDADES CON LLAMA ABIERTA O TRABAJOS EN CALIENTE",
     "ESPECIALISTA SEC CON INTERVENCIÓN EN LÍNEAS DE GAS",
-    "OPERADOR EQUIPO RADIACTIVO", "AISLACIÓN Y BLOQUEO DE ENERGÍAS",
-    "INSTALADOR ELÉCTRICO", "INTERVENCIÓN EN ENERGÍA ELÉCTRICA",
-    "MANIPULADOR DE EXPLOSIVOS", "CONDUCCIÓN",
-    "CONDUCCIÓN DE BUS O VEHÍCULOS DE TRANSPORTE DE CARGA", "CONDUCCIÓN MINA"
+    "OPERADOR EQUIPO RADIACTIVO",
+    "AISLACIÓN Y BLOQUEO DE ENERGÍAS",
+    "INSTALADOR ELÉCTRICO",
+    "INTERVENCIÓN EN ENERGÍA ELÉCTRICA",
+    "MANIPULADOR DE EXPLOSIVOS",
+    "CONDUCCIÓN",
+    "CONDUCCIÓN DE BUS O VEHÍCULOS DE TRANSPORTE DE CARGA",
+    "CONDUCCIÓN MINA"
 ]
 
-@api_router.get("/activities/predefined/list")
+@api_router.get("/roles/predefined/list")
 async def get_predefined_roles():
+    """Get list of predefined roles/activities"""
     return {"roles": PREDEFINED_ROLES}
 
-@api_router.post("/activities/predefined/init")
+@api_router.post("/roles/predefined/init")
 async def init_predefined_roles(admin: dict = Depends(require_admin)):
-    """Seed the predefined activities into the admin's company."""
-    company_id = admin.get("company_id")
-    if not company_id:
-        raise HTTPException(400, "Company scope required")
+    """Initialize predefined roles if they don't exist"""
     created = []
     for role_name in PREDEFINED_ROLES:
-        existing = await db.activities.find_one({"company_id": company_id, "name": role_name})
+        existing = await db.roles.find_one({"name": role_name})
         if not existing:
-            await db.activities.insert_one({
-                "activity_id": f"activity_{uuid.uuid4().hex[:12]}",
-                "company_id": company_id,
+            role_id = f"role_{uuid.uuid4().hex[:12]}"
+            role_doc = {
+                "role_id": role_id,
                 "name": role_name,
-                "description": f"Actividad: {role_name}",
+                "description": f"Rol/Actividad: {role_name}",
+                "course_ids": [],
+                "course_order": [],
                 "created_at": datetime.now(timezone.utc).isoformat()
-            })
+            }
+            await db.roles.insert_one(role_doc)
             created.append(role_name)
-    return {"message": f"Created {len(created)} activities", "created": created}
+    
+    return {"message": f"Created {len(created)} roles", "created": created}
 
-@api_router.post("/activities")
-async def create_activity(data: ActivityCreate, admin: dict = Depends(require_admin)):
-    company_id = admin.get("company_id")
-    if not company_id:
-        raise HTTPException(400, "Company scope required")
-    activity_id = f"activity_{uuid.uuid4().hex[:12]}"
-    doc = {
-        "activity_id": activity_id,
-        "company_id": company_id,
+@api_router.post("/roles")
+async def create_role(data: RoleCreate, admin: dict = Depends(require_admin)):
+    role_id = f"role_{uuid.uuid4().hex[:12]}"
+    role_doc = {
+        "role_id": role_id,
         "name": data.name,
         "description": data.description,
+        "course_ids": data.course_ids,
+        "course_order": data.course_order if data.course_order else data.course_ids,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
-    await db.activities.insert_one(doc)
-    return doc
+    await db.roles.insert_one(role_doc)
+    role_doc.pop("_id", None)
+    return role_doc
 
-@api_router.get("/activities")
-async def get_activities(user: dict = Depends(get_current_user)):
-    return await db.activities.find(scoped_filter(user)).sort("name", 1).to_list(500)
+@api_router.get("/roles")
+async def get_roles():
+    roles = await db.roles.find({}, {"_id": 0}).to_list(100)
+    return roles
 
-@api_router.get("/activities/{activity_id}")
-async def get_activity(activity_id: str, user: dict = Depends(get_current_user)):
-    a = await db.activities.find_one(scoped_filter(user, {"activity_id": activity_id}))
-    if not a:
-        raise HTTPException(status_code=404, detail="Activity not found")
-    return a
+@api_router.get("/roles/{role_id}")
+async def get_role(role_id: str):
+    role = await db.roles.find_one({"role_id": role_id}, {"_id": 0})
+    if not role:
+        raise HTTPException(status_code=404, detail="Role not found")
+    return role
 
-@api_router.put("/activities/{activity_id}")
-async def update_activity(activity_id: str, data: ActivityUpdate, admin: dict = Depends(require_admin)):
+@api_router.put("/roles/{role_id}")
+async def update_role(role_id: str, data: RoleUpdate, admin: dict = Depends(require_admin)):
     update_data = {k: v for k, v in data.model_dump().items() if v is not None}
     if not update_data:
         raise HTTPException(status_code=400, detail="No update data provided")
-    f = scoped_filter(admin, {"activity_id": activity_id})
-    res = await db.activities.update_one(f, {"$set": update_data})
-    if res.matched_count == 0:
-        raise HTTPException(404, "Activity not found")
-    return await db.activities.find_one(f)
+    
+    result = await db.roles.update_one({"role_id": role_id}, {"$set": update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Role not found")
+    
+    role = await db.roles.find_one({"role_id": role_id}, {"_id": 0})
+    return role
 
-@api_router.delete("/activities/{activity_id}")
-async def delete_activity(activity_id: str, admin: dict = Depends(require_admin)):
-    f = scoped_filter(admin, {"activity_id": activity_id})
-    res = await db.activities.delete_one(f)
-    if res.deleted_count == 0:
-        raise HTTPException(404, "Activity not found")
-    return {"message": "Activity deleted"}
+@api_router.delete("/roles/{role_id}")
+async def delete_role(role_id: str, admin: dict = Depends(require_admin)):
+    result = await db.roles.delete_one({"role_id": role_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Role not found")
+    return {"message": "Role deleted"}
 
 # ==================== COURSE ROUTES ====================
 
@@ -541,7 +539,7 @@ async def get_courses(user: dict = Depends(get_current_user)):
     else:
         # Get courses for user's role
         if user.get("role_id"):
-            role = await db.activities.find_one({"role_id": user["role_id"]}, {"_id": 0})
+            role = await db.roles.find_one({"role_id": user["role_id"]}, {"_id": 0})
             if role:
                 course_ids = role.get("course_ids", [])
                 courses = await db.courses.find(
@@ -727,7 +725,7 @@ async def submit_evaluation(eval_id: str, data: EvaluationSubmit, user: dict = D
             roles_info = []
             
             for role_id in user_role_ids:
-                role = await db.activities.find_one({"role_id": role_id}, {"_id": 0})
+                role = await db.roles.find_one({"role_id": role_id}, {"_id": 0})
                 if role:
                     roles_info.append(role)
                     for cid in role.get("course_ids", []):
@@ -1251,7 +1249,142 @@ def generate_certificate_pdf(certificate: dict, branding: dict) -> io.BytesIO:
 
 # ==================== BRANDING ROUTES ====================
 
-# Branding & company-scoped endpoints moved to routes_v2.py (multi-tenant)
+@api_router.get("/branding")
+async def get_branding():
+    branding = await db.branding.find_one({}, {"_id": 0})
+    if not branding:
+        branding = {
+            "branding_id": "default",
+            "logo_url": None,
+            "banner_logo_url": None,
+            "signature_url": None,
+            "footer_image_url": None,
+            "primary_color": "#2563EB",
+            "secondary_color": "#F1F5F9"
+        }
+    return branding
+
+@api_router.put("/branding")
+async def update_branding(data: BrandingUpdate, admin: dict = Depends(require_admin)):
+    update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+    
+    existing = await db.branding.find_one({})
+    if existing:
+        await db.branding.update_one({}, {"$set": update_data})
+    else:
+        branding_doc = {
+            "branding_id": "default",
+            "logo_url": None,
+            "signature_url": None,
+            "footer_image_url": None,
+            "primary_color": "#2563EB",
+            "secondary_color": "#F1F5F9",
+            **update_data
+        }
+        await db.branding.insert_one(branding_doc)
+    
+    branding = await db.branding.find_one({}, {"_id": 0})
+    return branding
+
+@api_router.post("/branding/logo")
+async def upload_logo(file: UploadFile = File(...), admin: dict = Depends(require_admin)):
+    if not file.filename.lower().endswith(('.png', '.jpg', '.jpeg')):
+        raise HTTPException(status_code=400, detail="Only PNG/JPG files allowed")
+    
+    ext = "png" if file.filename.lower().endswith(".png") else "jpg"
+    filename = f"logo_{uuid.uuid4().hex[:8]}.{ext}"
+    content = await file.read()
+    await upload_to_storage("logos", filename, content, f"image/{'jpeg' if ext == 'jpg' else 'png'}")
+    
+    logo_url = f"/api/files/logos/{filename}"
+    
+    existing = await db.branding.find_one({})
+    if existing:
+        await db.branding.update_one({}, {"$set": {"logo_url": logo_url}})
+    else:
+        await db.branding.insert_one({
+            "id": "default",
+            "logo_url": logo_url,
+            "primary_color": "#2563EB",
+            "secondary_color": "#F1F5F9"
+        })
+    
+    return {"logo_url": logo_url}
+
+@api_router.post("/branding/banner-logo")
+async def upload_banner_logo(file: UploadFile = File(...), admin: dict = Depends(require_admin)):
+    if not file.filename.lower().endswith(('.png', '.jpg', '.jpeg')):
+        raise HTTPException(status_code=400, detail="Only PNG/JPG files allowed")
+    
+    ext = "png" if file.filename.lower().endswith(".png") else "jpg"
+    filename = f"banner_logo_{uuid.uuid4().hex[:8]}.{ext}"
+    content = await file.read()
+    await upload_to_storage("logos", filename, content, f"image/{'jpeg' if ext == 'jpg' else 'png'}")
+    
+    banner_logo_url = f"/api/files/logos/{filename}"
+    
+    existing = await db.branding.find_one({})
+    if existing:
+        await db.branding.update_one({}, {"$set": {"banner_logo_url": banner_logo_url}})
+    else:
+        await db.branding.insert_one({
+            "id": "default",
+            "banner_logo_url": banner_logo_url,
+            "primary_color": "#2563EB",
+            "secondary_color": "#F1F5F9"
+        })
+    
+    return {"banner_logo_url": banner_logo_url}
+
+@api_router.post("/branding/signature")
+async def upload_signature(file: UploadFile = File(...), admin: dict = Depends(require_admin)):
+    if not file.filename.lower().endswith(('.png', '.jpg', '.jpeg')):
+        raise HTTPException(status_code=400, detail="Only PNG/JPG files allowed")
+    
+    ext = "png" if file.filename.lower().endswith(".png") else "jpg"
+    filename = f"signature_{uuid.uuid4().hex[:8]}.{ext}"
+    content = await file.read()
+    await upload_to_storage("signatures", filename, content, f"image/{'jpeg' if ext == 'jpg' else 'png'}")
+    
+    signature_url = f"/api/files/signatures/{filename}"
+    
+    existing = await db.branding.find_one({})
+    if existing:
+        await db.branding.update_one({}, {"$set": {"signature_url": signature_url}})
+    else:
+        await db.branding.insert_one({
+            "id": "default",
+            "signature_url": signature_url,
+            "primary_color": "#2563EB",
+            "secondary_color": "#F1F5F9"
+        })
+    
+    return {"signature_url": signature_url}
+
+@api_router.post("/branding/footer")
+async def upload_footer(file: UploadFile = File(...), admin: dict = Depends(require_admin)):
+    if not file.filename.lower().endswith(('.png', '.jpg', '.jpeg')):
+        raise HTTPException(status_code=400, detail="Only PNG/JPG files allowed")
+    
+    ext = "png" if file.filename.lower().endswith(".png") else "jpg"
+    filename = f"footer_{uuid.uuid4().hex[:8]}.{ext}"
+    content = await file.read()
+    await upload_to_storage("logos", filename, content, f"image/{'jpeg' if ext == 'jpg' else 'png'}")
+    
+    footer_image_url = f"/api/files/logos/{filename}"
+    
+    existing = await db.branding.find_one({})
+    if existing:
+        await db.branding.update_one({}, {"$set": {"footer_image_url": footer_image_url}})
+    else:
+        await db.branding.insert_one({
+            "id": "default",
+            "footer_image_url": footer_image_url,
+            "primary_color": "#2563EB",
+            "secondary_color": "#F1F5F9"
+        })
+    
+    return {"footer_image_url": footer_image_url}
 
 # ==================== FILE SERVING (proxies to Supabase Storage) ====================
 
@@ -1348,7 +1481,7 @@ async def get_users_report(admin: dict = Depends(require_admin)):
     for user in users:
         # Get role name
         if user.get("role_id"):
-            role = await db.activities.find_one({"role_id": user["role_id"]}, {"_id": 0, "name": 1})
+            role = await db.roles.find_one({"role_id": user["role_id"]}, {"_id": 0, "name": 1})
             user["role_name"] = role["name"] if role else "Sin rol"
         else:
             user["role_name"] = "Sin rol"
@@ -1444,7 +1577,7 @@ async def get_student_progress(user: dict = Depends(get_current_user)):
     if user_role_ids:
         # Get all roles
         for role_id in user_role_ids:
-            role = await db.activities.find_one({"role_id": role_id}, {"_id": 0})
+            role = await db.roles.find_one({"role_id": role_id}, {"_id": 0})
             if role:
                 roles.append(role)
                 # Collect unique course IDs
@@ -1529,10 +1662,10 @@ async def get_student_progress(user: dict = Depends(get_current_user)):
         "roles": [{"role_id": r["role_id"], "name": r["name"]} for r in roles]
     }
 
-@api_router.get("/activities/{role_id}/curriculum")
+@api_router.get("/roles/{role_id}/curriculum")
 async def get_role_curriculum(role_id: str):
     """Get curriculum roadmap for a role with course order and prerequisites"""
-    role = await db.activities.find_one({"role_id": role_id}, {"_id": 0})
+    role = await db.roles.find_one({"role_id": role_id}, {"_id": 0})
     if not role:
         raise HTTPException(status_code=404, detail="Role not found")
     
@@ -1583,15 +1716,30 @@ async def root():
 
 @api_router.post("/setup/admin")
 async def setup_admin():
-    """DEPRECATED: superadmin now creates admins per-company via /api/superadmin/companies/{id}/admin."""
-    return {"message": "Endpoint deprecated. Use superadmin login to create companies and admins.", "created": False}
+    """Create initial admin user if none exists"""
+    admin = await db.users.find_one({"is_admin": True})
+    if admin:
+        return {"message": "Admin already exists", "created": False}
+    
+    admin_id = f"user_{uuid.uuid4().hex[:12]}"
+    admin_doc = {
+        "user_id": admin_id,
+        "email": "admin@elearning.com",
+        "password_hash": hash_password("admin123"),
+        "full_name": "Administrador",
+        "rut": "11111111-1",
+        "company": "E-Learning Platform",
+        "role_id": None,
+        "is_admin": True,
+        "is_active": True,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.users.insert_one(admin_doc)
+    
+    return {"message": "Admin created", "created": True, "email": "admin@elearning.com", "password": "admin123"}
 
 # Include router and middleware
 app.include_router(api_router)
-
-# Include multi-tenant routes (companies, areas, document_types, worker_documents, bulk-import)
-from routes_v2 import v2_router
-app.include_router(v2_router)
 
 # Get allowed origins from environment or use defaults
 ALLOWED_ORIGINS = [

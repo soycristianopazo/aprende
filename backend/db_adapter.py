@@ -31,21 +31,33 @@ load_dotenv(Path(__file__).parent / ".env")
 # Maps each "collection" to its primary key column and the columns that should
 # be stored as native PG arrays (TEXT[]) / JSONB.
 TABLES: Dict[str, Dict[str, Any]] = {
-    "users": {
-        "pk": "user_id",
-        "array_cols": {"role_ids"},
+    "companies": {
+        "pk": "company_id",
+        "array_cols": set(),
         "json_cols": set(),
         "ts_cols": {"created_at"},
     },
-    "roles": {
-        "pk": "role_id",
-        "array_cols": {"course_ids", "course_order"},
+    "users": {
+        "pk": "user_id",
+        "array_cols": {"area_ids", "activity_ids"},
+        "json_cols": set(),
+        "ts_cols": {"created_at"},
+    },
+    "areas": {
+        "pk": "area_id",
+        "array_cols": set(),
+        "json_cols": set(),
+        "ts_cols": {"created_at"},
+    },
+    "activities": {
+        "pk": "activity_id",
+        "array_cols": set(),
         "json_cols": set(),
         "ts_cols": {"created_at"},
     },
     "courses": {
         "pk": "course_id",
-        "array_cols": {"prerequisites"},
+        "array_cols": {"area_ids", "activity_ids", "prerequisites"},
         "json_cols": set(),
         "ts_cols": {"created_at"},
     },
@@ -73,11 +85,17 @@ TABLES: Dict[str, Dict[str, Any]] = {
         "json_cols": {"course_grades", "courses_detail"},
         "ts_cols": {"issued_at", "expires_at"},
     },
-    "branding": {
-        "pk": "id",
-        "array_cols": set(),
+    "document_types": {
+        "pk": "document_type_id",
+        "array_cols": {"area_ids", "activity_ids"},
         "json_cols": set(),
-        "ts_cols": {"updated_at"},
+        "ts_cols": {"created_at"},
+    },
+    "worker_documents": {
+        "pk": "worker_document_id",
+        "array_cols": set(),
+        "json_cols": {"files"},
+        "ts_cols": {"created_at", "updated_at"},
     },
     "user_sessions": {
         "pk": "session_token",
