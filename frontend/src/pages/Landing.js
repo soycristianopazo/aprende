@@ -243,7 +243,7 @@ const Landing = () => {
               )}
             </div>
             <p className="text-slate-400 text-sm">
-              © {new Date().getFullYear()} E-Learning Platform. Todos los derechos reservados.
+              © {new Date().getFullYear()} DoSoft
             </p>
           </div>
         </div>

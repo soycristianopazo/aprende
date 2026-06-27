@@ -339,6 +339,10 @@ const Register = () => {
             ← Volver al inicio
           </Link>
         </p>
+
+        <p className="text-center text-xs text-slate-400 mt-4">
+          © {new Date().getFullYear()} DoSoft
+        </p>
       </div>
     </div>
   );

@@ -192,6 +192,13 @@ const AdminLayout = () => {
         <main className="p-4 lg:p-8">
           <Outlet />
         </main>
+
+        {/* Footer */}
+        <footer className="border-t border-slate-200 bg-white px-4 lg:px-8 py-4">
+          <p className="text-center text-xs text-slate-500">
+            © {new Date().getFullYear()} DoSoft
+          </p>
+        </footer>
       </div>
     </div>
   );

@@ -252,6 +252,10 @@ const VerifyCertificate = () => {
             )}
           </div>
         )}
+
+        <p className="text-center text-xs text-slate-400 mt-8">
+          © {new Date().getFullYear()} DoSoft
+        </p>
       </div>
     </div>
   );
