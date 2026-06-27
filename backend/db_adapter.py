@@ -51,13 +51,13 @@ TABLES: Dict[str, Dict[str, Any]] = {
     },
     "activities": {
         "pk": "activity_id",
-        "array_cols": set(),
+        "array_cols": {"competency_ids"},
         "json_cols": set(),
         "ts_cols": {"created_at"},
     },
     "courses": {
         "pk": "course_id",
-        "array_cols": {"area_ids", "activity_ids", "prerequisites"},
+        "array_cols": {"area_ids", "activity_ids", "prerequisites", "grants_competency_ids"},
         "json_cols": set(),
         "ts_cols": {"created_at"},
     },
@@ -96,6 +96,18 @@ TABLES: Dict[str, Dict[str, Any]] = {
         "array_cols": set(),
         "json_cols": {"files"},
         "ts_cols": {"created_at", "updated_at"},
+    },
+    "competencies": {
+        "pk": "competency_id",
+        "array_cols": set(),
+        "json_cols": set(),
+        "ts_cols": {"created_at"},
+    },
+    "worker_competencies": {
+        "pk": "worker_competency_id",
+        "array_cols": set(),
+        "json_cols": set(),
+        "ts_cols": {"acquired_at", "expiry_date", "created_at"},
     },
     "user_sessions": {
         "pk": "session_token",

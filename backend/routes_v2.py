@@ -90,6 +90,25 @@ class DocumentTypeUpdate(BaseModel):
     is_active: Optional[bool] = None
 
 
+class CompetencyCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    validity_months: Optional[int] = None  # None = no expiration
+
+
+class CompetencyUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    validity_months: Optional[int] = None
+    is_active: Optional[bool] = None
+
+
+class WorkerCompetencyManualCreate(BaseModel):
+    """JSON body used when admin marks competency acquired without uploading a file."""
+    expiry_date: Optional[str] = None
+    notes: Optional[str] = None
+
+
 class WorkerCreate(BaseModel):
     """Used by company admin to create a worker."""
     email: EmailStr
@@ -590,3 +609,250 @@ async def bulk_import_users(file: UploadFile = File(...), admin: dict = Depends(
 
     return {"created": created, "skipped": skipped, "errors": errors,
             "summary": {"created": len(created), "skipped": len(skipped), "errors": len(errors)}}
+
+
+
+# ============================================================
+# COMPETENCIES (F4 — catálogo por empresa)
+# ============================================================
+
+@v2_router.get("/competencies")
+async def list_competencies(user: dict = Depends(get_current_user)):
+    f = scoped_filter(user, {"is_active": True})
+    return await db.competencies.find(f).sort("name", 1).to_list(500)
+
+
+@v2_router.post("/competencies")
+async def create_competency(data: CompetencyCreate, admin: dict = Depends(require_admin)):
+    company_id = admin.get("company_id")
+    if not company_id:
+        raise HTTPException(400, "Company scope required")
+    existing = await db.competencies.find_one({"company_id": company_id, "name": data.name})
+    if existing:
+        raise HTTPException(400, f"Competencia '{data.name}' ya existe en tu empresa")
+    cid = f"comp_{uuid.uuid4().hex[:12]}"
+    doc = {
+        "competency_id": cid,
+        "company_id": company_id,
+        "name": data.name,
+        "description": data.description,
+        "validity_months": data.validity_months,
+        "is_active": True,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.competencies.insert_one(doc)
+    return doc
+
+
+@v2_router.put("/competencies/{competency_id}")
+async def update_competency(competency_id: str, data: CompetencyUpdate, admin: dict = Depends(require_admin)):
+    update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+    if not update_data:
+        raise HTTPException(400, "No update data")
+    f = scoped_filter(admin, {"competency_id": competency_id})
+    res = await db.competencies.update_one(f, {"$set": update_data})
+    if res.matched_count == 0:
+        raise HTTPException(404, "Competencia no encontrada")
+    return await db.competencies.find_one(f)
+
+
+@v2_router.delete("/competencies/{competency_id}")
+async def delete_competency(competency_id: str, admin: dict = Depends(require_admin)):
+    f = scoped_filter(admin, {"competency_id": competency_id})
+    res = await db.competencies.delete_one(f)
+    if res.deleted_count == 0:
+        raise HTTPException(404, "Competencia no encontrada")
+    return {"deleted": True}
+
+
+# ============================================================
+# WORKER COMPETENCIES
+# ============================================================
+
+def _compute_expiry(validity_months: Optional[int], base: Optional[datetime] = None) -> Optional[str]:
+    if not validity_months:
+        return None
+    base = base or datetime.now(timezone.utc)
+    # rough month math (30-day months — enough for compliance UI)
+    return (base + timedelta(days=validity_months * 30)).isoformat()
+
+
+@v2_router.get("/worker-competencies/{user_id}")
+async def get_worker_competencies(user_id: str, user: dict = Depends(get_current_user)):
+    company_id = user.get("company_id")
+    if not company_id:
+        return []
+    target = await db.users.find_one({"user_id": user_id, "company_id": company_id})
+    if not target:
+        raise HTTPException(404, "Trabajador no encontrado")
+    return await db.worker_competencies.find({"user_id": user_id, "company_id": company_id}).to_list(500)
+
+
+@v2_router.post("/worker-competencies/{user_id}/upload")
+async def upload_worker_competency(
+    user_id: str,
+    competency_id: str = Form(...),
+    expiry_date: Optional[str] = Form(None),
+    notes: Optional[str] = Form(None),
+    file: Optional[UploadFile] = File(None),
+    admin: dict = Depends(require_admin),
+):
+    """Admin manually grants a competency to a worker (with optional evidence file)."""
+    company_id = admin.get("company_id")
+    target = await db.users.find_one({"user_id": user_id, "company_id": company_id})
+    if not target:
+        raise HTTPException(404, "Trabajador no encontrado")
+
+    competency = await db.competencies.find_one({"competency_id": competency_id, "company_id": company_id})
+    if not competency:
+        raise HTTPException(404, "Competencia no encontrada")
+
+    file_url = None
+    original_name = None
+    if file is not None:
+        content = await file.read()
+        ext = (file.filename or "file").rsplit(".", 1)[-1].lower()
+        stored_name = f"{company_id}_{user_id}_{competency_id}_{uuid.uuid4().hex[:8]}.{ext}"
+        await upload_to_storage("materials", stored_name, content, file.content_type or "application/octet-stream")
+        file_url = f"/api/files/materials/{stored_name}"
+        original_name = file.filename
+
+    # If admin provided no expiry but the competency has validity_months, auto-compute
+    final_expiry = expiry_date
+    if not final_expiry and competency.get("validity_months"):
+        final_expiry = _compute_expiry(competency["validity_months"])
+
+    existing = await db.worker_competencies.find_one({"user_id": user_id, "competency_id": competency_id})
+    now_iso = datetime.now(timezone.utc).isoformat()
+    if existing:
+        update = {
+            "source": "manual",
+            "source_course_id": None,
+            "acquired_at": now_iso,
+            "expiry_date": final_expiry,
+            "notes": notes,
+            "uploaded_by": admin["user_id"],
+        }
+        if file_url:
+            update["file_url"] = file_url
+            update["original_name"] = original_name
+        await db.worker_competencies.update_one(
+            {"worker_competency_id": existing["worker_competency_id"]},
+            {"$set": update},
+        )
+        return await db.worker_competencies.find_one({"worker_competency_id": existing["worker_competency_id"]})
+
+    wc_id = f"wcomp_{uuid.uuid4().hex[:12]}"
+    doc = {
+        "worker_competency_id": wc_id,
+        "company_id": company_id,
+        "user_id": user_id,
+        "competency_id": competency_id,
+        "source": "manual",
+        "source_course_id": None,
+        "acquired_at": now_iso,
+        "expiry_date": final_expiry,
+        "file_url": file_url,
+        "original_name": original_name,
+        "notes": notes,
+        "uploaded_by": admin["user_id"],
+        "created_at": now_iso,
+    }
+    await db.worker_competencies.insert_one(doc)
+    return doc
+
+
+@v2_router.delete("/worker-competencies/{worker_competency_id}")
+async def delete_worker_competency(worker_competency_id: str, admin: dict = Depends(require_admin)):
+    f = scoped_filter(admin, {"worker_competency_id": worker_competency_id})
+    res = await db.worker_competencies.delete_one(f)
+    if res.deleted_count == 0:
+        raise HTTPException(404, "No encontrado")
+    return {"deleted": True}
+
+
+# ============================================================
+# WORKER SELF-SERVICE — Mis Competencias
+# ============================================================
+
+@v2_router.get("/my-competencies")
+async def list_my_competencies(user: dict = Depends(get_current_user)):
+    """Returns required competencies for this worker (based on their activities) + acquisition status."""
+    company_id = user.get("company_id")
+    if not company_id:
+        return []
+
+    # Collect required competency_ids from worker's activities
+    user_acts = user.get("activity_ids") or []
+    required_comp_ids: set = set()
+    if user_acts:
+        acts = await db.activities.find({"activity_id": {"$in": user_acts}, "company_id": company_id}).to_list(200)
+        for a in acts:
+            for cid in (a.get("competency_ids") or []):
+                required_comp_ids.add(cid)
+
+    # Always also include any competency the worker has already acquired (so the admin can grant ad-hoc)
+    own_wcs = await db.worker_competencies.find({"user_id": user["user_id"], "company_id": company_id}).to_list(500)
+    own_by_comp = {w["competency_id"]: w for w in own_wcs}
+    for cid in own_by_comp.keys():
+        required_comp_ids.add(cid)
+
+    if not required_comp_ids:
+        return []
+
+    comps = await db.competencies.find({"competency_id": {"$in": list(required_comp_ids)}, "company_id": company_id, "is_active": True}).to_list(500)
+
+    result = []
+    for c in comps:
+        result.append({
+            "competency": c,
+            "worker_competency": own_by_comp.get(c["competency_id"]),
+        })
+    # Sort: by competency name
+    result.sort(key=lambda x: (x["competency"].get("name") or "").lower())
+    return result
+
+
+# ============================================================
+# Helper for course completion auto-grant (called from server.py)
+# ============================================================
+
+async def grant_competencies_for_course_completion(user_id: str, company_id: str, course: dict):
+    """Auto-grant any competencies the course is configured to grant.
+    Idempotent: existing acquired rows for the same (user, competency) are refreshed to source='course'.
+    """
+    grant_ids = course.get("grants_competency_ids") or []
+    if not grant_ids:
+        return
+    comps = await db.competencies.find({"competency_id": {"$in": grant_ids}, "company_id": company_id, "is_active": True}).to_list(200)
+    now = datetime.now(timezone.utc)
+    now_iso = now.isoformat()
+    for c in comps:
+        expiry = _compute_expiry(c.get("validity_months"), base=now)
+        existing = await db.worker_competencies.find_one({"user_id": user_id, "competency_id": c["competency_id"]})
+        if existing:
+            await db.worker_competencies.update_one(
+                {"worker_competency_id": existing["worker_competency_id"]},
+                {"$set": {
+                    "source": "course",
+                    "source_course_id": course["course_id"],
+                    "acquired_at": now_iso,
+                    "expiry_date": expiry,
+                }},
+            )
+        else:
+            await db.worker_competencies.insert_one({
+                "worker_competency_id": f"wcomp_{uuid.uuid4().hex[:12]}",
+                "company_id": company_id,
+                "user_id": user_id,
+                "competency_id": c["competency_id"],
+                "source": "course",
+                "source_course_id": course["course_id"],
+                "acquired_at": now_iso,
+                "expiry_date": expiry,
+                "file_url": None,
+                "original_name": None,
+                "notes": f"Otorgada por curso: {course.get('name','')}",
+                "uploaded_by": None,
+                "created_at": now_iso,
+            })

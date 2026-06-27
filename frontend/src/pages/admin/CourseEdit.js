@@ -5,9 +5,10 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
+import { Checkbox } from '../../components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { toast } from 'sonner';
-import { ArrowLeft, Save, Upload, Loader2, Video, FileText } from 'lucide-react';
+import { ArrowLeft, Save, Upload, Loader2, Video, FileText, Award } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -19,6 +20,7 @@ const AdminCourseEdit = () => {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [course, setCourse] = useState(null);
+  const [competencies, setCompetencies] = useState([]);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -26,12 +28,24 @@ const AdminCourseEdit = () => {
     validity_hours: 8760,
     training_type: 'e-learning',
     video_url: '',
-    status: 'draft'
+    status: 'draft',
+    grants_competency_ids: [],
   });
 
   useEffect(() => {
     fetchCourse();
+    fetchCompetencies();
   }, [courseId]);
+
+  const fetchCompetencies = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const r = await fetch(`${API}/competencies`, { headers: { Authorization: `Bearer ${token}` } });
+      if (r.ok) setCompetencies(await r.json());
+    } catch (e) {
+      // silent — competencies are optional
+    }
+  };
 
   const fetchCourse = async () => {
     try {
@@ -50,7 +64,8 @@ const AdminCourseEdit = () => {
           validity_hours: data.validity_hours || 8760,
           training_type: data.training_type || 'e-learning',
           video_url: data.video_url || '',
-          status: data.status || 'draft'
+          status: data.status || 'draft',
+          grants_competency_ids: data.grants_competency_ids || [],
         });
       } else {
         toast.error('Curso no encontrado');
@@ -262,6 +277,53 @@ const AdminCourseEdit = () => {
 
         {/* Sidebar - Content */}
         <div className="space-y-6">
+          {/* Competencias que otorga */}
+          <Card className="border-slate-200">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Award className="w-5 h-5 text-blue-600" />
+                Competencias que otorga
+              </CardTitle>
+              <CardDescription>
+                Al aprobar este curso, el trabajador acreditará automáticamente estas competencias.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {competencies.length === 0 ? (
+                <p className="text-xs text-slate-400">
+                  Aún no hay competencias en el catálogo. Créalas en &quot;Competencias&quot;.
+                </p>
+              ) : (
+                <div className="space-y-1 max-h-56 overflow-y-auto">
+                  {competencies.map((c) => (
+                    <label key={c.competency_id} className="flex items-center gap-2 p-1.5 rounded hover:bg-slate-50 cursor-pointer">
+                      <Checkbox
+                        checked={(formData.grants_competency_ids || []).includes(c.competency_id)}
+                        onCheckedChange={() => {
+                          const arr = formData.grants_competency_ids || [];
+                          setFormData({
+                            ...formData,
+                            grants_competency_ids: arr.includes(c.competency_id)
+                              ? arr.filter((x) => x !== c.competency_id)
+                              : [...arr, c.competency_id],
+                          });
+                        }}
+                        data-testid={`course-grants-comp-${c.competency_id}`}
+                      />
+                      <span className="text-sm text-slate-700 flex-1">{c.name}</span>
+                      {c.validity_months ? (
+                        <span className="text-xs text-slate-400">{c.validity_months}m</span>
+                      ) : null}
+                    </label>
+                  ))}
+                </div>
+              )}
+              <p className="text-xs text-slate-400 mt-3">
+                Recuerda hacer clic en &quot;Guardar Cambios&quot; para aplicar.
+              </p>
+            </CardContent>
+          </Card>
+
           {/* Video */}
           <Card className="border-slate-200">
             <CardHeader>

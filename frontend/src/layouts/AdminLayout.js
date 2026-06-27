@@ -6,7 +6,7 @@ import { Separator } from '../components/ui/separator';
 import { 
   BookOpen, LayoutDashboard, Users, FolderTree, GraduationCap, 
   ClipboardCheck, Award, BarChart3, Palette, LogOut, Menu, X, ChevronRight,
-  Building, FileText, FolderOpen, Upload
+  Building, FileText, FolderOpen, Upload, ShieldCheck
 } from 'lucide-react';
 import { useState } from 'react';
 import { useBranding } from '../hooks/useBranding';
@@ -27,6 +27,8 @@ const AdminLayout = () => {
     { path: '/admin/users-import', icon: Upload, label: 'Importar Trabajadores' },
     { path: '/admin/areas', icon: Building, label: 'Áreas' },
     { path: '/admin/roles', icon: FolderTree, label: 'Actividades' },
+    { path: '/admin/competencies', icon: ShieldCheck, label: 'Competencias' },
+    { path: '/admin/worker-competencies', icon: Award, label: 'Matriz Competencias' },
     { path: '/admin/courses', icon: GraduationCap, label: 'Cursos' },
     { path: '/admin/evaluations', icon: ClipboardCheck, label: 'Evaluaciones' },
     { path: '/admin/document-types', icon: FileText, label: 'Tipos de Documentos' },

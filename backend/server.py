@@ -78,12 +78,14 @@ class ActivityCreate(BaseModel):
     description: Optional[str] = None
     course_ids: List[str] = []
     course_order: List[str] = []  # Ordered list of course_ids for curriculum path
+    competency_ids: List[str] = []
 
 class ActivityUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     course_ids: Optional[List[str]] = None
     course_order: Optional[List[str]] = None
+    competency_ids: Optional[List[str]] = None
 
 class CourseCreate(BaseModel):
     name: str
@@ -96,6 +98,7 @@ class CourseCreate(BaseModel):
     prerequisites: List[str] = []
     area_ids: List[str] = []
     activity_ids: List[str] = []
+    grants_competency_ids: List[str] = []
 
 class CourseUpdate(BaseModel):
     name: Optional[str] = None
@@ -109,6 +112,7 @@ class CourseUpdate(BaseModel):
     prerequisites: Optional[List[str]] = None
     area_ids: Optional[List[str]] = None
     activity_ids: Optional[List[str]] = None
+    grants_competency_ids: Optional[List[str]] = None
 
 class QuestionCreate(BaseModel):
     text: str
@@ -481,6 +485,7 @@ async def create_activity(data: ActivityCreate, admin: dict = Depends(require_ad
         "company_id": company_id,
         "name": data.name,
         "description": data.description,
+        "competency_ids": data.competency_ids,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.activities.insert_one(doc)
@@ -538,6 +543,7 @@ async def create_course(data: CourseCreate, admin: dict = Depends(require_admin)
         "prerequisites": data.prerequisites,
         "area_ids": data.area_ids,
         "activity_ids": data.activity_ids,
+        "grants_competency_ids": data.grants_competency_ids,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.courses.insert_one(course_doc)
@@ -730,6 +736,16 @@ async def submit_evaluation(eval_id: str, data: EvaluationSubmit, user: dict = D
                 "training_type": course["training_type"],
                 "completed_at": datetime.now(timezone.utc).isoformat()
             })
+            # F4: Auto-grant competencies the course is configured to grant
+            try:
+                from routes_v2 import grant_competencies_for_course_completion
+                await grant_competencies_for_course_completion(
+                    user_id=user["user_id"],
+                    company_id=user.get("company_id"),
+                    course=course,
+                )
+            except Exception as _exc:
+                logging.warning(f"Auto-grant competencies failed: {_exc}")
         else:
             if score > existing_completion.get("score", 0):
                 await db.course_completions.update_one(

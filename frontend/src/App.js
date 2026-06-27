@@ -23,6 +23,8 @@ import AdminCourseEdit from "./pages/admin/CourseEdit";
 import AdminEvaluations from "./pages/admin/Evaluations";
 import AdminDocumentTypes from "./pages/admin/DocumentTypes";
 import AdminWorkerDocuments from "./pages/admin/WorkerDocuments";
+import AdminCompetencies from "./pages/admin/Competencies";
+import AdminWorkerCompetencies from "./pages/admin/WorkerCompetencies";
 import AdminCertificates from "./pages/admin/Certificates";
 import AdminReports from "./pages/admin/Reports";
 import AdminBranding from "./pages/admin/Branding";
@@ -37,6 +39,7 @@ import StudentCourse from "./pages/student/Course";
 import StudentEvaluation from "./pages/student/Evaluation";
 import StudentCertificates from "./pages/student/Certificates";
 import StudentMyDocuments from "./pages/student/MyDocuments";
+import StudentMyCompetencies from "./pages/student/MyCompetencies";
 
 // Layouts
 import AdminLayout from "./layouts/AdminLayout";
@@ -128,6 +131,8 @@ function AppRouter() {
         <Route path="evaluations" element={<AdminEvaluations />} />
         <Route path="document-types" element={<AdminDocumentTypes />} />
         <Route path="worker-documents" element={<AdminWorkerDocuments />} />
+        <Route path="competencies" element={<AdminCompetencies />} />
+        <Route path="worker-competencies" element={<AdminWorkerCompetencies />} />
         <Route path="certificates" element={<AdminCertificates />} />
         <Route path="reports" element={<AdminReports />} />
         <Route path="branding" element={<AdminBranding />} />
@@ -144,6 +149,7 @@ function AppRouter() {
         <Route path="evaluation/:courseId" element={<StudentEvaluation />} />
         <Route path="certificates" element={<StudentCertificates />} />
         <Route path="my-documents" element={<StudentMyDocuments />} />
+        <Route path="my-competencies" element={<StudentMyCompetencies />} />
       </Route>
 
       {/* Fallback */}

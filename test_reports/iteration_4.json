@@ -1,0 +1,36 @@
+{
+  "summary": "Fase 4 (Competencias) backend + frontend verification. All 6 executed backend tests pass (CRUD competencias, activity↔competency linkage, worker-competencies manual upload + upsert + delete, /api/my-competencies union). Auto-grant on course completion is skipped (seed caveat — no published course with grants_competency_ids + evaluation, not a bug). Frontend admin sidebar shows the new 'Competencias' (ShieldCheck) and 'Matriz Competencias' (Award) items, the 'Nueva competencia' dialog persists a competency, /admin/worker-competencies loads, student top-nav exposes the 4 expected labels and /student/my-competencies renders heading + Vigentes/Por vencer/Vencidas/Pendientes summary. Login regression for SuperAdmin / Admin / Trabajador OK.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_f4_competencies.py",
+    "/app/test_reports/pytest/f4_results.xml"
+  ],
+  "action_items": [
+    "Optional: seed at least one published course with grants_competency_ids + evaluation so the auto-grant happy path can be exercised end-to-end (not a code bug — currently the test_f4_competencies::test_auto_grant_on_course_completion is skipped as instructed)."
+  ],
+  "critical_code_review_comments": [
+    "routes_v2.py /api/competencies CRUD + worker-competencies + /api/my-competencies look clean: scoped_filter is applied, duplicate-name guard exists on create, expiry is auto-computed from validity_months on upload when expiry_date is omitted, upsert keys on (user_id, competency_id) is correct.",
+    "server.py submit_evaluation hook (line ~740-748) correctly imports grant_competencies_for_course_completion and wraps in try/except so an auto-grant error never breaks evaluation submission — good defensive code.",
+    "Activity model now exposes competency_ids and ActivityUpdate includes it; PUT /api/activities/{id} persists arrays via the asyncpg adapter (confirmed empirically via test).",
+    "Minor: _compute_expiry uses 30-day months which is acknowledged in the comment — fine for compliance UI but mention to product owners.",
+    "Pre-existing (out-of-scope) console errors persist on /login and /superadmin: PostHog 'Failed to fetch' and SuperAdmin Dashboard 'Error fetching stats: TypeError: Failed to fetch'. Both already documented in iteration_3; still present, still non-blocking, but worth investigating in a future iteration."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_f4_competencies.py (new pytest file with 7 tests)"
+  ],
+  "success_rate": {"backend": "100% (6 passed, 1 expected-skip)", "frontend": "100% on the F4 flows actually exercised (admin sidebar, /admin/competencies create, /admin/worker-competencies load, /student/my-competencies render, 3-role login regression)"},
+  "test_credentials": "superadmin@aptiva.com / superadmin123, admin@aptivademo.com / admin123, trabajador@aptivademo.com / trabajador123 — all working.",
+  "seed_data_creation": "Backend pytest creates and self-cleans TEST_*-prefixed competencies + worker_competencies. Frontend UI flow left one demo competency 'UI_Comp_662868' on the Aptiva Demo company (12 months validity) — can be deleted by main agent or via DELETE /api/competencies if cleanup is needed.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "F4 backend pytest lives at /app/backend/tests/test_f4_competencies.py — re-run with: pytest /app/backend/tests/test_f4_competencies.py -v. The auto-grant test will continue to be SKIPPED until the seed includes a published course with grants_competency_ids AND an evaluation. To unskip, configure a published course (PUT /api/courses/{id} with grants_competency_ids=[<comp_id>]) and create an evaluation for it, then submit answers as the worker that hit min_score. The /admin/roles activity-edit dialog could not be opened by my Playwright selector (icon-only edit button without aria-label / data-testid for the row-level edit) — adding data-testid='edit-activity-{activity_id}' would help future automation. The activity↔competency_ids linkage is confirmed at the API level (test_activity_competency_linkage PASS). For deeper UI coverage of the WorkerCompetencies admin screen (open dialog → Select competencia → fecha → archivo → submit → expect status badge), main agent can self-test by following the screenshot evidence already captured.",
+  "rca of the issue": "No bug detected. Two transient false negatives in my first Playwright pass (student-nav labels not found in body.innerText) were caused by inner_text() not capturing text in nav links rendered as flex items inside the Aptiva top bar; the very next screenshot proved 'Mi Ruta Aptiva · Mis Competencias · Mi Expediente · Mis Constancias' are all rendered correctly. A second false negative (no name input in competency dialog) was due to using a generic selector before the modal animation completed; with a 1000ms wait + [role=dialog] input scoping, the input was found and the create flow succeeded (competency 'UI_Comp_662868' persisted to the list)."
+}
