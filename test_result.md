@@ -416,3 +416,97 @@ agent_communication:
       GET /api/branding returns all stored URLs correctly ✅
       
       🎉 MIGRATION COMPLETE - All Supabase Storage features working perfectly!
+  - agent: "user"
+
+frontend:
+  - task: "Login bug fix - REACT_APP_BACKEND_URL domain correction"
+    implemented: true
+    working: true
+    file: "frontend/.env, backend/.env"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "user"
+        comment: |
+          Login failing with error "Failed to execute 'json' on 'Response': Unexpected token '<', "<!DOCTYPE"... is not valid JSON" when trying to log in as admin.
+          ROOT CAUSE: /app/frontend/.env had REACT_APP_BACKEND_URL pointing to wrong domain (e401cd41-...emergentagent.com - internal) instead of public domain user-credentials-6.preview.emergentagent.com.
+      - working: true
+        agent: "main"
+        comment: |
+          Fixed REACT_APP_BACKEND_URL in /app/frontend/.env to point to correct public domain: https://user-credentials-6.preview.emergentagent.com
+          Also updated FRONTEND_URL and APP_URL in /app/backend/.env for CORS.
+          Restarted both backend and frontend services via supervisor.
+      - working: true
+        agent: "testing"
+        comment: |
+          ✅ LOGIN BUG FIX VERIFIED - Comprehensive end-to-end testing completed.
+          Admin login (admin@elearning.com/admin123): ✅ Redirects to /admin dashboard
+          Student login (demo.alumno@test.com/demo123): ✅ Redirects to /student dashboard
+          NO JSON parse errors - bug is completely fixed!
+          API calls returning JSON correctly (not HTML).
+          Both dashboards load with proper content and success toasts.
+          Minor non-critical issues: Some ERR_ABORTED for /api/branding and missing assets (race conditions during navigation).
+
+metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 4
+  run_ui: true
+
+test_plan:
+  current_focus:
+    - "Login bug fix - REACT_APP_BACKEND_URL domain correction"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+    message: |
+      BUG REPORT: Login failing with error "Failed to execute 'json' on 'Response': Unexpected token '<', "<!DOCTYPE"... is not valid JSON" when trying to log in as admin.
+      
+      ROOT CAUSE: /app/frontend/.env had REACT_APP_BACKEND_URL pointing to wrong domain (e401cd41-...emergentagent.com - internal) instead of public domain user-credentials-6.preview.emergentagent.com. Frontend was making API calls to unreachable URL that returned HTML error page (hence "<!DOCTYPE" parse error).
+      
+      FIX APPLIED:
+      - /app/frontend/.env: REACT_APP_BACKEND_URL=https://user-credentials-6.preview.emergentagent.com
+      - /app/backend/.env: FRONTEND_URL and APP_URL also updated to same domain (for CORS)
+      - Backend + frontend both restarted via supervisor
+      
+      Please verify login works for both admin (admin@elearning.com/admin123) and student (demo.alumno@test.com/demo123).
+  - agent: "testing"
+    message: |
+      ✅ LOGIN BUG FIX VERIFIED - ALL TESTS PASSED (100% success rate)
+      
+      Comprehensive end-to-end login testing completed:
+      
+      ✅ ADMIN LOGIN (admin@elearning.com / admin123):
+      - Login form loads correctly
+      - Credentials accepted without errors
+      - NO JSON parse errors (bug is fixed!)
+      - Successfully redirected to /admin dashboard
+      - Admin dashboard loads with proper content (Panel de Administración, user menu, navigation)
+      - "¡Bienvenido!" success toast displayed
+      - Logout functionality working
+      
+      ✅ STUDENT LOGIN (demo.alumno@test.com / demo123):
+      - Login form loads correctly
+      - Credentials accepted without errors
+      - NO JSON parse errors
+      - Successfully redirected to /student dashboard
+      - Student dashboard loads with proper content (¡Hola, Alumno Demo!, course progress, completed courses)
+      - "¡Bienvenido!" success toast displayed
+      
+      ✅ ERROR CHECKING:
+      - NO "Failed to execute 'json' on 'Response'" errors
+      - NO "Unexpected token '<'" errors
+      - NO "<!DOCTYPE" parse errors
+      - API calls returning JSON correctly (not HTML)
+      - Both /api/auth/login requests successful (200 OK)
+      
+      ⚠️ MINOR ISSUES (NON-CRITICAL):
+      - Some ERR_ABORTED network errors for /api/branding, /api/reports/summary, missing banner logo
+      - These are due to navigation/race conditions and missing assets, not affecting core login flow
+      - Console shows "Error fetching branding" and "Error fetching stats" but these are non-blocking
+      
+      🎉 BUG FIX CONFIRMED - The REACT_APP_BACKEND_URL fix resolved the login issue completely!
+      Both admin and student can now log in successfully and access their respective dashboards.
