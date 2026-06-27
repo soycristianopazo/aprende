@@ -5,7 +5,8 @@ import { ScrollArea } from '../components/ui/scroll-area';
 import { Separator } from '../components/ui/separator';
 import { 
   BookOpen, LayoutDashboard, Users, FolderTree, GraduationCap, 
-  ClipboardCheck, Award, BarChart3, Palette, LogOut, Menu, X, ChevronRight
+  ClipboardCheck, Award, BarChart3, Palette, LogOut, Menu, X, ChevronRight,
+  Building, FileText, FolderOpen, Upload
 } from 'lucide-react';
 import { useState } from 'react';
 import { useBranding } from '../hooks/useBranding';
@@ -22,10 +23,14 @@ const AdminLayout = () => {
 
   const menuItems = [
     { path: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
-    { path: '/admin/users', icon: Users, label: 'Usuarios' },
-    { path: '/admin/roles', icon: FolderTree, label: 'Roles/Actividades' },
+    { path: '/admin/users', icon: Users, label: 'Trabajadores' },
+    { path: '/admin/users-import', icon: Upload, label: 'Importar Trabajadores' },
+    { path: '/admin/areas', icon: Building, label: 'Áreas' },
+    { path: '/admin/roles', icon: FolderTree, label: 'Actividades' },
     { path: '/admin/courses', icon: GraduationCap, label: 'Cursos' },
     { path: '/admin/evaluations', icon: ClipboardCheck, label: 'Evaluaciones' },
+    { path: '/admin/document-types', icon: FileText, label: 'Tipos de Documentos' },
+    { path: '/admin/worker-documents', icon: FolderOpen, label: 'Expedientes' },
     { path: '/admin/certificates', icon: Award, label: 'Certificados' },
     { path: '/admin/reports', icon: BarChart3, label: 'Reportes' },
     { path: '/admin/branding', icon: Palette, label: 'Branding' },

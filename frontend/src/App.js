@@ -15,10 +15,14 @@ import VerifyCertificate from "./pages/VerifyCertificate";
 // Admin Pages
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminUsers from "./pages/admin/Users";
+import AdminUsersImport from "./pages/admin/UsersImport";
+import AdminAreas from "./pages/admin/Areas";
 import AdminRoles from "./pages/admin/Roles";
 import AdminCourses from "./pages/admin/Courses";
 import AdminCourseEdit from "./pages/admin/CourseEdit";
 import AdminEvaluations from "./pages/admin/Evaluations";
+import AdminDocumentTypes from "./pages/admin/DocumentTypes";
+import AdminWorkerDocuments from "./pages/admin/WorkerDocuments";
 import AdminCertificates from "./pages/admin/Certificates";
 import AdminReports from "./pages/admin/Reports";
 import AdminBranding from "./pages/admin/Branding";
@@ -115,10 +119,14 @@ function AppRouter() {
       }>
         <Route index element={<AdminDashboard />} />
         <Route path="users" element={<AdminUsers />} />
+        <Route path="users-import" element={<AdminUsersImport />} />
+        <Route path="areas" element={<AdminAreas />} />
         <Route path="roles" element={<AdminRoles />} />
         <Route path="courses" element={<AdminCourses />} />
         <Route path="courses/:courseId/edit" element={<AdminCourseEdit />} />
         <Route path="evaluations" element={<AdminEvaluations />} />
+        <Route path="document-types" element={<AdminDocumentTypes />} />
+        <Route path="worker-documents" element={<AdminWorkerDocuments />} />
         <Route path="certificates" element={<AdminCertificates />} />
         <Route path="reports" element={<AdminReports />} />
         <Route path="branding" element={<AdminBranding />} />

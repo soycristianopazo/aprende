@@ -26,7 +26,7 @@ const AdminUsers = () => {
     full_name: '',
     rut: '',
     company: '',
-    role_ids: []
+    activity_ids: []
   });
 
   useEffect(() => {
@@ -54,7 +54,7 @@ const AdminUsers = () => {
 
   const fetchRoles = async () => {
     try {
-      const response = await fetch(`${API}/roles`);
+      const response = await fetch(`${API}/activities`);
       if (response.ok) {
         const data = await response.json();
         setRoles(data);
@@ -67,7 +67,7 @@ const AdminUsers = () => {
   const initPredefinedRoles = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API}/roles/predefined/init`, {
+      const response = await fetch(`${API}/activities/predefined/init`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -97,7 +97,7 @@ const AdminUsers = () => {
           body: JSON.stringify({
             full_name: formData.full_name,
             company: formData.company || null,
-            role_ids: formData.role_ids,
+            activity_ids: formData.activity_ids,
             is_active: true
           })
         });
@@ -138,7 +138,7 @@ const AdminUsers = () => {
   const handleEdit = (user) => {
     setEditingUser(user);
     // Support both old role_id and new role_ids
-    let userRoleIds = user.role_ids || [];
+    let userRoleIds = user.activity_ids || [];
     if (!userRoleIds.length && user.role_id) {
       userRoleIds = [user.role_id];
     }
@@ -149,7 +149,7 @@ const AdminUsers = () => {
       full_name: user.full_name || user.name || '',
       rut: user.rut || '',
       company: user.company || '',
-      role_ids: userRoleIds
+      activity_ids: userRoleIds
     });
     setDialogOpen(true);
   };
@@ -204,22 +204,22 @@ const AdminUsers = () => {
       full_name: '',
       rut: '',
       company: '',
-      role_ids: []
+      activity_ids: []
     });
   };
 
   const toggleRole = (roleId) => {
     setFormData(prev => ({
       ...prev,
-      role_ids: prev.role_ids.includes(roleId)
-        ? prev.role_ids.filter(id => id !== roleId)
-        : [...prev.role_ids, roleId]
+      activity_ids: prev.activity_ids.includes(roleId)
+        ? prev.activity_ids.filter(id => id !== roleId)
+        : [...prev.activity_ids, roleId]
     }));
   };
 
   const getRoleNames = (user) => {
     // Support both old role_id and new role_ids
-    let userRoleIds = user.role_ids || [];
+    let userRoleIds = user.activity_ids || [];
     if (!userRoleIds.length && user.role_id) {
       userRoleIds = [user.role_id];
     }
@@ -344,15 +344,15 @@ const AdminUsers = () => {
                       </p>
                     ) : (
                       roles.map((role) => (
-                        <div key={role.role_id} className="flex items-center space-x-2 p-2 rounded hover:bg-white">
+                        <div key={role.activity_id} className="flex items-center space-x-2 p-2 rounded hover:bg-white">
                           <Checkbox
-                            id={role.role_id}
-                            checked={formData.role_ids.includes(role.role_id)}
-                            onCheckedChange={() => toggleRole(role.role_id)}
-                            data-testid={`role-checkbox-${role.role_id}`}
+                            id={role.activity_id}
+                            checked={formData.activity_ids.includes(role.activity_id)}
+                            onCheckedChange={() => toggleRole(role.activity_id)}
+                            data-testid={`role-checkbox-${role.activity_id}`}
                           />
                           <label
-                            htmlFor={role.role_id}
+                            htmlFor={role.activity_id}
                             className="text-sm text-slate-700 cursor-pointer flex-1"
                           >
                             {role.name}
@@ -361,9 +361,9 @@ const AdminUsers = () => {
                       ))
                     )}
                   </div>
-                  {formData.role_ids.length > 0 && (
+                  {formData.activity_ids.length > 0 && (
                     <p className="text-xs text-blue-700 mt-1">
-                      {formData.role_ids.length} rol(es)/actividad(es) seleccionado(s)
+                      {formData.activity_ids.length} rol(es)/actividad(es) seleccionado(s)
                     </p>
                   )}
                 </div>
