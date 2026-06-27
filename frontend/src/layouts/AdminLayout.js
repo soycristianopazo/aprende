@@ -75,20 +75,20 @@ const AdminLayout = () => {
       `}>
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center justify-center h-16 px-4 border-b border-slate-200 relative">
+          <div className="flex items-center justify-center h-24 px-4 border-b border-slate-200 relative">
             <Link to="/admin" className="flex items-center justify-center">
               {branding?.banner_logo_url ? (
                 <img 
                   src={`${BACKEND_URL}${branding.banner_logo_url}`} 
                   alt="Logo" 
-                  className="h-9 max-w-[140px] object-contain"
+                  className="h-16 max-w-[200px] object-contain"
                 />
               ) : (
                 <div className="flex items-center gap-2">
-                  <div className="w-9 h-9 rounded-lg bg-orange-500 flex items-center justify-center">
-                    <BookOpen className="w-5 h-5 text-white" />
+                  <div className="w-12 h-12 rounded-lg bg-orange-500 flex items-center justify-center">
+                    <BookOpen className="w-7 h-7 text-white" />
                   </div>
-                  <span className="font-bold text-lg text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                  <span className="font-bold text-xl text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
                     E-Learning
                   </span>
                 </div>
