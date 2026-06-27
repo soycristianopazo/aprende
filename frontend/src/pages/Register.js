@@ -123,7 +123,7 @@ const Register = () => {
               Crear Cuenta
             </CardTitle>
             <CardDescription className="text-slate-600">
-              Registra tus datos para comenzar
+              Aptiva es una plataforma para empresas. Si tu organización ya está registrada, pide a tu administrador que te dé acceso.
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
@@ -327,7 +327,7 @@ const Register = () => {
         </p>
 
         <p className="text-center text-xs text-slate-400 mt-4">
-          © {new Date().getFullYear()} DoSoft
+          © {new Date().getFullYear()} DoSoft · Aptiva
         </p>
       </div>
     </div>

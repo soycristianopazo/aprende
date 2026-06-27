@@ -197,7 +197,7 @@ const StudentEvaluation = () => {
                 onClick={() => navigate('/student')}
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Volver a Mis Cursos
+                Volver a Mi Ruta Aptiva
               </Button>
               {result.passed ? (
                 <Button

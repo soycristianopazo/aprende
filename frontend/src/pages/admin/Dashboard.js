@@ -134,7 +134,7 @@ const AdminDashboard = () => {
           Dashboard
         </h1>
         <p className="text-slate-600 mt-1">
-          Vista general de la plataforma de capacitación
+          Vista general de tu empresa en Aptiva: trabajadores, competencias y capacitaciones.
         </p>
       </div>
 

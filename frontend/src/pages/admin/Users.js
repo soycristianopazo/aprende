@@ -256,7 +256,7 @@ const AdminUsers = () => {
           <h1 className="text-3xl font-bold text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
             Usuarios
           </h1>
-          <p className="text-slate-600 mt-1">Gestiona los alumnos de la plataforma</p>
+          <p className="text-slate-600 mt-1">Gestiona los trabajadores de tu empresa</p>
         </div>
         <div className="flex gap-2">
           <Button 

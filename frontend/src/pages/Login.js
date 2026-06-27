@@ -77,7 +77,7 @@ const Login = () => {
               Iniciar Sesión
             </CardTitle>
             <CardDescription className="text-slate-600">
-              Ingresa a tu cuenta para continuar
+              Accede a tu panel Aptiva para gestionar competencias, capacitaciones y expedientes.
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
@@ -177,7 +177,7 @@ const Login = () => {
         </p>
 
         <p className="text-center text-xs text-slate-400 mt-4">
-          © {new Date().getFullYear()} DoSoft
+          © {new Date().getFullYear()} DoSoft · Aptiva
         </p>
       </div>
     </div>

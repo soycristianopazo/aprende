@@ -87,10 +87,10 @@ const StudentCertificates = () => {
     <div className="space-y-6" data-testid="student-certificates">
       <div>
         <h1 className="text-3xl font-bold text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
-          Mis Certificados
+          Mis Constancias
         </h1>
         <p className="text-slate-600 mt-1">
-          Descarga tus certificados de capacitación
+          Descarga las constancias y certificados de tus capacitaciones acreditadas.
         </p>
       </div>
 

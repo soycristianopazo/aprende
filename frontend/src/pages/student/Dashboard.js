@@ -209,16 +209,16 @@ const StudentDashboard = () => {
       {/* Courses Grid */}
       <div>
         <h2 className="text-xl font-semibold text-slate-900 mb-4" style={{ fontFamily: 'Manrope, sans-serif' }}>
-          Mis Cursos
+          Mi Ruta Aptiva
         </h2>
         
         {!progress?.courses || progress.courses.length === 0 ? (
           <Card className="border-slate-200">
             <CardContent className="py-12 text-center">
               <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-              <p className="text-slate-500">No tienes cursos asignados</p>
+              <p className="text-slate-500">Aún no tienes capacitaciones asignadas en tu ruta</p>
               <p className="text-sm text-slate-400 mt-1">
-                Contacta al administrador para que te asigne un rol con cursos
+                Tu ruta se construye automáticamente según tu área, actividad y competencias. Contacta al administrador si crees que falta algo.
               </p>
             </CardContent>
           </Card>

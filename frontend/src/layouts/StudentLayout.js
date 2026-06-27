@@ -25,8 +25,8 @@ const StudentLayout = () => {
   const branding = useBranding();
 
   const navItems = [
-    { path: '/student', label: 'Mis Cursos', exact: true },
-    { path: '/student/certificates', label: 'Mis Certificados' },
+    { path: '/student', label: 'Mi Ruta Aptiva', exact: true },
+    { path: '/student/certificates', label: 'Mis Constancias' },
   ];
 
   const isActive = (path, exact = false) => {
@@ -169,7 +169,7 @@ const StudentLayout = () => {
       {/* Footer */}
       <footer className="border-t border-slate-200 bg-white py-4 mt-auto">
         <p className="text-center text-xs text-slate-500">
-          © {new Date().getFullYear()} DoSoft
+          © {new Date().getFullYear()} DoSoft · Aptiva — Gestión de Competencias, Capacitaciones y Storage
         </p>
       </footer>
     </div>

@@ -163,10 +163,10 @@ const AdminLayout = () => {
               <Menu className="w-6 h-6" />
             </Button>
             <div className="flex items-center gap-2 lg:hidden">
-              <span className="text-sm font-medium text-slate-600">Panel de Administración</span>
+              <span className="text-sm font-medium text-slate-600">Panel Aptiva — Administración</span>
             </div>
             <div className="hidden lg:block">
-              <span className="text-sm text-slate-500">Panel de Administración</span>
+              <span className="text-sm text-slate-500">Panel Aptiva — Administración</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm text-slate-600 hidden sm:inline">
@@ -184,7 +184,7 @@ const AdminLayout = () => {
         {/* Footer */}
         <footer className="border-t border-slate-200 bg-white px-4 lg:px-8 py-4">
           <p className="text-center text-xs text-slate-500">
-            © {new Date().getFullYear()} DoSoft
+            © {new Date().getFullYear()} DoSoft · Aptiva — Gestión de Competencias, Capacitaciones y Storage
           </p>
         </footer>
       </div>
