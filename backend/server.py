@@ -94,6 +94,8 @@ class CourseCreate(BaseModel):
     video_url: Optional[str] = None
     status: str = "draft"
     prerequisites: List[str] = []
+    area_ids: List[str] = []
+    activity_ids: List[str] = []
 
 class CourseUpdate(BaseModel):
     name: Optional[str] = None
@@ -105,6 +107,8 @@ class CourseUpdate(BaseModel):
     material_url: Optional[str] = None
     status: Optional[str] = None
     prerequisites: Optional[List[str]] = None
+    area_ids: Optional[List[str]] = None
+    activity_ids: Optional[List[str]] = None
 
 class QuestionCreate(BaseModel):
     text: str
@@ -516,9 +520,13 @@ async def delete_activity(activity_id: str, admin: dict = Depends(require_admin)
 
 @api_router.post("/courses")
 async def create_course(data: CourseCreate, admin: dict = Depends(require_admin)):
+    company_id = admin.get("company_id")
+    if not company_id:
+        raise HTTPException(400, "Company scope required")
     course_id = f"course_{uuid.uuid4().hex[:12]}"
     course_doc = {
         "course_id": course_id,
+        "company_id": company_id,
         "name": data.name,
         "description": data.description,
         "hours": data.hours,
@@ -528,36 +536,43 @@ async def create_course(data: CourseCreate, admin: dict = Depends(require_admin)
         "material_url": None,
         "status": data.status,
         "prerequisites": data.prerequisites,
+        "area_ids": data.area_ids,
+        "activity_ids": data.activity_ids,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.courses.insert_one(course_doc)
-    course_doc.pop("_id", None)
     return course_doc
 
 @api_router.get("/courses")
 async def get_courses(user: dict = Depends(get_current_user)):
-    if user.get("is_admin"):
-        courses = await db.courses.find({}, {"_id": 0}).to_list(100)
-    else:
-        # Get courses for user's role
-        if user.get("role_id"):
-            role = await db.activities.find_one({"role_id": user["role_id"]}, {"_id": 0})
-            if role:
-                course_ids = role.get("course_ids", [])
-                courses = await db.courses.find(
-                    {"course_id": {"$in": course_ids}, "status": "published"},
-                    {"_id": 0}
-                ).to_list(100)
-            else:
-                courses = []
-        else:
-            courses = await db.courses.find({"status": "published"}, {"_id": 0}).to_list(100)
-    
-    return courses
+    """
+    Admin: all courses of their company.
+    Trabajador: only published courses matching their area_ids/activity_ids.
+    SuperAdmin: all courses (across all companies).
+    """
+    base = scoped_filter(user)
+    if user.get("is_admin") or user.get("is_super_admin"):
+        return await db.courses.find(base).to_list(500)
+
+    # Worker: filter by published + (area/activity match)
+    user_areas = user.get("area_ids") or []
+    user_acts = user.get("activity_ids") or []
+    base["status"] = "published"
+    all_courses = await db.courses.find(base).to_list(500)
+    result = []
+    for c in all_courses:
+        c_areas = c.get("area_ids") or []
+        c_acts = c.get("activity_ids") or []
+        # If course has no area/activity restrictions, show to everyone in company
+        if (not c_areas and not c_acts) or \
+           (any(a in user_areas for a in c_areas)) or \
+           (any(a in user_acts for a in c_acts)):
+            result.append(c)
+    return result
 
 @api_router.get("/courses/{course_id}")
 async def get_course(course_id: str, user: dict = Depends(get_current_user)):
-    course = await db.courses.find_one({"course_id": course_id}, {"_id": 0})
+    course = await db.courses.find_one(scoped_filter(user, {"course_id": course_id}))
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
     return course
@@ -567,41 +582,48 @@ async def update_course(course_id: str, data: CourseUpdate, admin: dict = Depend
     update_data = {k: v for k, v in data.model_dump().items() if v is not None}
     if not update_data:
         raise HTTPException(status_code=400, detail="No update data provided")
-    
-    result = await db.courses.update_one({"course_id": course_id}, {"$set": update_data})
-    if result.matched_count == 0:
+    f = scoped_filter(admin, {"course_id": course_id})
+    existing = await db.courses.find_one(f)
+    if not existing:
         raise HTTPException(status_code=404, detail="Course not found")
-    
-    course = await db.courses.find_one({"course_id": course_id}, {"_id": 0})
-    return course
+    await db.courses.update_one({"course_id": course_id}, {"$set": update_data})
+    return await db.courses.find_one({"course_id": course_id})
 
 @api_router.delete("/courses/{course_id}")
 async def delete_course(course_id: str, admin: dict = Depends(require_admin)):
-    result = await db.courses.delete_one({"course_id": course_id})
-    if result.deleted_count == 0:
+    f = scoped_filter(admin, {"course_id": course_id})
+    existing = await db.courses.find_one(f)
+    if not existing:
         raise HTTPException(status_code=404, detail="Course not found")
+    await db.courses.delete_one({"course_id": course_id})
     return {"message": "Course deleted"}
 
 @api_router.post("/courses/{course_id}/material")
 async def upload_course_material(course_id: str, file: UploadFile = File(...), admin: dict = Depends(require_admin)):
     if not file.filename.endswith('.pdf'):
         raise HTTPException(status_code=400, detail="Only PDF files allowed")
-    
+    # Verify course is in admin's company
+    course = await db.courses.find_one(scoped_filter(admin, {"course_id": course_id}))
+    if not course:
+        raise HTTPException(404, "Course not found")
     filename = f"{course_id}_{uuid.uuid4().hex[:8]}.pdf"
     content = await file.read()
-    # Upload to Supabase Storage (bucket: materials)
     await upload_to_storage("materials", filename, content, "application/pdf")
-    
-    # Keep relative URL so the frontend's `${BACKEND_URL}${url}` pattern still works
     material_url = f"/api/files/materials/{filename}"
     await db.courses.update_one({"course_id": course_id}, {"$set": {"material_url": material_url}})
-    
     return {"material_url": material_url}
 
 # ==================== EVALUATION ROUTES ====================
 
 @api_router.post("/evaluations")
 async def create_evaluation(data: EvaluationCreate, admin: dict = Depends(require_admin)):
+    company_id = admin.get("company_id")
+    if not company_id:
+        raise HTTPException(400, "Company scope required")
+    # Verify course is in admin's company
+    course = await db.courses.find_one({"company_id": company_id, "course_id": data.course_id})
+    if not course:
+        raise HTTPException(404, "Course not found in your company")
     # Check if evaluation exists for course
     existing = await db.evaluations.find_one({"course_id": data.course_id})
     if existing:
@@ -610,6 +632,7 @@ async def create_evaluation(data: EvaluationCreate, admin: dict = Depends(requir
     eval_id = f"eval_{uuid.uuid4().hex[:12]}"
     eval_doc = {
         "evaluation_id": eval_id,
+        "company_id": company_id,
         "course_id": data.course_id,
         "questions": [q.model_dump() for q in data.questions],
         "min_score": data.min_score,
@@ -617,12 +640,11 @@ async def create_evaluation(data: EvaluationCreate, admin: dict = Depends(requir
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.evaluations.insert_one(eval_doc)
-    eval_doc.pop("_id", None)
     return eval_doc
 
 @api_router.get("/evaluations/course/{course_id}")
 async def get_evaluation_by_course(course_id: str, user: dict = Depends(get_current_user)):
-    evaluation = await db.evaluations.find_one({"course_id": course_id}, {"_id": 0})
+    evaluation = await db.evaluations.find_one(scoped_filter(user, {"course_id": course_id}))
     if not evaluation:
         raise HTTPException(status_code=404, detail="Evaluation not found")
     return evaluation
@@ -640,16 +662,15 @@ async def update_evaluation(eval_id: str, data: EvaluationUpdate, admin: dict = 
     if not update_data:
         raise HTTPException(status_code=400, detail="No update data provided")
     
-    result = await db.evaluations.update_one({"evaluation_id": eval_id}, {"$set": update_data})
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Evaluation not found")
-    
-    evaluation = await db.evaluations.find_one({"evaluation_id": eval_id}, {"_id": 0})
-    return evaluation
+    existing = await db.evaluations.find_one(scoped_filter(admin, {"evaluation_id": eval_id}))
+    if not existing:
+        raise HTTPException(404, "Evaluation not found")
+    await db.evaluations.update_one({"evaluation_id": eval_id}, {"$set": update_data})
+    return await db.evaluations.find_one({"evaluation_id": eval_id})
 
 @api_router.post("/evaluations/{eval_id}/submit")
 async def submit_evaluation(eval_id: str, data: EvaluationSubmit, user: dict = Depends(get_current_user)):
-    evaluation = await db.evaluations.find_one({"evaluation_id": eval_id}, {"_id": 0})
+    evaluation = await db.evaluations.find_one(scoped_filter(user, {"evaluation_id": eval_id}))
     if not evaluation:
         raise HTTPException(status_code=404, detail="Evaluation not found")
     
@@ -675,6 +696,7 @@ async def submit_evaluation(eval_id: str, data: EvaluationSubmit, user: dict = D
     attempt_id = f"attempt_{uuid.uuid4().hex[:12]}"
     attempt_doc = {
         "attempt_id": attempt_id,
+        "company_id": user.get("company_id"),
         "evaluation_id": eval_id,
         "course_id": evaluation["course_id"],
         "user_id": user["user_id"],
@@ -698,8 +720,8 @@ async def submit_evaluation(eval_id: str, data: EvaluationSubmit, user: dict = D
         })
         
         if not existing_completion:
-            # Save course completion with score
             await db.course_completions.insert_one({
+                "company_id": user.get("company_id"),
                 "user_id": user["user_id"],
                 "course_id": evaluation["course_id"],
                 "course_name": course["name"],
@@ -709,74 +731,60 @@ async def submit_evaluation(eval_id: str, data: EvaluationSubmit, user: dict = D
                 "completed_at": datetime.now(timezone.utc).isoformat()
             })
         else:
-            # Update score if better
             if score > existing_completion.get("score", 0):
                 await db.course_completions.update_one(
                     {"user_id": user["user_id"], "course_id": evaluation["course_id"]},
                     {"$set": {"score": score}}
                 )
         
-        # Check if all courses in user's roles are completed
-        user_role_ids = user.get("role_ids", [])
-        if not user_role_ids and user.get("role_id"):
-            user_role_ids = [user["role_id"]]
+        # Compute required courses based on user's areas/activities (multi-tenant model)
+        company_id = user.get("company_id")
+        user_areas = set(user.get("area_ids") or [])
+        user_acts = set(user.get("activity_ids") or [])
+        all_courses = await db.courses.find({"company_id": company_id, "status": "published"}).to_list(500)
+        required_course_ids = set()
+        for c in all_courses:
+            c_areas = set(c.get("area_ids") or [])
+            c_acts = set(c.get("activity_ids") or [])
+            if (not c_areas and not c_acts) or (c_areas & user_areas) or (c_acts & user_acts):
+                required_course_ids.add(c["course_id"])
         
-        if user_role_ids:
-            # Get all unique course IDs from all user's roles
-            all_role_course_ids = set()
-            roles_info = []
-            
-            for role_id in user_role_ids:
-                role = await db.activities.find_one({"role_id": role_id}, {"_id": 0})
-                if role:
-                    roles_info.append(role)
-                    for cid in role.get("course_ids", []):
-                        all_role_course_ids.add(cid)
-            
-            completions = await db.course_completions.find({"user_id": user["user_id"]}, {"_id": 0}).to_list(100)
-            completed_course_ids = {c["course_id"] for c in completions}
-            
-            # Check if all courses from all roles are completed
-            if all_role_course_ids and all_role_course_ids.issubset(completed_course_ids):
+        if required_course_ids:
+            completions = await db.course_completions.find({"user_id": user["user_id"]}).to_list(500)
+            completed_ids = {c["course_id"] for c in completions}
+            if required_course_ids.issubset(completed_ids):
                 all_courses_completed = True
-                
-                # Check if certificate already exists for these roles
                 existing_cert = await db.certificates.find_one({
                     "user_id": user["user_id"],
-                    "role_ids": user_role_ids,
-                    "certificate_type": "role_completion"
+                    "certificate_type": "role_completion",
                 })
-                
                 if not existing_cert:
-                    # Get all completions for these roles' courses (no duplicates)
-                    role_completions = [c for c in completions if c["course_id"] in all_role_course_ids]
-                    
-                    # Calculate total hours and average score
-                    total_hours = sum(c.get("hours", 0) for c in role_completions)
-                    avg_score = int(sum(c.get("score", 0) for c in role_completions) / len(role_completions)) if role_completions else 0
-                    
-                    # Find minimum validity from courses
-                    min_validity = 8760  # Default 1 year
-                    for course_id in all_role_course_ids:
-                        c = await db.courses.find_one({"course_id": course_id}, {"_id": 0})
-                        if c and c.get("validity_hours", 8760) < min_validity:
-                            min_validity = c.get("validity_hours", 8760)
+                    relevant_completions = [c for c in completions if c["course_id"] in required_course_ids]
+                    total_hours = sum(c.get("hours", 0) for c in relevant_completions)
+                    avg_score = int(sum(c.get("score", 0) for c in relevant_completions) / max(1, len(relevant_completions)))
+                    # Min validity across all required courses
+                    min_validity = 8760
+                    for cid in required_course_ids:
+                        c2 = await db.courses.find_one({"course_id": cid})
+                        if c2 and (c2.get("validity_hours") or 8760) < min_validity:
+                            min_validity = c2.get("validity_hours") or 8760
+                    # Activity names
+                    user_act_ids = list(user_acts)
+                    act_objs = await db.activities.find({"activity_id": {"$in": user_act_ids}}).to_list(500) if user_act_ids else []
+                    act_names = [a["name"] for a in act_objs]
                     
                     cert_id = f"cert_{uuid.uuid4().hex[:12]}"
                     verification_code = uuid.uuid4().hex[:8].upper()
                     issued_at = datetime.now(timezone.utc)
                     expires_at = issued_at + timedelta(hours=min_validity)
-                    
-                    # Build role names
-                    role_names = ", ".join([r["name"] for r in roles_info])
-                    
                     cert_doc = {
                         "certificate_id": cert_id,
+                        "company_id": company_id,
                         "verification_code": verification_code,
                         "certificate_type": "role_completion",
                         "user_id": user["user_id"],
-                        "role_ids": user_role_ids,
-                        "role_names": role_names,
+                        "role_ids": user_act_ids,
+                        "role_names": act_names,
                         "user_name": user.get("full_name") or user.get("name", ""),
                         "user_rut": user.get("rut", ""),
                         "user_company": user.get("company", ""),
@@ -789,15 +797,13 @@ async def submit_evaluation(eval_id: str, data: EvaluationSubmit, user: dict = D
                                 "score": c.get("score", 0),
                                 "hours": c.get("hours", 0),
                                 "training_type": c.get("training_type", "e-learning")
-                            }
-                            for c in role_completions
+                            } for c in relevant_completions
                         ],
                         "issued_at": issued_at.isoformat(),
                         "expires_at": expires_at.isoformat(),
                         "is_valid": True
                     }
                     await db.certificates.insert_one(cert_doc)
-                    cert_doc.pop("_id", None)
                     certificate = cert_doc
     
     return {
@@ -812,22 +818,25 @@ async def submit_evaluation(eval_id: str, data: EvaluationSubmit, user: dict = D
 
 @api_router.get("/certificates")
 async def get_certificates(user: dict = Depends(get_current_user)):
-    if user.get("is_admin"):
-        certificates = await db.certificates.find({}, {"_id": 0}).to_list(1000)
+    if user.get("is_admin") or user.get("is_super_admin"):
+        certificates = await db.certificates.find(scoped_filter(user)).to_list(1000)
     else:
-        certificates = await db.certificates.find({"user_id": user["user_id"]}, {"_id": 0}).to_list(100)
+        certificates = await db.certificates.find({"user_id": user["user_id"]}).to_list(100)
     return certificates
 
 @api_router.get("/certificates/{cert_id}")
 async def get_certificate(cert_id: str, user: dict = Depends(get_current_user)):
-    certificate = await db.certificates.find_one({"certificate_id": cert_id}, {"_id": 0})
+    certificate = await db.certificates.find_one(scoped_filter(user, {"certificate_id": cert_id}))
     if not certificate:
         raise HTTPException(status_code=404, detail="Certificate not found")
+    # If non-admin, must own the certificate
+    if not (user.get("is_admin") or user.get("is_super_admin")) and certificate.get("user_id") != user["user_id"]:
+        raise HTTPException(403, "Forbidden")
     return certificate
 
 @api_router.get("/certificates/verify/{code}")
 async def verify_certificate(code: str):
-    certificate = await db.certificates.find_one({"verification_code": code}, {"_id": 0})
+    certificate = await db.certificates.find_one({"verification_code": code})
     if not certificate:
         raise HTTPException(status_code=404, detail="Certificate not found")
     
@@ -845,15 +854,24 @@ async def verify_certificate(code: str):
 
 @api_router.get("/certificates/{cert_id}/pdf")
 async def download_certificate_pdf(cert_id: str, user: dict = Depends(get_current_user)):
-    certificate = await db.certificates.find_one({"certificate_id": cert_id}, {"_id": 0})
+    certificate = await db.certificates.find_one(scoped_filter(user, {"certificate_id": cert_id}))
     if not certificate:
         raise HTTPException(status_code=404, detail="Certificate not found")
+    if not (user.get("is_admin") or user.get("is_super_admin")) and certificate.get("user_id") != user["user_id"]:
+        raise HTTPException(403, "Forbidden")
     
-    # Get branding
-    branding = await db.branding.find_one({}, {"_id": 0}) or {}
-    
+    # Branding now lives in companies row
+    company = await db.companies.find_one({"company_id": certificate.get("company_id")}) or {}
+    branding = {
+        "primary_color": company.get("primary_color"),
+        "secondary_color": company.get("secondary_color"),
+        "logo_url": company.get("logo_url"),
+        "banner_logo_url": company.get("banner_logo_url"),
+        "signature_url": company.get("signature_url"),
+        "footer_text": company.get("footer_text"),
+        "footer_image_url": company.get("footer_image_url"),
+    }
     pdf_buffer = generate_certificate_pdf(certificate, branding)
-    
     return StreamingResponse(
         pdf_buffer,
         media_type="application/pdf",
@@ -862,13 +880,13 @@ async def download_certificate_pdf(cert_id: str, user: dict = Depends(get_curren
 
 @api_router.post("/certificates/{cert_id}/regenerate")
 async def regenerate_certificate(cert_id: str, admin: dict = Depends(require_admin)):
-    certificate = await db.certificates.find_one({"certificate_id": cert_id}, {"_id": 0})
+    certificate = await db.certificates.find_one(scoped_filter(admin, {"certificate_id": cert_id}))
     if not certificate:
         raise HTTPException(status_code=404, detail="Certificate not found")
     
     # Update with new dates
     issued_at = datetime.now(timezone.utc)
-    course = await db.courses.find_one({"course_id": certificate["course_id"]}, {"_id": 0})
+    course = await db.courses.find_one({"course_id": certificate.get("course_id", "")}) if certificate.get("course_id") else None
     validity_hours = course.get("validity_hours", 8760) if course else 8760
     expires_at = issued_at + timedelta(hours=validity_hours)
     
@@ -1073,11 +1091,16 @@ def generate_certificate_pdf(certificate: dict, branding: dict) -> io.BytesIO:
     if is_role_cert:
         # Certificado de ROL - con tabla de cursos
         role_names = certificate.get("role_names") or certificate.get("role_name", "")
+        # Handle both list and string formats
+        if isinstance(role_names, list):
+            role_names_str = ", ".join(role_names)
+        else:
+            role_names_str = str(role_names)
         elements.append(Paragraph(
             f"Ha completado satisfactoriamente la malla curricular correspondiente al Rol/Actividad:",
             normal_center
         ))
-        elements.append(Paragraph(f"{role_names.upper()}", role_style))
+        elements.append(Paragraph(f"{role_names_str.upper()}", role_style))
         
         elements.append(Spacer(1, 6))
         
@@ -1279,18 +1302,23 @@ async def serve_file(folder: str, filename: str):
 
 @api_router.get("/reports/summary")
 async def get_reports_summary(admin: dict = Depends(require_admin)):
-    total_users = await db.users.count_documents({"is_admin": False})
-    active_users = await db.users.count_documents({"is_admin": False, "is_active": True})
-    total_courses = await db.courses.count_documents({})
-    published_courses = await db.courses.count_documents({"status": "published"})
-    total_certificates = await db.certificates.count_documents({})
+    base = scoped_filter(admin)
+    base_workers = {**base, "is_admin": False, "is_super_admin": {"$ne": True}}
+    total_users = await db.users.count_documents(base_workers)
+    active_users = await db.users.count_documents({**base_workers, "is_active": True})
+    total_courses = await db.courses.count_documents(base)
+    published_courses = await db.courses.count_documents({**base, "status": "published"})
+    total_certificates = await db.certificates.count_documents(base)
     
     now = datetime.now(timezone.utc)
     valid_certificates = 0
     expired_certificates = 0
     
-    async for cert in db.certificates.find({}, {"_id": 0, "expires_at": 1, "is_valid": 1}):
-        expires_at = datetime.fromisoformat(cert["expires_at"])
+    async for cert in db.certificates.find(base):
+        expires_at = cert.get("expires_at")
+        if not expires_at:
+            continue
+        expires_at = datetime.fromisoformat(expires_at) if isinstance(expires_at, str) else expires_at
         if expires_at.tzinfo is None:
             expires_at = expires_at.replace(tzinfo=timezone.utc)
         if cert["is_valid"] and expires_at > now:
@@ -1298,35 +1326,40 @@ async def get_reports_summary(admin: dict = Depends(require_admin)):
         else:
             expired_certificates += 1
     
-    # Get users by role (uses role_ids[] - unnest array)
+    # Users by activity (only within the admin's company)
     users_by_role = []
     from db_adapter import get_pool
     pool = await get_pool()
+    company_filter = ""
+    params = []
+    if not admin.get("is_super_admin"):
+        company_filter = "WHERE u.company_id = $1"
+        params = [admin.get("company_id")]
+        worker_filter = "AND u.is_admin = FALSE AND COALESCE(u.is_super_admin, FALSE) = FALSE"
+    else:
+        worker_filter = "WHERE u.is_admin = FALSE AND COALESCE(u.is_super_admin, FALSE) = FALSE"
+    sql = f"""
+        SELECT COALESCE(a.activity_id, NULL) AS activity_id,
+               COALESCE(a.name, 'Sin actividad') AS activity_name,
+               COUNT(*) AS count
+        FROM users u
+        LEFT JOIN LATERAL UNNEST(
+            CASE WHEN array_length(u.activity_ids, 1) > 0 THEN u.activity_ids ELSE ARRAY[NULL]::TEXT[] END
+        ) AS aid ON TRUE
+        LEFT JOIN activities a ON a.activity_id = aid
+        {company_filter} {worker_filter if company_filter else worker_filter}
+        GROUP BY a.activity_id, a.name
+    """
     async with pool.acquire() as conn:
-        rows = await conn.fetch(
-            """
-            SELECT COALESCE(r.role_id, NULL) AS role_id,
-                   COALESCE(r.name, 'Sin rol') AS role_name,
-                   COUNT(*) AS count
-            FROM users u
-            LEFT JOIN LATERAL UNNEST(
-                CASE WHEN array_length(u.role_ids, 1) > 0 THEN u.role_ids ELSE ARRAY[NULL]::TEXT[] END
-            ) AS rid ON TRUE
-            LEFT JOIN roles r ON r.role_id = rid
-            WHERE u.is_admin = FALSE
-            GROUP BY r.role_id, r.name
-            """
-        )
+        rows = await conn.fetch(sql, *params)
     for r in rows:
-        users_by_role.append({"role": r["role_name"] or "Sin rol", "count": r["count"]})
+        users_by_role.append({"role": r["activity_name"] or "Sin actividad", "count": r["count"]})
     
-    # Get course completions stats
-    completions = await db.course_completions.count_documents({})
+    completions = await db.course_completions.count_documents(base)
     
-    # Calculate total hours trained
     total_hours = 0
-    async for cert in db.certificates.find({}, {"_id": 0, "hours": 1}):
-        total_hours += cert.get("hours", 0)
+    async for cert in db.certificates.find(base):
+        total_hours += (cert.get("hours") or 0)
     
     return {
         "total_users": total_users,
@@ -1343,23 +1376,23 @@ async def get_reports_summary(admin: dict = Depends(require_admin)):
 
 @api_router.get("/reports/users")
 async def get_users_report(admin: dict = Depends(require_admin)):
-    users = await db.users.find({"is_admin": False}, {"_id": 0, "password_hash": 0}).to_list(1000)
+    base = scoped_filter(admin, {"is_admin": False, "is_super_admin": {"$ne": True}})
+    users = await db.users.find(base, {"_id": 0, "password_hash": 0}).to_list(1000)
     
     for user in users:
-        # Get role name
-        if user.get("role_id"):
-            role = await db.activities.find_one({"role_id": user["role_id"]}, {"_id": 0, "name": 1})
-            user["role_name"] = role["name"] if role else "Sin rol"
+        # Get activity names
+        act_ids = user.get("activity_ids") or []
+        if act_ids:
+            acts = await db.activities.find({"activity_id": {"$in": act_ids}}).to_list(100)
+            user["role_name"] = ", ".join([a["name"] for a in acts]) if acts else "Sin actividad"
         else:
-            user["role_name"] = "Sin rol"
+            user["role_name"] = "Sin actividad"
         
-        # Get certificates count
         user["certificates_count"] = await db.certificates.count_documents({"user_id": user["user_id"]})
         
-        # Get total hours
         total_hours = 0
-        async for cert in db.certificates.find({"user_id": user["user_id"]}, {"_id": 0, "hours": 1}):
-            total_hours += cert.get("hours", 0)
+        async for cert in db.certificates.find({"user_id": user["user_id"]}):
+            total_hours += (cert.get("hours") or 0)
         user["total_hours_trained"] = total_hours
     
     return users
@@ -1393,7 +1426,7 @@ async def export_users_csv(admin: dict = Depends(require_admin)):
 
 @api_router.get("/reports/export/certificates")
 async def export_certificates_csv(admin: dict = Depends(require_admin)):
-    certificates = await db.certificates.find({}, {"_id": 0}).to_list(1000)
+    certificates = await db.certificates.find(scoped_filter(admin)).to_list(1000)
     
     output = io.StringIO()
     writer = csv.writer(output)
@@ -1430,80 +1463,53 @@ async def export_certificates_csv(admin: dict = Depends(require_admin)):
 
 @api_router.get("/student/progress")
 async def get_student_progress(user: dict = Depends(get_current_user)):
-    """Get student progress - combines courses from all assigned roles without duplicates"""
+    """
+    Student progress (multi-tenant): courses are derived from user's area_ids/activity_ids
+    and the courses tagged with matching areas/activities (or untagged = applies to all).
+    """
+    company_id = user.get("company_id")
+    if not company_id:
+        return {"courses": [], "total_courses": 0, "completed_courses": 0,
+                "completion_percentage": 0, "role_names": None, "roles": []}
+    
+    user_areas = set(user.get("area_ids") or [])
+    user_acts = set(user.get("activity_ids") or [])
+    
+    all_courses = await db.courses.find({"company_id": company_id, "status": "published"}).to_list(500)
     courses = []
-    roles = []
-    all_course_ids = set()
-    course_order = []
+    for c in all_courses:
+        c_areas = set(c.get("area_ids") or [])
+        c_acts = set(c.get("activity_ids") or [])
+        if (not c_areas and not c_acts) or (c_areas & user_areas) or (c_acts & user_acts):
+            courses.append(c)
     
-    # Get user's role_ids (support both old single role_id and new role_ids array)
-    user_role_ids = user.get("role_ids", [])
-    if not user_role_ids and user.get("role_id"):
-        user_role_ids = [user["role_id"]]
-    
-    if user_role_ids:
-        # Get all roles
-        for role_id in user_role_ids:
-            role = await db.activities.find_one({"role_id": role_id}, {"_id": 0})
-            if role:
-                roles.append(role)
-                # Collect unique course IDs
-                for cid in role.get("course_ids", []):
-                    if cid not in all_course_ids:
-                        all_course_ids.add(cid)
-                        course_order.append(cid)
-        
-        # Fetch all unique courses
-        if all_course_ids:
-            courses = await db.courses.find(
-                {"course_id": {"$in": list(all_course_ids)}, "status": "published"},
-                {"_id": 0}
-            ).to_list(100)
-    else:
-        courses = await db.courses.find({"status": "published"}, {"_id": 0}).to_list(100)
-    
-    # Get completions
-    completions = await db.course_completions.find({"user_id": user["user_id"]}, {"_id": 0}).to_list(100)
+    completions = await db.course_completions.find({"user_id": user["user_id"]}).to_list(500)
     completed_ids = {c["course_id"] for c in completions}
     
-    # Get certificates
-    certificates = await db.certificates.find({"user_id": user["user_id"]}, {"_id": 0}).to_list(100)
+    certificates = await db.certificates.find({"user_id": user["user_id"]}).to_list(500)
     cert_by_course = {c.get("course_id"): c for c in certificates if c.get("course_id")}
     
-    # Create course map for quick lookup
     course_map = {c["course_id"]: c for c in courses}
     
-    # Sort courses by order if available
-    if course_order:
-        sorted_courses = []
-        for cid in course_order:
-            if cid in course_map:
-                sorted_courses.append(course_map[cid])
-        # Add any courses not in order list
-        for course in courses:
-            if course["course_id"] not in course_order:
-                sorted_courses.append(course)
-        courses = sorted_courses
+    # Get user's activities (for display names)
+    act_objs = []
+    if user_acts:
+        act_objs = await db.activities.find({"activity_id": {"$in": list(user_acts)}}).to_list(100)
     
     progress = []
     for idx, course in enumerate(courses):
         is_completed = course["course_id"] in completed_ids
         certificate = cert_by_course.get(course["course_id"])
         
-        # Check prerequisites
-        prerequisites = course.get("prerequisites", [])
+        prerequisites = course.get("prerequisites") or []
         missing_prerequisites = []
         is_locked = False
-        
         for prereq_id in prerequisites:
             if prereq_id not in completed_ids:
                 is_locked = True
-                prereq_course = course_map.get(prereq_id)
-                if prereq_course:
-                    missing_prerequisites.append({
-                        "course_id": prereq_id,
-                        "name": prereq_course["name"]
-                    })
+                pre = course_map.get(prereq_id)
+                if pre:
+                    missing_prerequisites.append({"course_id": prereq_id, "name": pre["name"]})
         
         progress.append({
             "course": course,
@@ -1516,9 +1522,7 @@ async def get_student_progress(user: dict = Depends(get_current_user)):
     
     total_courses = len(courses)
     completed_courses = len(completed_ids & {c["course_id"] for c in courses})
-    
-    # Build role names string
-    role_names = ", ".join([r.get("name", "") for r in roles]) if roles else None
+    role_names = ", ".join([a["name"] for a in act_objs]) if act_objs else None
     
     return {
         "courses": progress,
@@ -1526,53 +1530,45 @@ async def get_student_progress(user: dict = Depends(get_current_user)):
         "completed_courses": completed_courses,
         "completion_percentage": int((completed_courses / total_courses * 100) if total_courses > 0 else 0),
         "role_names": role_names,
-        "roles": [{"role_id": r["role_id"], "name": r["name"]} for r in roles]
+        "roles": [{"role_id": a["activity_id"], "name": a["name"]} for a in act_objs]
     }
 
-@api_router.get("/activities/{role_id}/curriculum")
-async def get_role_curriculum(role_id: str):
-    """Get curriculum roadmap for a role with course order and prerequisites"""
-    role = await db.activities.find_one({"role_id": role_id}, {"_id": 0})
-    if not role:
-        raise HTTPException(status_code=404, detail="Role not found")
+@api_router.get("/activities/{activity_id}/curriculum")
+async def get_activity_curriculum(activity_id: str, user: dict = Depends(get_current_user)):
+    """Get the curriculum (courses) tagged with this activity (in the user's company)."""
+    activity = await db.activities.find_one(scoped_filter(user, {"activity_id": activity_id}))
+    if not activity:
+        raise HTTPException(status_code=404, detail="Activity not found")
     
-    course_ids = role.get("course_ids", [])
-    course_order = role.get("course_order", course_ids)
-    
-    courses = await db.courses.find(
-        {"course_id": {"$in": course_ids}},
-        {"_id": 0}
-    ).to_list(100)
+    # Courses in this company tagged with this activity
+    company_id = activity["company_id"]
+    all_courses = await db.courses.find({"company_id": company_id}).to_list(500)
+    courses = [c for c in all_courses if activity_id in (c.get("activity_ids") or [])]
     
     course_map = {c["course_id"]: c for c in courses}
-    
-    # Build ordered curriculum with prerequisites info
     curriculum = []
-    for idx, course_id in enumerate(course_order):
-        course = course_map.get(course_id)
-        if course:
-            prerequisites = course.get("prerequisites", [])
-            prereq_names = []
-            for prereq_id in prerequisites:
-                prereq = course_map.get(prereq_id)
-                if prereq:
-                    prereq_names.append(prereq["name"])
-            
-            curriculum.append({
-                "order": idx + 1,
-                "course_id": course["course_id"],
-                "name": course["name"],
-                "description": course["description"],
-                "hours": course["hours"],
-                "training_type": course["training_type"],
-                "prerequisites": prerequisites,
-                "prerequisite_names": prereq_names
-            })
+    for idx, course in enumerate(courses):
+        prerequisites = course.get("prerequisites") or []
+        prereq_names = []
+        for pre_id in prerequisites:
+            pre = course_map.get(pre_id)
+            if pre:
+                prereq_names.append(pre["name"])
+        curriculum.append({
+            "order": idx + 1,
+            "course_id": course["course_id"],
+            "name": course["name"],
+            "description": course.get("description"),
+            "hours": course.get("hours") or 0,
+            "training_type": course.get("training_type"),
+            "prerequisites": prerequisites,
+            "prerequisite_names": prereq_names
+        })
     
     return {
-        "role": role,
+        "role": activity,
         "curriculum": curriculum,
-        "total_hours": sum(c["hours"] for c in curriculum)
+        "total_hours": sum((c.get("hours") or 0) for c in courses)
     }
 
 # ==================== SETUP ROUTES ====================

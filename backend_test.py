@@ -1,541 +1,659 @@
 #!/usr/bin/env python3
 """
-Comprehensive backend test for F1.1 Multi-tenant migration (Aptiva platform)
-Tests:
-- SuperAdmin: companies CRUD, create admin per company
-- Admin: users, areas, activities, document-types, branding, worker-documents
-- Trabajador: my-documents, forbidden access
-- Tenant isolation (CRITICAL)
-- Bulk import CSV
+F1.2 Multi-tenant Backend Testing Script
+Tests multi-tenant scope for legacy endpoints: courses, evaluations, certificates, completions, reports, student/progress
 """
 import requests
 import json
-import io
 import sys
-from datetime import datetime
+from typing import Dict, Any, Optional
 
-# Backend URL from frontend/.env
 BASE_URL = "https://user-credentials-6.preview.emergentagent.com/api"
 
-# Test credentials (seeded)
-SUPERADMIN = {"email": "superadmin@aptiva.com", "password": "superadmin123"}
-ADMIN_DEMO = {"email": "admin@aptivademo.com", "password": "admin123"}
-TRABAJADOR_DEMO = {"email": "trabajador@aptivademo.com", "password": "trabajador123"}
+# Test credentials
+SUPERADMIN_EMAIL = "superadmin@aptiva.com"
+SUPERADMIN_PASSWORD = "superadmin123"
 
-# Global state
-tokens = {}
-company_ids = {}
-created_resources = {
-    "companies": [],
-    "users": [],
-    "areas": [],
-    "activities": [],
-    "document_types": [],
-    "worker_documents": [],
-}
+ADMIN_DEMO_EMAIL = "admin@aptivademo.com"
+ADMIN_DEMO_PASSWORD = "admin123"
 
-def log(msg, level="INFO"):
-    print(f"[{level}] {msg}")
+TRABAJADOR_DEMO_EMAIL = "trabajador@aptivademo.com"
+TRABAJADOR_DEMO_PASSWORD = "trabajador123"
 
-def login(credentials, label):
-    """Login and store token."""
-    log(f"Logging in as {label} ({credentials['email']})...")
-    resp = requests.post(f"{BASE_URL}/auth/login", json=credentials)
-    if resp.status_code != 200:
-        log(f"Login failed: {resp.status_code} {resp.text}", "ERROR")
+# Test state
+test_results = []
+test_data = {}
+
+
+def log_test(name: str, passed: bool, details: str = ""):
+    """Log test result"""
+    status = "✅ PASS" if passed else "❌ FAIL"
+    print(f"{status}: {name}")
+    if details:
+        print(f"  Details: {details}")
+    test_results.append({"name": name, "passed": passed, "details": details})
+
+
+def login(email: str, password: str) -> Optional[str]:
+    """Login and return token"""
+    try:
+        resp = requests.post(f"{BASE_URL}/auth/login", json={"email": email, "password": password})
+        if resp.status_code == 200:
+            data = resp.json()
+            return data.get("token")
+        else:
+            print(f"Login failed for {email}: {resp.status_code} - {resp.text}")
+            return None
+    except Exception as e:
+        print(f"Login exception for {email}: {e}")
         return None
-    data = resp.json()
-    token = data.get("token")
-    user = data.get("user")
-    tokens[label] = token
-    log(f"✓ Login successful: {label} (user_id={user.get('user_id')}, company_id={user.get('company_id')})")
-    return token
 
-def get_headers(label):
-    """Get auth headers for a user."""
-    return {"Authorization": f"Bearer {tokens[label]}"}
 
-def test_auth_me(label):
-    """Test /api/auth/me returns correct company_id."""
-    log(f"Testing /api/auth/me for {label}...")
-    resp = requests.get(f"{BASE_URL}/auth/me", headers=get_headers(label))
-    if resp.status_code != 200:
-        log(f"GET /api/auth/me failed: {resp.status_code} {resp.text}", "ERROR")
-        return False
-    user = resp.json()
-    company_id = user.get("company_id")
-    is_super = user.get("is_super_admin")
-    is_admin = user.get("is_admin")
-    log(f"✓ {label}: company_id={company_id}, is_super_admin={is_super}, is_admin={is_admin}")
-    return True
+def get_headers(token: str) -> Dict[str, str]:
+    """Get authorization headers"""
+    return {"Authorization": f"Bearer {token}"}
 
-def test_superadmin_companies():
-    """Test SuperAdmin CRUD on companies."""
-    log("Testing SuperAdmin companies CRUD...")
-    headers = get_headers("superadmin")
+
+def test_authentication():
+    """Test 1: Verify authentication for all users"""
+    print("\n=== TEST 1: Authentication ===")
     
-    # GET companies
-    resp = requests.get(f"{BASE_URL}/superadmin/companies", headers=headers)
-    if resp.status_code != 200:
-        log(f"GET /superadmin/companies failed: {resp.status_code} {resp.text}", "ERROR")
-        return False
-    companies = resp.json()
-    log(f"✓ GET /superadmin/companies: {len(companies)} companies")
+    # SuperAdmin login
+    token = login(SUPERADMIN_EMAIL, SUPERADMIN_PASSWORD)
+    if token:
+        test_data["superadmin_token"] = token
+        resp = requests.get(f"{BASE_URL}/auth/me", headers=get_headers(token))
+        if resp.status_code == 200:
+            user = resp.json()
+            test_data["superadmin_user"] = user
+            log_test("SuperAdmin login", 
+                    user.get("is_super_admin") == True and user.get("company_id") is None,
+                    f"is_super_admin={user.get('is_super_admin')}, company_id={user.get('company_id')}")
+        else:
+            log_test("SuperAdmin login", False, f"GET /auth/me failed: {resp.status_code}")
+    else:
+        log_test("SuperAdmin login", False, "Login failed")
     
-    # POST create 2nd company
-    new_company = {
-        "name": "Test Company 2",
-        "rut": "77.000.000-2",
-        "contact_email": "contact@testcompany2.com",
+    # Admin Demo login
+    token = login(ADMIN_DEMO_EMAIL, ADMIN_DEMO_PASSWORD)
+    if token:
+        test_data["admin_demo_token"] = token
+        resp = requests.get(f"{BASE_URL}/auth/me", headers=get_headers(token))
+        if resp.status_code == 200:
+            user = resp.json()
+            test_data["admin_demo_user"] = user
+            test_data["aptiva_demo_company_id"] = user.get("company_id")
+            log_test("Admin Demo login", 
+                    user.get("is_admin") == True and user.get("company_id") is not None,
+                    f"is_admin={user.get('is_admin')}, company_id={user.get('company_id')}")
+        else:
+            log_test("Admin Demo login", False, f"GET /auth/me failed: {resp.status_code}")
+    else:
+        log_test("Admin Demo login", False, "Login failed")
+    
+    # Trabajador Demo login
+    token = login(TRABAJADOR_DEMO_EMAIL, TRABAJADOR_DEMO_PASSWORD)
+    if token:
+        test_data["trabajador_demo_token"] = token
+        resp = requests.get(f"{BASE_URL}/auth/me", headers=get_headers(token))
+        if resp.status_code == 200:
+            user = resp.json()
+            test_data["trabajador_demo_user"] = user
+            log_test("Trabajador Demo login", 
+                    user.get("is_admin") == False and user.get("company_id") is not None,
+                    f"area_ids={user.get('area_ids')}, activity_ids={user.get('activity_ids')}")
+        else:
+            log_test("Trabajador Demo login", False, f"GET /auth/me failed: {resp.status_code}")
+    else:
+        log_test("Trabajador Demo login", False, "Login failed")
+
+
+def test_create_second_company():
+    """Test 2: Create a second company and admin for tenant isolation testing"""
+    print("\n=== TEST 2: Create Second Company ===")
+    
+    token = test_data.get("superadmin_token")
+    if not token:
+        log_test("Create second company", False, "SuperAdmin token not available")
+        return
+    
+    # Create company
+    company_data = {
+        "name": "Test Company B",
+        "rut": "99999999-9",
+        "contact_email": "contact@testcompanyb.com",
         "primary_color": "#FF5733",
         "secondary_color": "#C70039"
     }
-    resp = requests.post(f"{BASE_URL}/superadmin/companies", json=new_company, headers=headers)
-    if resp.status_code != 200:
-        log(f"POST /superadmin/companies failed: {resp.status_code} {resp.text}", "ERROR")
-        return False
-    company2 = resp.json()
-    company_ids["company2"] = company2["company_id"]
-    created_resources["companies"].append(company2["company_id"])
-    log(f"✓ Created company2: {company2['name']} (id={company2['company_id']})")
+    resp = requests.post(f"{BASE_URL}/superadmin/companies", 
+                        json=company_data, 
+                        headers=get_headers(token))
     
-    # GET single company
-    resp = requests.get(f"{BASE_URL}/superadmin/companies/{company2['company_id']}", headers=headers)
-    if resp.status_code != 200:
-        log(f"GET /superadmin/companies/{{id}} failed: {resp.status_code} {resp.text}", "ERROR")
-        return False
-    log(f"✓ GET /superadmin/companies/{{id}}: {resp.json()['name']}")
-    
-    # PUT update company
-    resp = requests.put(f"{BASE_URL}/superadmin/companies/{company2['company_id']}", 
-                       json={"footer_text": "© Test Company 2"}, headers=headers)
-    if resp.status_code != 200:
-        log(f"PUT /superadmin/companies/{{id}} failed: {resp.status_code} {resp.text}", "ERROR")
-        return False
-    log(f"✓ PUT /superadmin/companies/{{id}}: updated footer_text")
-    
-    return True
-
-def test_superadmin_create_admin_for_company2():
-    """Test SuperAdmin creating admin for company2."""
-    log("Testing SuperAdmin creating admin for company2...")
-    headers = get_headers("superadmin")
-    company2_id = company_ids["company2"]
-    
-    admin_data = {
-        "email": "admin@testcompany2.com",
-        "password": "admin123",
-        "full_name": "Admin Test Company 2",
-        "rut": "33.333.333-3"
-    }
-    resp = requests.post(f"{BASE_URL}/superadmin/companies/{company2_id}/admin", 
-                        json=admin_data, headers=headers)
-    if resp.status_code != 200:
-        log(f"POST /superadmin/companies/{{id}}/admin failed: {resp.status_code} {resp.text}", "ERROR")
-        return False
-    admin2 = resp.json()
-    created_resources["users"].append(admin2["user_id"])
-    log(f"✓ Created admin for company2: {admin2['email']} (user_id={admin2['user_id']})")
-    
-    # Login as new admin
-    token = login({"email": "admin@testcompany2.com", "password": "admin123"}, "admin_company2")
-    if not token:
-        return False
-    
-    return True
-
-def test_admin_users():
-    """Test admin CRUD on users (scoped to their company)."""
-    log("Testing admin users CRUD...")
-    headers = get_headers("admin_demo")
-    
-    # GET users (should only see their company's users, not superadmin)
-    resp = requests.get(f"{BASE_URL}/users", headers=headers)
-    if resp.status_code != 200:
-        log(f"GET /users failed: {resp.status_code} {resp.text}", "ERROR")
-        return False
-    users = resp.json()
-    log(f"✓ GET /users: {len(users)} users (should NOT include superadmin)")
-    
-    # Verify superadmin is NOT in the list
-    superadmin_in_list = any(u.get("email") == "superadmin@aptiva.com" for u in users)
-    if superadmin_in_list:
-        log("✗ CRITICAL: SuperAdmin appears in company users list!", "ERROR")
-        return False
-    log("✓ SuperAdmin correctly excluded from company users list")
-    
-    # POST create new worker
-    new_worker = {
-        "email": f"worker_test_{datetime.now().timestamp()}@aptivademo.com",
-        "password": "test123",
-        "full_name": "Test Worker",
-        "rut": "44.444.444-4",
-        "area_ids": [],
-        "activity_ids": [],
-        "is_admin": False
-    }
-    resp = requests.post(f"{BASE_URL}/users", json=new_worker, headers=headers)
-    if resp.status_code != 200:
-        log(f"POST /users failed: {resp.status_code} {resp.text}", "ERROR")
-        return False
-    worker = resp.json()
-    created_resources["users"].append(worker["user_id"])
-    log(f"✓ Created worker: {worker['email']} (user_id={worker['user_id']}, company_id={worker.get('company_id')})")
-    
-    # Verify worker has correct company_id
-    if worker.get("company_id") is None:
-        log("✗ CRITICAL: Worker created without company_id!", "ERROR")
-        return False
-    
-    return True
-
-def test_admin_areas():
-    """Test admin CRUD on areas."""
-    log("Testing admin areas CRUD...")
-    headers = get_headers("admin_demo")
-    
-    # GET areas
-    resp = requests.get(f"{BASE_URL}/areas", headers=headers)
-    if resp.status_code != 200:
-        log(f"GET /areas failed: {resp.status_code} {resp.text}", "ERROR")
-        return False
-    areas = resp.json()
-    log(f"✓ GET /areas: {len(areas)} areas")
-    
-    # POST create area
-    new_area = {
-        "name": f"Test Area {datetime.now().timestamp()}",
-        "description": "Test area for multi-tenant"
-    }
-    resp = requests.post(f"{BASE_URL}/areas", json=new_area, headers=headers)
-    if resp.status_code != 200:
-        log(f"POST /areas failed: {resp.status_code} {resp.text}", "ERROR")
-        return False
-    area = resp.json()
-    created_resources["areas"].append(area["area_id"])
-    log(f"✓ Created area: {area['name']} (area_id={area['area_id']}, company_id={area.get('company_id')})")
-    
-    return True
-
-def test_admin_activities():
-    """Test admin CRUD on activities."""
-    log("Testing admin activities CRUD...")
-    headers = get_headers("admin_demo")
-    
-    # GET activities
-    resp = requests.get(f"{BASE_URL}/activities", headers=headers)
-    if resp.status_code != 200:
-        log(f"GET /activities failed: {resp.status_code} {resp.text}", "ERROR")
-        return False
-    activities = resp.json()
-    log(f"✓ GET /activities: {len(activities)} activities")
-    
-    # POST create activity
-    new_activity = {
-        "name": f"Test Activity {datetime.now().timestamp()}",
-        "description": "Test activity for multi-tenant"
-    }
-    resp = requests.post(f"{BASE_URL}/activities", json=new_activity, headers=headers)
-    if resp.status_code != 200:
-        log(f"POST /activities failed: {resp.status_code} {resp.text}", "ERROR")
-        return False
-    activity = resp.json()
-    created_resources["activities"].append(activity["activity_id"])
-    log(f"✓ Created activity: {activity['name']} (activity_id={activity['activity_id']}, company_id={activity.get('company_id')})")
-    
-    return True
-
-def test_admin_document_types():
-    """Test admin CRUD on document types."""
-    log("Testing admin document-types CRUD...")
-    headers = get_headers("admin_demo")
-    
-    # GET document-types
-    resp = requests.get(f"{BASE_URL}/document-types", headers=headers)
-    if resp.status_code != 200:
-        log(f"GET /document-types failed: {resp.status_code} {resp.text}", "ERROR")
-        return False
-    doctypes = resp.json()
-    log(f"✓ GET /document-types: {len(doctypes)} document types")
-    
-    # POST create document type
-    new_doctype = {
-        "name": f"Test DocType {datetime.now().timestamp()}",
-        "description": "Test document type",
-        "requires_expiry": True,
-        "area_ids": [],
-        "activity_ids": []
-    }
-    resp = requests.post(f"{BASE_URL}/document-types", json=new_doctype, headers=headers)
-    if resp.status_code != 200:
-        log(f"POST /document-types failed: {resp.status_code} {resp.text}", "ERROR")
-        return False
-    doctype = resp.json()
-    created_resources["document_types"].append(doctype["document_type_id"])
-    log(f"✓ Created document type: {doctype['name']} (document_type_id={doctype['document_type_id']}, company_id={doctype.get('company_id')})")
-    
-    return True
-
-def test_admin_branding():
-    """Test admin branding GET/PUT."""
-    log("Testing admin branding GET/PUT...")
-    headers = get_headers("admin_demo")
-    
-    # GET branding
-    resp = requests.get(f"{BASE_URL}/branding", headers=headers)
-    if resp.status_code != 200:
-        log(f"GET /branding failed: {resp.status_code} {resp.text}", "ERROR")
-        return False
-    branding = resp.json()
-    log(f"✓ GET /branding: company_id={branding.get('company_id')}, primary_color={branding.get('primary_color')}")
-    
-    # PUT update branding
-    update_data = {
-        "primary_color": "#FF0000",
-        "footer_text": "© Aptiva Demo Updated"
-    }
-    resp = requests.put(f"{BASE_URL}/branding", json=update_data, headers=headers)
-    if resp.status_code != 200:
-        log(f"PUT /branding failed: {resp.status_code} {resp.text}", "ERROR")
-        return False
-    updated = resp.json()
-    log(f"✓ PUT /branding: primary_color={updated.get('primary_color')}")
-    
-    return True
-
-def test_admin_worker_documents():
-    """Test admin uploading worker documents."""
-    log("Testing admin worker-documents upload...")
-    headers = get_headers("admin_demo")
-    
-    # Get trabajador user_id
-    resp = requests.get(f"{BASE_URL}/auth/me", headers=get_headers("trabajador_demo"))
-    if resp.status_code != 200:
-        log(f"Failed to get trabajador user_id", "ERROR")
-        return False
-    trabajador = resp.json()
-    trabajador_user_id = trabajador["user_id"]
-    
-    # Get a document type
-    resp = requests.get(f"{BASE_URL}/document-types", headers=headers)
-    if resp.status_code != 200:
-        log(f"Failed to get document types", "ERROR")
-        return False
-    doctypes = resp.json()
-    if not doctypes:
-        log("No document types available", "ERROR")
-        return False
-    doctype_id = doctypes[0]["document_type_id"]
-    
-    # Upload a test file (small PDF)
-    test_file_content = b"%PDF-1.4\n1 0 obj\n<<\n/Type /Catalog\n/Pages 2 0 R\n>>\nendobj\n2 0 obj\n<<\n/Type /Pages\n/Kids [3 0 R]\n/Count 1\n>>\nendobj\n3 0 obj\n<<\n/Type /Page\n/Parent 2 0 R\n/MediaBox [0 0 612 792]\n>>\nendobj\nxref\n0 4\n0000000000 65535 f\n0000000009 00000 n\n0000000058 00000 n\n0000000115 00000 n\ntrailer\n<<\n/Size 4\n/Root 1 0 R\n>>\nstartxref\n190\n%%EOF"
-    files = {"file": ("test_document.pdf", test_file_content, "application/pdf")}
-    data = {
-        "document_type_id": doctype_id,
-        "expiry_date": "2025-12-31",
-        "notes": "Test upload"
-    }
-    resp = requests.post(f"{BASE_URL}/worker-documents/{trabajador_user_id}/upload", 
-                        data=data, files=files, headers=headers)
-    if resp.status_code != 200:
-        log(f"POST /worker-documents/{{user_id}}/upload failed: {resp.status_code} {resp.text}", "ERROR")
-        return False
-    wd = resp.json()
-    log(f"✓ Uploaded worker document: worker_document_id={wd.get('worker_document_id')}, files_count={len(wd.get('files', []))}")
-    
-    # GET worker documents
-    resp = requests.get(f"{BASE_URL}/worker-documents/{trabajador_user_id}", headers=headers)
-    if resp.status_code != 200:
-        log(f"GET /worker-documents/{{user_id}} failed: {resp.status_code} {resp.text}", "ERROR")
-        return False
-    wdocs = resp.json()
-    log(f"✓ GET /worker-documents/{{user_id}}: {len(wdocs)} documents")
-    
-    return True
-
-def test_trabajador_my_documents():
-    """Test trabajador self-service /api/my-documents."""
-    log("Testing trabajador /api/my-documents...")
-    headers = get_headers("trabajador_demo")
-    
-    resp = requests.get(f"{BASE_URL}/my-documents", headers=headers)
-    if resp.status_code != 200:
-        log(f"GET /my-documents failed: {resp.status_code} {resp.text}", "ERROR")
-        return False
-    my_docs = resp.json()
-    log(f"✓ GET /my-documents: {len(my_docs)} required document types")
-    
-    return True
-
-def test_trabajador_forbidden_access():
-    """Test trabajador cannot access other users' documents."""
-    log("Testing trabajador forbidden access to other users' documents...")
-    headers = get_headers("trabajador_demo")
-    
-    # Get admin user_id
-    resp = requests.get(f"{BASE_URL}/auth/me", headers=get_headers("admin_demo"))
-    if resp.status_code != 200:
-        log(f"Failed to get admin user_id", "ERROR")
-        return False
-    admin = resp.json()
-    admin_user_id = admin["user_id"]
-    
-    # Try to access admin's worker documents (should be 403)
-    resp = requests.get(f"{BASE_URL}/worker-documents/{admin_user_id}", headers=headers)
-    if resp.status_code == 403:
-        log(f"✓ Trabajador correctly forbidden from accessing other user's documents (403)")
-        return True
-    else:
-        log(f"✗ CRITICAL: Trabajador should get 403 but got {resp.status_code}", "ERROR")
-        return False
-
-def test_tenant_isolation():
-    """CRITICAL: Test that company2 admin cannot see Aptiva Demo data."""
-    log("Testing CRITICAL tenant isolation...")
-    headers_demo = get_headers("admin_demo")
-    headers_company2 = get_headers("admin_company2")
-    
-    # Get Aptiva Demo users
-    resp = requests.get(f"{BASE_URL}/users", headers=headers_demo)
-    if resp.status_code != 200:
-        log(f"Failed to get Aptiva Demo users", "ERROR")
-        return False
-    demo_users = resp.json()
-    demo_user_emails = [u["email"] for u in demo_users]
-    log(f"Aptiva Demo users: {len(demo_users)} users")
-    
-    # Get company2 users
-    resp = requests.get(f"{BASE_URL}/users", headers=headers_company2)
-    if resp.status_code != 200:
-        log(f"Failed to get company2 users", "ERROR")
-        return False
-    company2_users = resp.json()
-    company2_user_emails = [u["email"] for u in company2_users]
-    log(f"Company2 users: {len(company2_users)} users")
-    
-    # Check for overlap (should be NONE)
-    overlap = set(demo_user_emails) & set(company2_user_emails)
-    if overlap:
-        log(f"✗ CRITICAL: Tenant isolation BROKEN! Overlapping users: {overlap}", "ERROR")
-        return False
-    log(f"✓ CRITICAL: Tenant isolation verified - no overlapping users")
-    
-    # Get Aptiva Demo areas
-    resp = requests.get(f"{BASE_URL}/areas", headers=headers_demo)
-    if resp.status_code != 200:
-        log(f"Failed to get Aptiva Demo areas", "ERROR")
-        return False
-    demo_areas = resp.json()
-    log(f"Aptiva Demo areas: {len(demo_areas)} areas")
-    
-    # Get company2 areas
-    resp = requests.get(f"{BASE_URL}/areas", headers=headers_company2)
-    if resp.status_code != 200:
-        log(f"Failed to get company2 areas", "ERROR")
-        return False
-    company2_areas = resp.json()
-    log(f"Company2 areas: {len(company2_areas)} areas")
-    
-    # Check for overlap (should be NONE)
-    demo_area_names = [a["name"] for a in demo_areas]
-    company2_area_names = [a["name"] for a in company2_areas]
-    overlap = set(demo_area_names) & set(company2_area_names)
-    if overlap:
-        log(f"✗ CRITICAL: Tenant isolation BROKEN! Overlapping areas: {overlap}", "ERROR")
-        return False
-    log(f"✓ CRITICAL: Tenant isolation verified - no overlapping areas")
-    
-    return True
-
-def test_bulk_import():
-    """Test bulk user import via CSV."""
-    log("Testing bulk user import...")
-    headers = get_headers("admin_demo")
-    
-    # Create CSV content
-    csv_content = """email,password,full_name,rut,area_names,activity_names
-bulk1@aptivademo.com,test123,Bulk User One,90000001-1,Operaciones Mina,Trabajo en Altura
-bulk2@aptivademo.com,test123,Bulk User Two,90000002-2,Mantenimiento,Soldadura"""
-    
-    files = {"file": ("bulk_import.csv", csv_content.encode("utf-8"), "text/csv")}
-    resp = requests.post(f"{BASE_URL}/users/bulk-import", files=files, headers=headers)
-    if resp.status_code != 200:
-        log(f"POST /users/bulk-import failed: {resp.status_code} {resp.text}", "ERROR")
-        return False
-    result = resp.json()
-    summary = result.get("summary", {})
-    log(f"✓ Bulk import: created={summary.get('created')}, skipped={summary.get('skipped')}, errors={summary.get('errors')}")
-    
-    # Store created user IDs for cleanup
-    for item in result.get("created", []):
-        created_resources["users"].append(item["user_id"])
-    
-    if summary.get("created", 0) < 2:
-        log(f"✗ Expected at least 2 users created, got {summary.get('created')}", "ERROR")
-        return False
-    
-    return True
-
-def main():
-    """Run all tests."""
-    log("=" * 80)
-    log("F1.1 MULTI-TENANT BACKEND TESTS - APTIVA PLATFORM")
-    log("=" * 80)
-    
-    tests = [
-        ("Login SuperAdmin", lambda: login(SUPERADMIN, "superadmin")),
-        ("Login Admin Demo", lambda: login(ADMIN_DEMO, "admin_demo")),
-        ("Login Trabajador Demo", lambda: login(TRABAJADOR_DEMO, "trabajador_demo")),
-        ("Test /api/auth/me - SuperAdmin", lambda: test_auth_me("superadmin")),
-        ("Test /api/auth/me - Admin Demo", lambda: test_auth_me("admin_demo")),
-        ("Test /api/auth/me - Trabajador Demo", lambda: test_auth_me("trabajador_demo")),
-        ("Test SuperAdmin Companies CRUD", test_superadmin_companies),
-        ("Test SuperAdmin Create Admin for Company2", test_superadmin_create_admin_for_company2),
-        ("Test /api/auth/me - Admin Company2", lambda: test_auth_me("admin_company2")),
-        ("Test Admin Users CRUD", test_admin_users),
-        ("Test Admin Areas CRUD", test_admin_areas),
-        ("Test Admin Activities CRUD", test_admin_activities),
-        ("Test Admin Document Types CRUD", test_admin_document_types),
-        ("Test Admin Branding GET/PUT", test_admin_branding),
-        ("Test Admin Worker Documents Upload", test_admin_worker_documents),
-        ("Test Trabajador My Documents", test_trabajador_my_documents),
-        ("Test Trabajador Forbidden Access", test_trabajador_forbidden_access),
-        ("Test CRITICAL Tenant Isolation", test_tenant_isolation),
-        ("Test Bulk User Import", test_bulk_import),
-    ]
-    
-    passed = 0
-    failed = 0
-    
-    for name, test_func in tests:
-        log("")
-        log(f"Running: {name}")
-        log("-" * 80)
-        try:
-            result = test_func()
-            if result or result is None:
-                passed += 1
-                log(f"✓ PASSED: {name}", "SUCCESS")
+    if resp.status_code == 200:
+        company = resp.json()
+        test_data["company_b_id"] = company.get("company_id")
+        log_test("Create Test Company B", True, f"company_id={company.get('company_id')}")
+        
+        # Create admin for company B
+        admin_data = {
+            "email": "admin@testcompanyb.com",
+            "password": "admin123",
+            "full_name": "Admin Company B",
+            "rut": "88888888-8"
+        }
+        resp = requests.post(f"{BASE_URL}/superadmin/companies/{company['company_id']}/admin",
+                           json=admin_data,
+                           headers=get_headers(token))
+        
+        if resp.status_code == 200:
+            admin = resp.json()
+            log_test("Create Admin for Company B", True, f"user_id={admin.get('user_id')}")
+            
+            # Login as company B admin
+            token_b = login("admin@testcompanyb.com", "admin123")
+            if token_b:
+                test_data["admin_b_token"] = token_b
+                resp = requests.get(f"{BASE_URL}/auth/me", headers=get_headers(token_b))
+                if resp.status_code == 200:
+                    user = resp.json()
+                    test_data["admin_b_user"] = user
+                    log_test("Login as Admin Company B", True, f"company_id={user.get('company_id')}")
+                else:
+                    log_test("Login as Admin Company B", False, f"GET /auth/me failed: {resp.status_code}")
             else:
-                failed += 1
-                log(f"✗ FAILED: {name}", "ERROR")
-        except Exception as e:
-            failed += 1
-            log(f"✗ EXCEPTION in {name}: {e}", "ERROR")
-            import traceback
-            traceback.print_exc()
+                log_test("Login as Admin Company B", False, "Login failed")
+        else:
+            log_test("Create Admin for Company B", False, f"Status: {resp.status_code}, Response: {resp.text}")
+    else:
+        log_test("Create Test Company B", False, f"Status: {resp.status_code}, Response: {resp.text}")
+
+
+def test_tenant_isolation_empty_lists():
+    """Test 3: Verify Company B admin sees empty lists (no data from Aptiva Demo)"""
+    print("\n=== TEST 3: Tenant Isolation - Empty Lists ===")
     
-    log("")
-    log("=" * 80)
-    log(f"TEST SUMMARY: {passed} passed, {failed} failed out of {passed + failed} tests")
-    log("=" * 80)
+    token = test_data.get("admin_b_token")
+    if not token:
+        log_test("Tenant isolation - empty lists", False, "Admin B token not available")
+        return
+    
+    # Check users
+    resp = requests.get(f"{BASE_URL}/users", headers=get_headers(token))
+    if resp.status_code == 200:
+        users = resp.json()
+        # Should only see admin@testcompanyb.com (themselves)
+        log_test("Company B - GET /users (empty)", 
+                len(users) == 1 and users[0].get("email") == "admin@testcompanyb.com",
+                f"Found {len(users)} users: {[u.get('email') for u in users]}")
+    else:
+        log_test("Company B - GET /users", False, f"Status: {resp.status_code}")
+    
+    # Check courses
+    resp = requests.get(f"{BASE_URL}/courses", headers=get_headers(token))
+    if resp.status_code == 200:
+        courses = resp.json()
+        log_test("Company B - GET /courses (empty)", 
+                len(courses) == 0,
+                f"Found {len(courses)} courses")
+    else:
+        log_test("Company B - GET /courses", False, f"Status: {resp.status_code}")
+    
+    # Check areas
+    resp = requests.get(f"{BASE_URL}/areas", headers=get_headers(token))
+    if resp.status_code == 200:
+        areas = resp.json()
+        log_test("Company B - GET /areas (empty)", 
+                len(areas) == 0,
+                f"Found {len(areas)} areas")
+    else:
+        log_test("Company B - GET /areas", False, f"Status: {resp.status_code}")
+    
+    # Check activities
+    resp = requests.get(f"{BASE_URL}/activities", headers=get_headers(token))
+    if resp.status_code == 200:
+        activities = resp.json()
+        log_test("Company B - GET /activities (empty)", 
+                len(activities) == 0,
+                f"Found {len(activities)} activities")
+    else:
+        log_test("Company B - GET /activities", False, f"Status: {resp.status_code}")
+    
+    # Check certificates
+    resp = requests.get(f"{BASE_URL}/certificates", headers=get_headers(token))
+    if resp.status_code == 200:
+        certificates = resp.json()
+        log_test("Company B - GET /certificates (empty)", 
+                len(certificates) == 0,
+                f"Found {len(certificates)} certificates")
+    else:
+        log_test("Company B - GET /certificates", False, f"Status: {resp.status_code}")
+    
+    # Check reports/summary
+    resp = requests.get(f"{BASE_URL}/reports/summary", headers=get_headers(token))
+    if resp.status_code == 200:
+        summary = resp.json()
+        log_test("Company B - GET /reports/summary (empty)", 
+                summary.get("total_users") == 0 and summary.get("total_courses") == 0,
+                f"total_users={summary.get('total_users')}, total_courses={summary.get('total_courses')}")
+    else:
+        log_test("Company B - GET /reports/summary", False, f"Status: {resp.status_code}")
+
+
+def test_create_course_with_areas_activities():
+    """Test 4: Create course with area_ids and activity_ids in Aptiva Demo"""
+    print("\n=== TEST 4: Create Course with Areas/Activities ===")
+    
+    token = test_data.get("admin_demo_token")
+    if not token:
+        log_test("Create course with areas/activities", False, "Admin Demo token not available")
+        return
+    
+    # Get areas and activities first
+    resp = requests.get(f"{BASE_URL}/areas", headers=get_headers(token))
+    if resp.status_code == 200:
+        areas = resp.json()
+        test_data["areas"] = areas
+        print(f"  Found {len(areas)} areas: {[a.get('name') for a in areas]}")
+    
+    resp = requests.get(f"{BASE_URL}/activities", headers=get_headers(token))
+    if resp.status_code == 200:
+        activities = resp.json()
+        test_data["activities"] = activities
+        print(f"  Found {len(activities)} activities: {[a.get('name') for a in activities]}")
+        
+        # Find "Trabajo en Altura" activity
+        trabajo_altura = next((a for a in activities if "Trabajo en Altura" in a.get("name", "")), None)
+        if trabajo_altura:
+            test_data["trabajo_altura_activity_id"] = trabajo_altura.get("activity_id")
+    
+    # Find "Operaciones Mina" area
+    areas = test_data.get("areas", [])
+    operaciones_mina = next((a for a in areas if "Operaciones Mina" in a.get("name", "")), None)
+    if operaciones_mina:
+        test_data["operaciones_mina_area_id"] = operaciones_mina.get("area_id")
+    
+    # Create course with area_ids and activity_ids
+    course_data = {
+        "name": "Curso de Seguridad en Altura",
+        "description": "Curso de capacitación para trabajo en altura",
+        "hours": 8,
+        "validity_hours": 8760,
+        "training_type": "e-learning",
+        "status": "published",
+        "prerequisites": [],
+        "area_ids": [test_data.get("operaciones_mina_area_id")] if test_data.get("operaciones_mina_area_id") else [],
+        "activity_ids": [test_data.get("trabajo_altura_activity_id")] if test_data.get("trabajo_altura_activity_id") else []
+    }
+    
+    resp = requests.post(f"{BASE_URL}/courses", json=course_data, headers=get_headers(token))
+    if resp.status_code == 200:
+        course = resp.json()
+        test_data["course_id"] = course.get("course_id")
+        log_test("Create course with area_ids/activity_ids", 
+                course.get("company_id") == test_data.get("aptiva_demo_company_id"),
+                f"course_id={course.get('course_id')}, area_ids={course.get('area_ids')}, activity_ids={course.get('activity_ids')}")
+    else:
+        log_test("Create course with area_ids/activity_ids", False, f"Status: {resp.status_code}, Response: {resp.text}")
+
+
+def test_worker_sees_matching_courses():
+    """Test 5: Trabajador sees courses matching their area_ids/activity_ids"""
+    print("\n=== TEST 5: Worker Sees Matching Courses ===")
+    
+    token = test_data.get("trabajador_demo_token")
+    if not token:
+        log_test("Worker sees matching courses", False, "Trabajador token not available")
+        return
+    
+    resp = requests.get(f"{BASE_URL}/courses", headers=get_headers(token))
+    if resp.status_code == 200:
+        courses = resp.json()
+        # Should see the course we created (matches their activity_ids)
+        course_names = [c.get("name") for c in courses]
+        has_matching_course = any("Seguridad en Altura" in name for name in course_names)
+        log_test("Trabajador sees matching courses", 
+                has_matching_course,
+                f"Found {len(courses)} courses: {course_names}")
+    else:
+        log_test("Trabajador sees matching courses", False, f"Status: {resp.status_code}")
+
+
+def test_create_evaluation():
+    """Test 6: Create evaluation for the course"""
+    print("\n=== TEST 6: Create Evaluation ===")
+    
+    token = test_data.get("admin_demo_token")
+    course_id = test_data.get("course_id")
+    
+    if not token or not course_id:
+        log_test("Create evaluation", False, "Token or course_id not available")
+        return
+    
+    eval_data = {
+        "course_id": course_id,
+        "questions": [
+            {
+                "text": "¿Cuál es la altura mínima para considerar trabajo en altura?",
+                "options": ["1 metro", "1.5 metros", "1.8 metros", "2 metros"],
+                "correct_index": 2
+            },
+            {
+                "text": "¿Qué equipo es obligatorio para trabajo en altura?",
+                "options": ["Casco", "Arnés de seguridad", "Guantes", "Botas"],
+                "correct_index": 1
+            },
+            {
+                "text": "¿Cada cuánto se debe inspeccionar el arnés?",
+                "options": ["Diariamente", "Semanalmente", "Mensualmente", "Anualmente"],
+                "correct_index": 0
+            }
+        ],
+        "min_score": 70,
+        "max_attempts": 3
+    }
+    
+    resp = requests.post(f"{BASE_URL}/evaluations", json=eval_data, headers=get_headers(token))
+    if resp.status_code == 200:
+        evaluation = resp.json()
+        test_data["evaluation_id"] = evaluation.get("evaluation_id")
+        log_test("Create evaluation", 
+                evaluation.get("company_id") == test_data.get("aptiva_demo_company_id"),
+                f"evaluation_id={evaluation.get('evaluation_id')}, questions={len(evaluation.get('questions', []))}")
+    else:
+        log_test("Create evaluation", False, f"Status: {resp.status_code}, Response: {resp.text}")
+
+
+def test_worker_submit_evaluation():
+    """Test 7: Worker submits evaluation and auto-certificate is issued"""
+    print("\n=== TEST 7: Worker Submit Evaluation & Auto-Certificate ===")
+    
+    token = test_data.get("trabajador_demo_token")
+    eval_id = test_data.get("evaluation_id")
+    
+    if not token or not eval_id:
+        log_test("Worker submit evaluation", False, "Token or evaluation_id not available")
+        return
+    
+    # Submit with all correct answers
+    submit_data = {
+        "answers": [2, 1, 0]  # All correct
+    }
+    
+    resp = requests.post(f"{BASE_URL}/evaluations/{eval_id}/submit", 
+                        json=submit_data, 
+                        headers=get_headers(token))
+    
+    if resp.status_code == 200:
+        result = resp.json()
+        passed = result.get("passed")
+        score = result.get("score")
+        certificate = result.get("certificate")
+        all_courses_completed = result.get("all_courses_completed")
+        
+        log_test("Worker submit evaluation - passed", 
+                passed and score == 100,
+                f"score={score}, passed={passed}")
+        
+        if certificate:
+            test_data["certificate_id"] = certificate.get("certificate_id")
+            test_data["verification_code"] = certificate.get("verification_code")
+            
+            # Verify certificate fields
+            has_company_id = certificate.get("company_id") == test_data.get("aptiva_demo_company_id")
+            has_role_ids = len(certificate.get("role_ids", [])) > 0
+            has_role_names = len(certificate.get("role_names", [])) > 0
+            has_courses_detail = len(certificate.get("courses_detail", [])) > 0
+            cert_type = certificate.get("certificate_type") == "role_completion"
+            
+            log_test("Auto-certificate issued", 
+                    has_company_id and has_role_ids and has_role_names and cert_type,
+                    f"certificate_id={certificate.get('certificate_id')}, type={certificate.get('certificate_type')}, role_names={certificate.get('role_names')}")
+            
+            log_test("Certificate has correct fields",
+                    has_courses_detail and certificate.get("total_hours") > 0,
+                    f"total_hours={certificate.get('total_hours')}, average_score={certificate.get('average_score')}, courses={len(certificate.get('courses_detail', []))}")
+        else:
+            log_test("Auto-certificate issued", False, "No certificate in response")
+    else:
+        log_test("Worker submit evaluation", False, f"Status: {resp.status_code}, Response: {resp.text}")
+
+
+def test_get_certificates():
+    """Test 8: Worker can retrieve their certificates"""
+    print("\n=== TEST 8: Get Certificates ===")
+    
+    token = test_data.get("trabajador_demo_token")
+    if not token:
+        log_test("Get certificates", False, "Trabajador token not available")
+        return
+    
+    resp = requests.get(f"{BASE_URL}/certificates", headers=get_headers(token))
+    if resp.status_code == 200:
+        certificates = resp.json()
+        has_certificate = len(certificates) > 0
+        log_test("Worker GET /certificates", 
+                has_certificate,
+                f"Found {len(certificates)} certificates")
+    else:
+        log_test("Worker GET /certificates", False, f"Status: {resp.status_code}")
+
+
+def test_public_certificate_verification():
+    """Test 9: Public certificate verification endpoint (no auth)"""
+    print("\n=== TEST 9: Public Certificate Verification ===")
+    
+    code = test_data.get("verification_code")
+    if not code:
+        log_test("Public certificate verification", False, "Verification code not available")
+        return
+    
+    # No auth header - public endpoint
+    resp = requests.get(f"{BASE_URL}/certificates/verify/{code}")
+    if resp.status_code == 200:
+        result = resp.json()
+        certificate = result.get("certificate")
+        is_valid = result.get("is_valid")
+        
+        log_test("Public certificate verification", 
+                certificate is not None and is_valid,
+                f"is_valid={is_valid}, verification_code={certificate.get('verification_code') if certificate else None}")
+    else:
+        log_test("Public certificate verification", False, f"Status: {resp.status_code}")
+
+
+def test_certificate_pdf_generation():
+    """Test 10: PDF generation with company branding"""
+    print("\n=== TEST 10: Certificate PDF Generation ===")
+    
+    token = test_data.get("trabajador_demo_token")
+    cert_id = test_data.get("certificate_id")
+    
+    if not token or not cert_id:
+        log_test("Certificate PDF generation", False, "Token or certificate_id not available")
+        return
+    
+    resp = requests.get(f"{BASE_URL}/certificates/{cert_id}/pdf", headers=get_headers(token))
+    if resp.status_code == 200:
+        content_type = resp.headers.get("Content-Type", "")
+        content_length = len(resp.content)
+        
+        log_test("Certificate PDF generation", 
+                "application/pdf" in content_type and content_length > 1000,
+                f"content_type={content_type}, size={content_length} bytes")
+    else:
+        log_test("Certificate PDF generation", False, f"Status: {resp.status_code}")
+
+
+def test_tenant_isolation_cross_access():
+    """Test 11: Company B admin cannot access Aptiva Demo course"""
+    print("\n=== TEST 11: Tenant Isolation - Cross-Access Denied ===")
+    
+    token = test_data.get("admin_b_token")
+    course_id = test_data.get("course_id")
+    
+    if not token or not course_id:
+        log_test("Tenant isolation - cross-access", False, "Token or course_id not available")
+        return
+    
+    # Try to access Aptiva Demo course from Company B
+    resp = requests.get(f"{BASE_URL}/courses/{course_id}", headers=get_headers(token))
+    log_test("Company B cannot access Aptiva Demo course", 
+            resp.status_code == 404,
+            f"Status: {resp.status_code} (expected 404)")
+
+
+def test_student_progress():
+    """Test 12: Student progress endpoint shows correct courses"""
+    print("\n=== TEST 12: Student Progress ===")
+    
+    token = test_data.get("trabajador_demo_token")
+    if not token:
+        log_test("Student progress", False, "Trabajador token not available")
+        return
+    
+    resp = requests.get(f"{BASE_URL}/student/progress", headers=get_headers(token))
+    if resp.status_code == 200:
+        progress = resp.json()
+        courses = progress.get("courses", [])
+        total_courses = progress.get("total_courses", 0)
+        completed_courses = progress.get("completed_courses", 0)
+        role_names = progress.get("role_names")
+        
+        log_test("Student progress endpoint", 
+                total_courses > 0 and completed_courses > 0,
+                f"total={total_courses}, completed={completed_courses}, role_names={role_names}")
+    else:
+        log_test("Student progress endpoint", False, f"Status: {resp.status_code}")
+
+
+def test_activity_curriculum():
+    """Test 13: Activity curriculum endpoint returns courses tagged with activity"""
+    print("\n=== TEST 13: Activity Curriculum ===")
+    
+    token = test_data.get("admin_demo_token")
+    activity_id = test_data.get("trabajo_altura_activity_id")
+    
+    if not token or not activity_id:
+        log_test("Activity curriculum", False, "Token or activity_id not available")
+        return
+    
+    resp = requests.get(f"{BASE_URL}/activities/{activity_id}/curriculum", headers=get_headers(token))
+    if resp.status_code == 200:
+        result = resp.json()
+        curriculum = result.get("curriculum", [])
+        total_hours = result.get("total_hours", 0)
+        
+        log_test("Activity curriculum endpoint", 
+                len(curriculum) > 0,
+                f"Found {len(curriculum)} courses, total_hours={total_hours}")
+    else:
+        log_test("Activity curriculum endpoint", False, f"Status: {resp.status_code}")
+
+
+def test_reports_summary():
+    """Test 14: Reports summary is scoped to company"""
+    print("\n=== TEST 14: Reports Summary (Scoped) ===")
+    
+    token = test_data.get("admin_demo_token")
+    if not token:
+        log_test("Reports summary", False, "Admin Demo token not available")
+        return
+    
+    resp = requests.get(f"{BASE_URL}/reports/summary", headers=get_headers(token))
+    if resp.status_code == 200:
+        summary = resp.json()
+        total_users = summary.get("total_users", 0)
+        total_courses = summary.get("total_courses", 0)
+        total_certificates = summary.get("total_certificates", 0)
+        users_by_role = summary.get("users_by_role", [])
+        
+        log_test("Reports summary scoped to company", 
+                total_users > 0 and total_courses > 0,
+                f"users={total_users}, courses={total_courses}, certificates={total_certificates}, users_by_role={len(users_by_role)}")
+    else:
+        log_test("Reports summary", False, f"Status: {resp.status_code}")
+
+
+def test_reports_users():
+    """Test 15: Reports users endpoint is scoped to company"""
+    print("\n=== TEST 15: Reports Users (Scoped) ===")
+    
+    token = test_data.get("admin_demo_token")
+    if not token:
+        log_test("Reports users", False, "Admin Demo token not available")
+        return
+    
+    resp = requests.get(f"{BASE_URL}/reports/users", headers=get_headers(token))
+    if resp.status_code == 200:
+        users = resp.json()
+        # Should only see users from Aptiva Demo company
+        log_test("Reports users scoped to company", 
+                len(users) > 0,
+                f"Found {len(users)} users")
+    else:
+        log_test("Reports users", False, f"Status: {resp.status_code}")
+
+
+def print_summary():
+    """Print test summary"""
+    print("\n" + "="*60)
+    print("TEST SUMMARY")
+    print("="*60)
+    
+    passed = sum(1 for t in test_results if t["passed"])
+    failed = sum(1 for t in test_results if not t["passed"])
+    total = len(test_results)
+    
+    print(f"\nTotal Tests: {total}")
+    print(f"Passed: {passed} ✅")
+    print(f"Failed: {failed} ❌")
+    print(f"Success Rate: {(passed/total*100):.1f}%")
     
     if failed > 0:
-        log("Some tests FAILED. See details above.", "ERROR")
+        print("\n" + "="*60)
+        print("FAILED TESTS:")
+        print("="*60)
+        for t in test_results:
+            if not t["passed"]:
+                print(f"\n❌ {t['name']}")
+                if t["details"]:
+                    print(f"   {t['details']}")
+    
+    return failed == 0
+
+
+def main():
+    """Run all tests"""
+    print("="*60)
+    print("F1.2 MULTI-TENANT BACKEND TESTING")
+    print("="*60)
+    
+    try:
+        test_authentication()
+        test_create_second_company()
+        test_tenant_isolation_empty_lists()
+        test_create_course_with_areas_activities()
+        test_worker_sees_matching_courses()
+        test_create_evaluation()
+        test_worker_submit_evaluation()
+        test_get_certificates()
+        test_public_certificate_verification()
+        test_certificate_pdf_generation()
+        test_tenant_isolation_cross_access()
+        test_student_progress()
+        test_activity_curriculum()
+        test_reports_summary()
+        test_reports_users()
+        
+        success = print_summary()
+        sys.exit(0 if success else 1)
+        
+    except Exception as e:
+        print(f"\n❌ CRITICAL ERROR: {e}")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)
-    else:
-        log("All tests PASSED!", "SUCCESS")
-        sys.exit(0)
+
 
 if __name__ == "__main__":
     main()

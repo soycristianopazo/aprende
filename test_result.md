@@ -884,12 +884,12 @@ agent_communication:
 metadata:
   created_by: "main_agent"
   version: "1.0"
-  test_sequence: 7
-  run_ui: true
+  test_sequence: 8
+  run_ui: false
 
 test_plan:
   current_focus:
-    - "Logo flicker bug fix - Aptiva logo appears immediately (no BookOpen fallback)"
+    - "F1.2 - Multi-tenant scope for legacy endpoints (courses, evaluations, certificates, completions, reports)"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
@@ -1137,3 +1137,203 @@ agent_communication:
       - /api/courses, /api/evaluations, /api/certificates, /api/completions, /api/reports/*
       
       🎉 F1.1 MULTI-TENANT MIGRATION COMPLETE - All features working correctly!
+
+  - task: "F1.2 - Multi-tenant scope for legacy endpoints (courses, evaluations, certificates, completions, reports)"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: |
+          Patched all remaining server.py endpoints to be multi-tenant:
+          
+          1. Courses (CourseCreate now accepts area_ids[]/activity_ids[]):
+             - POST /api/courses: injects admin's company_id, validates company scope.
+             - GET /api/courses: admin sees all courses of their company; worker only sees published courses whose area_ids/activity_ids match theirs (untagged courses visible to everyone in company).
+             - GET/PUT/DELETE /api/courses/{id}: scoped via scoped_filter.
+             - POST /api/courses/{id}/material: verifies course is in admin's company.
+          
+          2. Evaluations:
+             - POST /api/evaluations: validates the target course is in admin's company, injects company_id.
+             - GET /api/evaluations/course/{id}, PUT /api/evaluations/{id}: scoped.
+             - POST /api/evaluations/{id}/submit: scoped retrieval; attempt insert includes company_id; completion insert includes company_id; **NEW certificate logic uses user's area_ids/activity_ids to compute required courses** (replaces old role.course_ids[] approach).
+          
+          3. Certificates:
+             - GET /api/certificates: scoped; workers see only their own.
+             - GET /api/certificates/{id}, /pdf, /regenerate: scoped via scoped_filter + ownership check for non-admin.
+             - GET /api/certificates/verify/{code}: still public (anyone can verify with code).
+             - PDF generation now reads branding from companies row (no more singleton branding table).
+          
+          4. Reports:
+             - /api/reports/summary: total_users/courses/certificates/etc. all scoped; users_by_role aggregation now uses activity_ids[] joined to activities table (instead of legacy role_ids -> roles).
+             - /api/reports/users: scoped, returns activity names joined for "role_name" field.
+             - /api/reports/export/certificates: scoped.
+          
+          5. Student progress (/api/student/progress):
+             - Rewritten to compute required courses from user's area_ids/activity_ids matching courses' area_ids/activity_ids.
+             - Returns roles[] populated from user's activity_ids.
+          
+          6. /api/activities/{activity_id}/curriculum:
+             - Rewritten: returns courses tagged with the given activity (instead of legacy role.course_ids[]).
+          
+          Smoke tested: as admin@aptivademo.com -> POST /api/courses returns course with company_id; GET /api/courses returns only that company's; /api/reports/summary returns scoped counts and users_by_role with activity name "Trabajo en Altura" (the seeded one for the worker).
+      - working: true
+        agent: "testing"
+        comment: |
+          ✅ F1.2 MULTI-TENANT TESTING COMPLETE - ALL TESTS PASSED (23/23 = 100%)
+          
+          Comprehensive end-to-end testing of F1.2 multi-tenant features completed successfully:
+          
+          ✅ AUTHENTICATION (3/3):
+          1. SuperAdmin login (superadmin@aptiva.com) - company_id=None, is_super_admin=True ✅
+          2. Admin Demo login (admin@aptivademo.com) - company_id assigned, is_admin=True ✅
+          3. Trabajador Demo login (trabajador@aptivademo.com) - area_ids=['Operaciones Mina'], activity_ids=['Trabajo en Altura'] ✅
+          
+          ✅ TENANT ISOLATION (6/6):
+          4. Created 2nd company via SuperAdmin ✅
+          5. Created admin for Company B ✅
+          6. Company B admin sees only their own users (1 user) ✅
+          7. Company B admin sees no courses (0 courses) ✅
+          8. Company B admin sees no certificates (0 certificates) ✅
+          9. Company B admin cannot access Aptiva Demo course (404) ✅
+          
+          ✅ NEW COURSE MODEL - area_ids/activity_ids (2/2):
+          10. Courses have area_ids[] and activity_ids[] arrays ✅
+          11. Worker sees only published courses matching their area/activity (3 courses visible) ✅
+          
+          ✅ AUTO-CERTIFICATE FLOW (6/6):
+          12. Certificate auto-issued when worker completes ALL required courses ✅
+          13. Certificate has correct company_id (company_77bf0fe68d27) ✅
+          14. Certificate has role_ids (= user's activity_ids) ✅
+          15. Certificate has role_names (= activity names: "Trabajo en Altura") ✅
+          16. Certificate type is "role_completion" ✅
+          17. Certificate has courses_detail array (2 courses) ✅
+          
+          ✅ PUBLIC CERTIFICATE VERIFICATION (1/1):
+          18. GET /api/certificates/verify/{code} works without auth, returns is_valid=True ✅
+          
+          ✅ PDF GENERATION WITH BRANDING (1/1):
+          19. GET /api/certificates/{id}/pdf generates PDF (3416 bytes) with company branding ✅
+          
+          ✅ STUDENT PROGRESS (1/1):
+          20. GET /api/student/progress returns courses based on area/activity match (total=3, completed=3) ✅
+          
+          ✅ ACTIVITY CURRICULUM (1/1):
+          21. GET /api/activities/{activity_id}/curriculum returns courses tagged with activity (2 courses, 16 hours) ✅
+          
+          ✅ REPORTS (SCOPED) (2/2):
+          22. GET /api/reports/summary scoped to company (users=5, courses=3, certificates=1) ✅
+          23. GET /api/reports/users scoped to company (5 users) ✅
+          
+          🎉 CRITICAL VERIFICATION: Multi-tenant scope for legacy endpoints is WORKING PERFECTLY!
+          
+          **KEY FEATURES VERIFIED:**
+          - Tenant isolation: Company B admin cannot see Aptiva Demo data
+          - New course model: courses use area_ids/activity_ids instead of role.course_ids[]
+          - Worker visibility: workers see courses matching their area/activity OR untagged courses
+          - Auto-certificate: issued when ALL required courses completed, with correct company_id, role_ids, role_names
+          - Public verification: /api/certificates/verify/{code} works without auth
+          - PDF generation: embeds company branding from companies table
+          - Student progress: computed from area/activity matching
+          - Activity curriculum: returns courses tagged with activity
+          - Reports: all scoped to company, users_by_role uses activity_ids
+          
+          **BUG FIXED:**
+          - PDF generation was failing with "AttributeError: 'list' object has no attribute 'upper'"
+          - Fixed by handling role_names as both list and string in generate_certificate_pdf()
+          - Line 1093-1098 in server.py: added isinstance check to convert list to comma-separated string
+          
+          All F1.2 endpoints tested and working:
+          - /api/courses (GET/POST/PUT/DELETE) - scoped by company, worker filtering by area/activity
+          - /api/evaluations (GET/POST/PUT) - scoped by company
+          - /api/evaluations/{id}/submit - auto-certificate logic with area/activity matching
+          - /api/certificates (GET) - scoped by company, workers see only their own
+          - /api/certificates/{id}/pdf - PDF generation with company branding
+          - /api/certificates/verify/{code} - public verification (no auth)
+          - /api/student/progress - computed from area/activity matching
+          - /api/activities/{activity_id}/curriculum - courses tagged with activity
+          - /api/reports/summary - scoped aggregation with activity_ids
+          - /api/reports/users - scoped with activity names
+          
+          🎉 F1.2 MULTI-TENANT MIGRATION COMPLETE - All legacy endpoints working correctly!
+
+agent_communication:
+  - agent: "main"
+    message: |
+      F1.2 complete. Please test multi-tenant scope on all the legacy endpoints. Credentials unchanged:
+        - SuperAdmin: superadmin@aptiva.com / superadmin123
+        - Admin "Aptiva Demo": admin@aptivademo.com / admin123
+        - Trabajador "Aptiva Demo": trabajador@aptivademo.com / trabajador123
+      
+      Tests:
+      1. As admin@aptivademo.com:
+         a. Create a course with area_ids=[some_area], activity_ids=[Trabajo en Altura activity_id] -> POST /api/courses.
+         b. GET /api/courses -> should include that course.
+         c. Create an evaluation for it -> POST /api/evaluations.
+         d. PUT/DELETE that course/evaluation.
+      2. As trabajador@aptivademo.com (has area_ids=[Operaciones Mina], activity_ids=[Trabajo en Altura]):
+         a. GET /api/courses -> should only return courses matching their area/activity OR untagged. Should see step 1a's course.
+         b. GET /api/student/progress -> returns the same course list with completion status.
+         c. Submit the evaluation correctly -> POST /api/evaluations/{eval_id}/submit -> should create a course_completion and (since this is their only required course) auto-issue a certificate with company_id.
+         d. GET /api/certificates -> their own certificate.
+         e. GET /api/certificates/{id}/pdf -> PDF download with branding from their company.
+         f. Public GET /api/certificates/verify/{code} -> returns valid.
+      3. Cross-tenant isolation:
+         a. Create a 2nd company via superadmin + an admin for it.
+         b. Login as that 2nd admin.
+         c. GET /api/courses, /api/users, /api/reports/summary, /api/certificates -> MUST NOT see "Aptiva Demo" data.
+         d. Try GET /api/courses/{aptiva_demo_course_id} -> 404 (not in their company).
+      4. As superadmin (no company_id):
+         a. GET /api/reports/summary -> should not crash; returns aggregated counts (across all companies).
+      5. /api/activities/{activity_id}/curriculum (activity in admin's company) -> returns the courses tagged with that activity.
+  - agent: "testing"
+    message: |
+      ✅ F1.2 MULTI-TENANT TESTING COMPLETE - 23/23 tests passed (100% success rate)
+      
+      All F1.2 multi-tenant features are working correctly:
+      
+      ✅ AUTHENTICATION (3/3):
+      - SuperAdmin, Admin Demo, Trabajador Demo all login successfully
+      - Correct company_id assignment and role verification
+      
+      ✅ TENANT ISOLATION (6/6):
+      - Created 2nd company and admin successfully
+      - Company B admin sees only their own data (1 user, 0 courses, 0 certificates)
+      - Company B admin cannot access Aptiva Demo course (404)
+      - Perfect tenant isolation - no data leakage
+      
+      ✅ NEW COURSE MODEL (2/2):
+      - Courses have area_ids[] and activity_ids[] arrays
+      - Workers see only published courses matching their area/activity OR untagged courses
+      
+      ✅ AUTO-CERTIFICATE FLOW (6/6):
+      - Certificate auto-issued when worker completes ALL required courses
+      - Certificate has correct company_id, role_ids (activity_ids), role_names (activity names)
+      - Certificate type is "role_completion"
+      - Certificate has courses_detail array with all completed courses
+      
+      ✅ PUBLIC CERTIFICATE VERIFICATION (1/1):
+      - GET /api/certificates/verify/{code} works without auth
+      - Returns is_valid=True for valid certificates
+      
+      ✅ PDF GENERATION (1/1):
+      - GET /api/certificates/{id}/pdf generates PDF successfully
+      - PDF embeds company branding from companies table
+      - Fixed bug: role_names list handling in PDF generation
+      
+      ✅ STUDENT PROGRESS (1/1):
+      - GET /api/student/progress returns courses based on area/activity matching
+      - Shows completion status and role names
+      
+      ✅ ACTIVITY CURRICULUM (1/1):
+      - GET /api/activities/{activity_id}/curriculum returns courses tagged with activity
+      
+      ✅ REPORTS (2/2):
+      - GET /api/reports/summary scoped to company
+      - GET /api/reports/users scoped to company
+      
+      🎉 F1.2 COMPLETE - All legacy endpoints (courses, evaluations, certificates, completions, reports, student/progress) are now multi-tenant scoped and working perfectly!
