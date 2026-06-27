@@ -1,128 +1,122 @@
-# E-Learning Platform - PRD
+# Aptiva — PRD
 
 ## Problem Statement
-Desarrollar una plataforma web autónoma de capacitaciones e-learning que permita gestionar cursos estructurados en mallas curriculares por rol, administrar contenidos multimedia, evaluar conocimientos mediante pruebas con alternativas, emitir certificados automáticos con validez y trazabilidad.
+Aptiva es una plataforma multi-empresa (multi-tenant) para **Gestión de Competencias, Capacitaciones y Storage de Trabajadores**. Su propósito es asegurar que cada trabajador cuente con la documentación, salud compatible, competencias y conocimiento de los riesgos y controles necesarios, de manera que ante un accidente, auditoría o fiscalización, la empresa cuente con los respaldos para blindarse de responsabilidades civiles y penales según la legislación.
+
+Vendor / dueño del producto: **DoSoft**.
 
 ## User Personas
-1. **Administrador**: Acceso total - gestión de usuarios, cursos, evaluaciones, certificados, reportes, branding
-2. **Alumno**: Acceso a cursos asignados según rol, evaluaciones, descarga de certificados
+1. **SuperAdmin** (global, DoSoft): Crea y administra empresas y sus administradores iniciales. Acceso transversal a métricas globales.
+2. **Admin de Empresa**: Gestiona su empresa (trabajadores, áreas, actividades, tipos de documento, expedientes/storage, cursos, evaluaciones, certificados, reportes, branding).
+3. **Trabajador**: Accede a su "Ruta Aptiva" (capacitaciones auto-asignadas según su área/actividad/competencias) y a sus constancias.
 
-## Core Requirements (Static)
-- Autenticación: Email/contraseña + Google OAuth
-- Gestión de usuarios con RUT, empresa, rol
-- Mallas curriculares por rol (cursos obligatorios)
-- Cursos con videos Vimeo + PDFs descargables
-- Evaluaciones múltiple opción configurables
-- Certificados PDF automáticos con código de verificación
-- Branding configurable (logo, firma, colores)
-- Reportes exportables CSV
-- **Pre-requisitos de cursos con línea de tiempo visual**
+## Core Requirements
+- Multi-tenant por `company_id` (toda tabla operativa scopeada).
+- Autenticación email/contraseña con 3 roles (SuperAdmin, Admin, Trabajador).
+- Storage de Trabajadores (expediente digital): contratos, exámenes pre-ocupacionales, certificados de salud, licencias, con fechas de vencimiento.
+- Matriz de Competencias por empresa (catálogo, asignación a actividades, adquisición vía curso o subida manual con vencimiento).
+- **Ruta Aptiva**: capacitaciones que el trabajador ve automáticamente según su área, actividad y competencias requeridas.
+- Evaluaciones con scoring automático.
+- Certificados/Constancias PDF verificables con código.
+- Reportes exportables CSV/Excel.
+- Branding por empresa (logo, banner, colores).
+- Importación CSV de trabajadores.
 
 ## Technical Stack
-- **Frontend**: React + Tailwind CSS + Shadcn UI
+- **Frontend**: React + Tailwind + Shadcn UI
 - **Backend**: FastAPI (Python)
-- **Database**: MongoDB
-- **PDF Generation**: ReportLab
-- **Auth**: JWT + Emergent Google OAuth
+- **DB**: Supabase PostgreSQL (vía asyncpg)
+- **Storage**: Supabase Storage (proxied por backend en `/api/files/...`)
+- **PDF**: ReportLab
+- **Auth**: JWT + (Emergent) Google OAuth
 
-## What's Been Implemented
+## Architecture
+```
+/app/
+├── backend/
+│   ├── server.py             # Endpoints legacy adaptados a multi-tenant
+│   ├── routes_v2.py          # SuperAdmin, Companies, Users multi-tenant, Areas, DocumentTypes, WorkerDocuments, UsersImport
+│   ├── init_schema_v2.sql    # Esquema PostgreSQL multi-tenant
+│   ├── storage_client.py     # Wrapper Supabase Storage
+│   └── seed.py               # Seed idempotente
+└── frontend/src/
+    ├── App.js
+    ├── contexts/AuthContext.js
+    ├── layouts/{SuperAdminLayout, AdminLayout, StudentLayout}.js
+    └── pages/{Landing, Login, Register, AuthCallback, VerifyCertificate}
+        + superadmin/{Dashboard, Companies}
+        + admin/{Dashboard, Users, UsersImport, Areas, Roles, Courses, CourseEdit, Evaluations, DocumentTypes, WorkerDocuments, Certificates, Reports, Branding}
+        + student/{Dashboard, Course, Evaluation, Certificates}
+```
 
-### Backend (/app/backend/server.py)
-- [x] Auth: register, login, Google OAuth, logout
-- [x] Users: CRUD, search by RUT
-- [x] Roles: CRUD with course assignment and course_order
-- [x] Courses: CRUD, material upload, prerequisites
-- [x] Evaluations: CRUD, submit with scoring
-- [x] **Certificates: UN SOLO certificado cuando se completan TODOS los cursos del rol**
-- [x] Certificate PDF: Diseño moderno horizontal con marco, tabla de cursos y porcentajes
-- [x] Branding: logo, banner logo, signature, colors
-- [x] Reports: summary, user reports, CSV export
-- [x] GET /api/roles/{role_id}/curriculum - Returns ordered curriculum with prerequisites
-- [x] GET /api/student/progress - Returns is_locked and missing_prerequisites
+## DB Schema (multi-tenant)
+- `companies`: {id, name, rut, is_active}
+- `users`: {id, company_id, email, is_super_admin, is_admin, area_ids, activity_ids}
+- `areas`: {id, company_id, name}
+- `activities`: {id, company_id, name}
+- `document_types`: {id, company_id, name, requires_expiry}
+- `worker_documents`: {id, company_id, user_id, document_type_id, files (JSONB)}
+- `courses`, `evaluations`, `certificates`: scopeadas por `company_id`.
 
-### Frontend Pages
-- [x] Landing page (with banner logo)
-- [x] Login/Register
-- [x] Admin Dashboard with charts
-- [x] Admin Users management
-- [x] Admin Roles & Curriculum (with timeline modal and prerequisite config)
-- [x] Admin Courses management
-- [x] Admin Evaluations builder
-- [x] Admin Certificates history
-- [x] Admin Reports with export
-- [x] Admin Branding config (logo certificado, banner logo, firma)
-- [x] Student Dashboard (with course ordering and locking)
-- [x] Student Course viewer
-- [x] Student Evaluation flow
-- [x] Student Certificates
-- [x] Certificate verification (public)
-- [x] **NEW**: Student Roadmap Modal (learning path timeline)
+## Brand & Copy (Fase 2 — completed 2026-02)
+- Title HTML: "Aptiva — Competencias, Capacitaciones y Storage de Trabajadores"
+- Tagline: "Gestión de Competencias, Capacitaciones y Storage"
+- Hero: "Blinda a tu empresa con trabajadores **competentes y respaldados**"
+- "Ruta Aptiva" = nombre branded del plan de capacitación autogestionado del trabajador.
+- "Mis Cursos" → "Mi Ruta Aptiva"; "Mis Certificados" (trabajador) → "Mis Constancias".
+- Footers: "© <year> DoSoft · Aptiva — Gestión de Competencias, Capacitaciones y Storage".
 
-## DB Schema Updates (2025-01-29)
-- **courses**: Added `prerequisites: List[str]` (list of course_ids)
-- **roles**: Added `course_order: List[str]` (ordered list of course_ids)
-- **users**: Changed `role_id` to `role_ids: List[str]` (supports multiple roles/activities)
-- **certificates**: Changed `role_id/role_name` to `role_ids/role_names` (supports multiple roles)
+## What's Been Implemented (CHANGELOG)
+### 2026-02 — Fase 2 (Textos / Brand)
+- [x] Landing rediseñada con propuesta de valor de blindaje legal.
+- [x] Login/Register descripciones alineadas a Aptiva.
+- [x] Layouts (Super/Admin/Student) headers y footers actualizados.
+- [x] Student Dashboard heading "Mi Ruta Aptiva" + empty-state.
+- [x] Student Certificates heading "Mis Constancias".
+- [x] meta description + OG tags + title HTML.
+- [x] Verificado por testing agent: 25/25 (100%).
 
-## Predefined Roles/Activities
-1. TRABAJO EN ALTURA
-2. ARMADO DE ANDAMIOS
-3. OPERADOR PLATAFORMAS MÓVILES MOTORIZADAS
-4. OPERADOR GRÚA
-5. RIGGER
-6. IZAJE
-7. OPERADOR EQUIPO EXCAVACIÓN Y MOVIMIENTO DE TIERRA
-8. ESPACIOS CONFINADOS
-9. SOLDADOR
-10. ACTIVIDADES CON LLAMA ABIERTA O TRABAJOS EN CALIENTE
-11. ESPECIALISTA SEC CON INTERVENCIÓN EN LÍNEAS DE GAS
-12. OPERADOR EQUIPO RADIACTIVO
-13. AISLACIÓN Y BLOQUEO DE ENERGÍAS
-14. INSTALADOR ELÉCTRICO
-15. INTERVENCIÓN EN ENERGÍA ELÉCTRICA
-16. MANIPULADOR DE EXPLOSIVOS
-17. CONDUCCIÓN
-18. CONDUCCIÓN DE BUS O VEHÍCULOS DE TRANSPORTE DE CARGA
-19. CONDUCCIÓN MINA
+### Previo — Fases 1 + 3 (multi-tenant + UI admin)
+- [x] Migración MongoDB → Supabase PostgreSQL.
+- [x] Storage local → Supabase Storage (proxy backend).
+- [x] Backend multi-tenant scoping vía `get_current_company_id()`.
+- [x] SuperAdmin Dashboard + Companies CRUD.
+- [x] Admin UI: Areas, DocumentTypes, WorkerDocuments, UsersImport.
+- [x] Branding: paleta azul, favicon, logo Aptiva.
+
+## Test Credentials (ver /app/memory/test_credentials.md)
+| Rol | Email | Password |
+|---|---|---|
+| SuperAdmin | `superadmin@aptiva.com` | `superadmin123` |
+| Admin Aptiva Demo | `admin@aptivademo.com` | `admin123` |
+| Trabajador Aptiva Demo | `trabajador@aptivademo.com` | `trabajador123` |
 
 ## Prioritized Backlog
 
-### P0 (Critical) - ✅ Done
-- Auth system
-- Course management
-- Evaluation system
-- Certificate generation
-- **Course prerequisites system**
+### P0 — Próximo
+- **F3.4** — Vista trabajador para ver/descargar sus propios documentos (cerrar ciclo del módulo Storage).
 
-### P1 (Important) - ✅ Done
-- Branding configuration
-- Reports and export
-- Banner logo for all pages
+### P1
+- **Fase 4 — Módulo Competencias**:
+  - Catálogo de competencias por empresa.
+  - Asignación de competencias a actividades.
+  - Adquisición vía curso (al aprobar un curso, marca competencia) o subida manual por admin (con fecha de vencimiento).
+  - Alertas de vencimiento próximo.
+- **Fase 5 — Ruta Aptiva inteligente**: motor que combina área + actividad + competencias requeridas para construir la ruta del trabajador automáticamente.
 
-### P2 (Nice to Have)
-- Email notifications
-- Advanced analytics
-- Multi-language support
-- Bulk user import
-- Course chat feature
+### P2 — Mejoras
+- Notificaciones por email (documentos/competencias por vencer).
+- Refactor backend: consolidar `server.py` + `routes_v2.py` en `/app/backend/routes/`.
+- Dashboard SuperAdmin: corregir fetch de stats globales (404/error observado en testing).
+- Verificar 404s de favicon/logo en `/login` (assets con `?v=3` cache-bust).
+- Eliminar/restringir Register público (en multi-tenant no debería existir auto-registro).
+- Multi-idioma (es/en/pt).
 
-### Known Issues
-- Google OAuth flow may need verification (reported as failing in iteration_1.json)
-- Older courses may lack 'prerequisites' field (migration recommended)
-
-## Test Credentials
-- Admin: admin@elearning.com / admin123
-- Student: demo.alumno@test.com / demo123
-
-## Test Data
-- Role "Operador" (role_b9d0af933ed8) has 3 courses:
-  1. Inducción General (no prerequisites) - course_700e34687aed
-  2. Seguridad Básica (requires #1) - course_7cba543d9e13
-  3. Seguridad Avanzada (requires #1 and #2) - course_e1ba9b6b0c83
+### Known Issues (no bloqueantes)
+- `pages/admin/Branding.js` aún tiene textos genéricos "la plataforma" — pendientes de pulir.
+- SuperAdmin Dashboard: stats endpoint produce `Failed to fetch` (no crítico, no bloquea F4).
 
 ## Next Tasks
-1. Fix Google OAuth flow (if still broken)
-2. Add email notifications on certificate generation
-3. Implement bulk user import via CSV
-4. Add more detailed analytics dashboard
-5. Backend code refactoring (split server.py into modules)
+1. **F3.4** Vista trabajador de sus documentos.
+2. **Fase 4** Módulo Competencias.
+3. Refactor backend en `/app/backend/routes/`.
