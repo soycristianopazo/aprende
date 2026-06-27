@@ -67,6 +67,16 @@ Vendor / dueño del producto: **DoSoft**.
 - Footers: "© <year> DoSoft · Aptiva — Gestión de Competencias, Capacitaciones y Storage".
 
 ## What's Been Implemented (CHANGELOG)
+### 2026-02 — F3.4 (Worker storage view)
+- [x] Endpoint `/api/my-documents` ya existía y devuelve tipos requeridos + archivos subidos del trabajador (scoped por área/actividad).
+- [x] Nueva página `/student/my-documents` ("Mi Expediente") con:
+  - Tarjetas resumen (Vigentes / Por vencer / Vencidos / Pendientes).
+  - Listado por tipo de documento con estado (Pendiente / Vigente / Por vencer / Vencido).
+  - Descarga directa de cada archivo (proxy `/api/files/...`).
+  - Empty-state explicando que el admin es quien sube los documentos.
+- [x] Nav del trabajador ahora muestra: Mi Ruta Aptiva · Mi Expediente · Mis Constancias.
+- [x] Smoke test manual confirmado con `trabajador@aptivademo.com` (4 docs, badges correctos, descarga 302 → Supabase signed URL).
+
 ### 2026-02 — Fase 2 (Textos / Brand)
 - [x] Landing rediseñada con propuesta de valor de blindaje legal.
 - [x] Login/Register descripciones alineadas a Aptiva.
@@ -94,7 +104,7 @@ Vendor / dueño del producto: **DoSoft**.
 ## Prioritized Backlog
 
 ### P0 — Próximo
-- **F3.4** — Vista trabajador para ver/descargar sus propios documentos (cerrar ciclo del módulo Storage).
+- **Fase 4 — Módulo Competencias** (siguiente).
 
 ### P1
 - **Fase 4 — Módulo Competencias**:

@@ -26,6 +26,7 @@ const StudentLayout = () => {
 
   const navItems = [
     { path: '/student', label: 'Mi Ruta Aptiva', exact: true },
+    { path: '/student/my-documents', label: 'Mi Expediente' },
     { path: '/student/certificates', label: 'Mis Constancias' },
   ];
 

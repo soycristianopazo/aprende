@@ -36,6 +36,7 @@ import StudentDashboard from "./pages/student/Dashboard";
 import StudentCourse from "./pages/student/Course";
 import StudentEvaluation from "./pages/student/Evaluation";
 import StudentCertificates from "./pages/student/Certificates";
+import StudentMyDocuments from "./pages/student/MyDocuments";
 
 // Layouts
 import AdminLayout from "./layouts/AdminLayout";
@@ -142,6 +143,7 @@ function AppRouter() {
         <Route path="course/:courseId" element={<StudentCourse />} />
         <Route path="evaluation/:courseId" element={<StudentEvaluation />} />
         <Route path="certificates" element={<StudentCertificates />} />
+        <Route path="my-documents" element={<StudentMyDocuments />} />
       </Route>
 
       {/* Fallback */}
