@@ -27,6 +27,8 @@ load_dotenv(ROOT_DIR / '.env')
 
 # PostgreSQL (Supabase) connection via MongoDB-compatible adapter
 from db_adapter import db, close_pool, ping as db_ping
+# Supabase Storage client
+from storage_client import upload_to_storage, get_public_url
 
 # JWT Config
 JWT_SECRET = os.environ.get('JWT_SECRET', 'elearning_secret_key_2024_secure')
@@ -559,12 +561,11 @@ async def upload_course_material(course_id: str, file: UploadFile = File(...), a
         raise HTTPException(status_code=400, detail="Only PDF files allowed")
     
     filename = f"{course_id}_{uuid.uuid4().hex[:8]}.pdf"
-    filepath = UPLOAD_DIR / "materials" / filename
-    
     content = await file.read()
-    with open(filepath, "wb") as f:
-        f.write(content)
+    # Upload to Supabase Storage (bucket: materials)
+    await upload_to_storage("materials", filename, content, "application/pdf")
     
+    # Keep relative URL so the frontend's `${BACKEND_URL}${url}` pattern still works
     material_url = f"/api/files/materials/{filename}"
     await db.courses.update_one({"course_id": course_id}, {"$set": {"material_url": material_url}})
     
@@ -1265,12 +1266,10 @@ async def upload_logo(file: UploadFile = File(...), admin: dict = Depends(requir
     if not file.filename.lower().endswith(('.png', '.jpg', '.jpeg')):
         raise HTTPException(status_code=400, detail="Only PNG/JPG files allowed")
     
-    filename = f"logo_{uuid.uuid4().hex[:8]}.png"
-    filepath = UPLOAD_DIR / "logos" / filename
-    
+    ext = "png" if file.filename.lower().endswith(".png") else "jpg"
+    filename = f"logo_{uuid.uuid4().hex[:8]}.{ext}"
     content = await file.read()
-    with open(filepath, "wb") as f:
-        f.write(content)
+    await upload_to_storage("logos", filename, content, f"image/{'jpeg' if ext == 'jpg' else 'png'}")
     
     logo_url = f"/api/files/logos/{filename}"
     
@@ -1279,7 +1278,7 @@ async def upload_logo(file: UploadFile = File(...), admin: dict = Depends(requir
         await db.branding.update_one({}, {"$set": {"logo_url": logo_url}})
     else:
         await db.branding.insert_one({
-            "branding_id": "default",
+            "id": "default",
             "logo_url": logo_url,
             "primary_color": "#F97316",
             "secondary_color": "#F1F5F9"
@@ -1292,12 +1291,10 @@ async def upload_banner_logo(file: UploadFile = File(...), admin: dict = Depends
     if not file.filename.lower().endswith(('.png', '.jpg', '.jpeg')):
         raise HTTPException(status_code=400, detail="Only PNG/JPG files allowed")
     
-    filename = f"banner_logo_{uuid.uuid4().hex[:8]}.png"
-    filepath = UPLOAD_DIR / "logos" / filename
-    
+    ext = "png" if file.filename.lower().endswith(".png") else "jpg"
+    filename = f"banner_logo_{uuid.uuid4().hex[:8]}.{ext}"
     content = await file.read()
-    with open(filepath, "wb") as f:
-        f.write(content)
+    await upload_to_storage("logos", filename, content, f"image/{'jpeg' if ext == 'jpg' else 'png'}")
     
     banner_logo_url = f"/api/files/logos/{filename}"
     
@@ -1306,7 +1303,7 @@ async def upload_banner_logo(file: UploadFile = File(...), admin: dict = Depends
         await db.branding.update_one({}, {"$set": {"banner_logo_url": banner_logo_url}})
     else:
         await db.branding.insert_one({
-            "branding_id": "default",
+            "id": "default",
             "banner_logo_url": banner_logo_url,
             "primary_color": "#F97316",
             "secondary_color": "#F1F5F9"
@@ -1319,12 +1316,10 @@ async def upload_signature(file: UploadFile = File(...), admin: dict = Depends(r
     if not file.filename.lower().endswith(('.png', '.jpg', '.jpeg')):
         raise HTTPException(status_code=400, detail="Only PNG/JPG files allowed")
     
-    filename = f"signature_{uuid.uuid4().hex[:8]}.png"
-    filepath = UPLOAD_DIR / "signatures" / filename
-    
+    ext = "png" if file.filename.lower().endswith(".png") else "jpg"
+    filename = f"signature_{uuid.uuid4().hex[:8]}.{ext}"
     content = await file.read()
-    with open(filepath, "wb") as f:
-        f.write(content)
+    await upload_to_storage("signatures", filename, content, f"image/{'jpeg' if ext == 'jpg' else 'png'}")
     
     signature_url = f"/api/files/signatures/{filename}"
     
@@ -1333,7 +1328,7 @@ async def upload_signature(file: UploadFile = File(...), admin: dict = Depends(r
         await db.branding.update_one({}, {"$set": {"signature_url": signature_url}})
     else:
         await db.branding.insert_one({
-            "branding_id": "default",
+            "id": "default",
             "signature_url": signature_url,
             "primary_color": "#F97316",
             "secondary_color": "#F1F5F9"
@@ -1346,12 +1341,10 @@ async def upload_footer(file: UploadFile = File(...), admin: dict = Depends(requ
     if not file.filename.lower().endswith(('.png', '.jpg', '.jpeg')):
         raise HTTPException(status_code=400, detail="Only PNG/JPG files allowed")
     
-    filename = f"footer_{uuid.uuid4().hex[:8]}.png"
-    filepath = UPLOAD_DIR / "logos" / filename
-    
+    ext = "png" if file.filename.lower().endswith(".png") else "jpg"
+    filename = f"footer_{uuid.uuid4().hex[:8]}.{ext}"
     content = await file.read()
-    with open(filepath, "wb") as f:
-        f.write(content)
+    await upload_to_storage("logos", filename, content, f"image/{'jpeg' if ext == 'jpg' else 'png'}")
     
     footer_image_url = f"/api/files/logos/{filename}"
     
@@ -1360,7 +1353,7 @@ async def upload_footer(file: UploadFile = File(...), admin: dict = Depends(requ
         await db.branding.update_one({}, {"$set": {"footer_image_url": footer_image_url}})
     else:
         await db.branding.insert_one({
-            "branding_id": "default",
+            "id": "default",
             "footer_image_url": footer_image_url,
             "primary_color": "#F97316",
             "secondary_color": "#F1F5F9"
@@ -1368,19 +1361,27 @@ async def upload_footer(file: UploadFile = File(...), admin: dict = Depends(requ
     
     return {"footer_image_url": footer_image_url}
 
-# ==================== FILE SERVING ====================
+# ==================== FILE SERVING (proxies to Supabase Storage) ====================
 
 @api_router.get("/files/{folder}/{filename}")
 async def serve_file(folder: str, filename: str):
+    """
+    Serves files by proxying to Supabase Storage public URLs.
+    Legacy fallback: if file exists in local /uploads (pre-migration), serve it.
+    """
     allowed_folders = ["logos", "signatures", "materials"]
     if folder not in allowed_folders:
         raise HTTPException(status_code=404, detail="File not found")
-    
-    filepath = UPLOAD_DIR / folder / filename
-    if not filepath.exists():
-        raise HTTPException(status_code=404, detail="File not found")
-    
-    return FileResponse(filepath)
+
+    # Legacy fallback for files that may still exist on disk
+    local_path = UPLOAD_DIR / folder / filename
+    if local_path.exists():
+        return FileResponse(local_path)
+
+    # Redirect to Supabase Storage public URL (302)
+    from fastapi.responses import RedirectResponse
+    public_url = get_public_url(folder, filename)
+    return RedirectResponse(public_url, status_code=302)
 
 # ==================== REPORTS ROUTES ====================
 

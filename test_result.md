@@ -291,3 +291,128 @@ agent_communication:
       - GET /api/reports/summary certificate count incremented correctly
       
       🎉 MIGRATION COMPLETE - All PostgreSQL features including auto-certificate issuance are working!
+
+  - task: "Schema fix: certificates missing columns"
+    implemented: true
+    working: true
+    file: "backend/init_schema.sql"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "testing"
+        comment: "Auto-certificate failed with column certificate_type does not exist (also missing user_rut, user_company, total_hours, average_score, course_id, course_name, score, training_type)."
+      - working: true
+        agent: "main"
+        comment: "ALTER TABLE applied with 9 missing columns; init_schema.sql synchronized."
+      - working: true
+        agent: "testing"
+        comment: "Re-tested end-to-end auto-certificate issuance: 13/13 tests passed. Certificate created with role_completion type, role_ids[], courses_detail JSONB, verification_code, exposure via /api/certificates and public /api/certificates/verify/{code}, summary count incremented."
+
+  - task: "Supabase Storage migration for file uploads"
+    implemented: true
+    working: true
+    file: "backend/storage_client.py, backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: |
+          Migrated all file uploads (logo, banner-logo, signature, footer, course materials) from local
+          disk to Supabase Storage. Created 3 public buckets via REST API: logos, signatures, materials.
+          Added storage_client.py (uses Supabase Storage REST API directly with service_role key).
+          5 upload endpoints (POST /api/courses/{id}/material, POST /api/branding/logo,
+          /api/branding/banner-logo, /api/branding/signature, /api/branding/footer) now upload to
+          Storage and return a relative URL `/api/files/{folder}/{filename}`.
+          The serve endpoint GET /api/files/{folder}/{filename} now 302-redirects to the public
+          Supabase URL (with local-disk fallback for any legacy file). This keeps frontend code
+          unchanged (it concatenates `${BACKEND_URL}${url}`).
+          Smoke tested: POST /api/branding/logo with PNG -> 200 + logo_url stored; GET via
+          /api/files/logos/{filename} returned the exact bytes via the 302 redirect; direct Supabase
+          public URL also returns 200 with content-type image/png.
+      - working: true
+        agent: "testing"
+        comment: |
+          ✅ SUPABASE STORAGE MIGRATION COMPLETE - ALL TESTS PASSED (15/15 = 100%)
+          
+          Comprehensive end-to-end testing of Supabase Storage file upload flow:
+          
+          ✅ 1. Admin login (admin@elearning.com/admin123) - WORKING
+          ✅ 2. POST /api/branding/logo (PNG) - Returns {"logo_url": "/api/files/logos/{filename}"} - WORKING
+          ✅ 3. POST /api/branding/banner-logo (PNG) - Returns {"banner_logo_url": "/api/files/logos/{filename}"} - WORKING
+          ✅ 4. POST /api/branding/signature (PNG) - Returns {"signature_url": "/api/files/signatures/{filename}"} - WORKING
+          ✅ 5. POST /api/branding/footer (PNG) - Returns {"footer_image_url": "/api/files/logos/{filename}"} - WORKING
+          ✅ 6. Create test course - WORKING
+          ✅ 7. POST /api/courses/{course_id}/material (PDF) - Returns {"material_url": "/api/files/materials/{filename}"} - WORKING
+          ✅ 8. GET /api/branding - All stored URLs present and correct - WORKING
+          ✅ 9. GET /api/files/logos/{logo_filename} with redirect follow - 302 → Supabase public URL, 200 + non-empty content - WORKING
+          ✅ 10. GET /api/files/logos/{banner_filename} with redirect follow - 302 → Supabase public URL, 200 + non-empty content - WORKING
+          ✅ 11. GET /api/files/signatures/{signature_filename} with redirect follow - 302 → Supabase public URL, 200 + non-empty content - WORKING
+          ✅ 12. GET /api/files/logos/{footer_filename} with redirect follow - 302 → Supabase public URL, 200 + non-empty content - WORKING
+          ✅ 13. GET /api/files/materials/{material_filename} with redirect follow - 302 → Supabase public URL, 200 + non-empty content - WORKING
+          ✅ 14. Validation: Upload .txt to /api/branding/logo - Correctly rejected with 400 - WORKING
+          ✅ 15. Non-existent file: GET /api/files/logos/nonexistent_xyz123.png - Returns 400/404 as expected - WORKING
+          
+          Verified redirect behavior:
+          - GET /api/files/{folder}/{filename} returns 302 status
+          - Location header points to https://jnqdgknthzslhbfsmjtq.supabase.co/storage/v1/object/public/{bucket}/{filename}
+          - Following redirect returns 200 with correct content-type and non-empty body
+          - Frontend code remains unchanged (uses ${BACKEND_URL}${url} pattern)
+          
+          All 3 Supabase Storage buckets working correctly:
+          - logos (for logo, banner_logo, footer_image)
+          - signatures (for certificate signature)
+          - materials (for course PDFs)
+          
+          🎉 SUPABASE STORAGE MIGRATION COMPLETE - All file uploads and serving working perfectly!
+
+metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 3
+  run_ui: false
+
+test_plan:
+  current_focus:
+    - "Supabase Storage migration for file uploads"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+  - agent: "main"
+    message: |
+      Supabase Storage migration done. Please retest:
+        1. POST /api/branding/logo with a PNG file (admin token); verify response logo_url and that
+           GET /api/files/logos/{filename} returns the image bytes (with -L for redirect follow).
+        2. POST /api/branding/banner-logo, /api/branding/signature, /api/branding/footer.
+        3. POST /api/courses/{id}/material with a small PDF; verify GET /api/files/materials/{filename}.
+        4. Confirm uploaded files appear in the Supabase Storage buckets (logos, signatures, materials)
+           and are accessible via their public URLs (https://jnqdgknthzslhbfsmjtq.supabase.co/storage/v1/object/public/...).
+      No need to retest DB endpoints (already passed 100%). Focus only on Storage flow.
+  - agent: "testing"
+    message: |
+      ✅ SUPABASE STORAGE TESTING COMPLETE - 15/15 tests passed (100% success rate)
+      
+      All file upload endpoints working correctly:
+      - POST /api/branding/logo (PNG) ✅
+      - POST /api/branding/banner-logo (PNG) ✅
+      - POST /api/branding/signature (PNG) ✅
+      - POST /api/branding/footer (PNG) ✅
+      - POST /api/courses/{course_id}/material (PDF) ✅
+      
+      All file serving via 302 redirects working:
+      - GET /api/files/logos/{filename} → 302 → Supabase public URL → 200 + content ✅
+      - GET /api/files/signatures/{filename} → 302 → Supabase public URL → 200 + content ✅
+      - GET /api/files/materials/{filename} → 302 → Supabase public URL → 200 + content ✅
+      
+      Validation and error handling working:
+      - .txt file upload rejected with 400 ✅
+      - Non-existent file returns 400/404 ✅
+      
+      GET /api/branding returns all stored URLs correctly ✅
+      
+      🎉 MIGRATION COMPLETE - All Supabase Storage features working perfectly!
