@@ -526,65 +526,263 @@ frontend:
           - NO tiny dots with empty space - the bug is completely fixed!
           
           Minor note: Cache buster ?v=2 not in rendered DOM (React %PUBLIC_URL% replacement happens at build time), but favicon files are being served correctly and displaying properly.
+      - working: false
+        agent: "user"
+        comment: |
+          NEW BUG REPORT: The favicon is missing the black C-shaped semicircles/arcs that are part of the Aptiva logo.
+          User reported: "El favicon tiene semi círculos negros que no salen" (the favicon's black semicircles are not showing).
+          
+          ROOT CAUSE: In the previous ?v=2 fix, black pixels were treated as background and made transparent. But the source PNG 
+          actually had a TRANSPARENT background already (41,677 transparent pixels, alpha=0), with the logo composed of:
+          - 17,252 BLACK pixels (the C-shaped arcs) 
+          - 2,350 BLUE pixels (the two squares)
+          
+          The "remove black" step in ?v=2 destroyed the arcs, leaving only blue squares visible.
+      - working: true
+        agent: "user"
+        comment: |
+          FIX APPLIED (?v=3):
+          - Regenerated favicons by reading source RGBA preserving the alpha channel
+          - Computed bounding box of pixels with alpha > 0 (not by color) — bbox came out 223x221
+          - Cropped + centered on a transparent square
+          - NOT modifying any black pixels — they are part of the logo
+          - Wrote favicon.ico (multi-res 16/32/48/64/128/256) — file is now 536 bytes (was 327 before)
+          - Wrote favicon-32x32.png (now 1213 bytes, was 475)
+          - Cache buster bumped to ?v=3
+          - index.html links updated to use ?v=3
+      - working: true
+        agent: "testing"
+        comment: |
+          ✅ FAVICON BUG FIX VERIFIED - ALL TESTS PASSED (8/8 = 100%)
+          
+          Comprehensive verification of black C-shaped arcs + blue squares:
+          
+          ✅ TEST 1: GET /favicon.ico?v=3 returns 200, content-type: image/x-icon, size: 536 bytes (expected ~536) - PASS
+          ✅ TEST 2: GET /favicon-32x32.png?v=3 returns 200, size: 1213 bytes (expected ~1213) - PASS
+          ✅ TEST 3: GET /logo192.png?v=3 returns 200, size: 7828 bytes - PASS
+          ✅ TEST 4: GET /logo512.png?v=3 returns 200, size: 35543 bytes - PASS
+          ✅ TEST 5: Large-scale favicon image injected at 256x256 with red border - PASS
+          ✅ TEST 6: PIXEL ANALYSIS - CRITICAL SUCCESS:
+                     - Black pixels (C-shaped arcs): 45,309 pixels
+                     - Blue pixels (two squares): 7,578 pixels
+                     - Transparent pixels: 11,716 pixels
+                     - Both black arcs AND blue squares are present!
+                     - Black pixels > Blue pixels as expected (arcs are larger than squares)
+          ✅ TEST 7: Visual screenshot saved for verification - PASS
+          ✅ TEST 8: Cache buster ?v=3 found in favicon links in rendered DOM - PASS
+          
+          🎉 CRITICAL VERIFICATION: The Aptiva logo is now COMPLETE with BOTH elements visible!
+          - BLACK C-SHAPED ARCS: Clearly visible forming circular/semicircular pattern around perimeter
+          - BLUE SQUARES: Two distinct blue squares (upper left + lower right areas)
+          - Visual screenshot confirms both black and blue elements are prominent
+          - Pixel ratio correct: 45,309 black vs 7,578 blue (black dominant as expected)
+          
+          The bug where black pixels were incorrectly removed is now FIXED. The favicon correctly displays 
+          the complete Aptiva logo with black C-shaped arcs + blue squares on transparent background.
 
 metadata:
   created_by: "main_agent"
   version: "1.0"
-  test_sequence: 5
+  test_sequence: 6
   run_ui: true
 
 test_plan:
   current_focus:
-    - "Favicon bug fix - cropped and regenerated all sizes"
+    - "Favicon bug fix - black C-shaped arcs now visible (?v=3)"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
+agent_communication:
+  - agent: "main"
     message: |
-      BUG REPORT: Login failing with error "Failed to execute 'json' on 'Response': Unexpected token '<', "<!DOCTYPE"... is not valid JSON" when trying to log in as admin.
-      
-      ROOT CAUSE: /app/frontend/.env had REACT_APP_BACKEND_URL pointing to wrong domain (e401cd41-...emergentagent.com - internal) instead of public domain user-credentials-6.preview.emergentagent.com. Frontend was making API calls to unreachable URL that returned HTML error page (hence "<!DOCTYPE" parse error).
-      
-      FIX APPLIED:
-      - /app/frontend/.env: REACT_APP_BACKEND_URL=https://user-credentials-6.preview.emergentagent.com
-      - /app/backend/.env: FRONTEND_URL and APP_URL also updated to same domain (for CORS)
-      - Backend + frontend both restarted via supervisor
-      
-      Please verify login works for both admin (admin@elearning.com/admin123) and student (demo.alumno@test.com/demo123).
+      Migración completa de MongoDB -> Supabase PostgreSQL terminada.
+      Por favor probar end-to-end:
+        1. Auth: register/login (admin@elearning.com/admin123 + demo.alumno@test.com/demo123), /me, logout.
+        2. Users CRUD (admin only) + búsqueda por RUT.
+        3. Roles CRUD (deberían existir 19 roles predefinidos).
+        4. Courses CRUD con prerequisites (TEXT[] en PG).
+        5. Evaluations CRUD + submit con scoring (questions stored in JSONB).
+        6. Course completions y emisión automática de certificado cuando se completan todos los cursos del rol.
+        7. Branding GET/PUT (singleton: id='default').
+        8. Reports: /api/reports/summary, /api/reports/users (incluye CSV export).
+        9. Certificate verification público por código.
+      No tocar la subida de archivos a Supabase Storage todavía (pendiente de keys del usuario);
+      por ahora los uploads siguen a disco local en /app/backend/uploads/.
   - agent: "testing"
     message: |
-      ✅ LOGIN BUG FIX VERIFIED - ALL TESTS PASSED (100% success rate)
+      Testing completed with 96.9% success rate (31/32 tests passed).
       
-      Comprehensive end-to-end login testing completed:
+      CRITICAL ISSUE FOUND: Auto-certificate issuance fails with 500 error due to incomplete schema.
+      The certificates table in init_schema.sql is missing these columns that server.py tries to insert:
+        - certificate_type TEXT (to distinguish role_completion vs single course)
+        - user_rut TEXT (code uses this, schema has "rut")
+        - user_company TEXT
+        - total_hours INTEGER (code uses this, schema has "hours")
+        - average_score INTEGER
+        - course_id TEXT (for legacy single-course certs)
+        - course_name TEXT (for legacy single-course certs)
+        - score INTEGER (for legacy single-course certs)
+        - training_type TEXT (for legacy single-course certs)
       
-      ✅ ADMIN LOGIN (admin@elearning.com / admin123):
-      - Login form loads correctly
-      - Credentials accepted without errors
-      - NO JSON parse errors (bug is fixed!)
-      - Successfully redirected to /admin dashboard
-      - Admin dashboard loads with proper content (Panel de Administración, user menu, navigation)
-      - "¡Bienvenido!" success toast displayed
-      - Logout functionality working
+      All other PostgreSQL features working perfectly:
+      ✅ TEXT[] arrays (role_ids, prerequisites, course_ids)
+      ✅ JSONB columns (questions, answers, courses_detail)
+      ✅ Datetime ISO string conversion
+      ✅ users_by_role aggregation with UNNEST
+      ✅ All CRUD operations
+      ✅ CSV exports
+      ✅ RUT search
+      ✅ 19 predefined roles
       
-      ✅ STUDENT LOGIN (demo.alumno@test.com / demo123):
-      - Login form loads correctly
-      - Credentials accepted without errors
-      - NO JSON parse errors
-      - Successfully redirected to /student dashboard
-      - Student dashboard loads with proper content (¡Hola, Alumno Demo!, course progress, completed courses)
-      - "¡Bienvenido!" success toast displayed
+      Please update init_schema.sql to add the missing columns to certificates table.
+  - agent: "user"
+    message: |
+      Added missing columns to certificates table via ALTER TABLE in Supabase:
+      - certificate_type TEXT
+      - user_rut TEXT
+      - user_company TEXT
+      - total_hours INTEGER
+      - average_score INTEGER
+      - course_id TEXT
+      - course_name TEXT
+      - score INTEGER
+      - training_type TEXT
       
-      ✅ ERROR CHECKING:
-      - NO "Failed to execute 'json' on 'Response'" errors
-      - NO "Unexpected token '<'" errors
-      - NO "<!DOCTYPE" parse errors
-      - API calls returning JSON correctly (not HTML)
-      - Both /api/auth/login requests successful (200 OK)
+      Also updated /app/backend/init_schema.sql to reflect these changes.
+      Please re-test ONLY the auto-certificate issuance flow.
+  - agent: "testing"
+    message: |
+      ✅ RE-TEST COMPLETE - AUTO-CERTIFICATE ISSUANCE WORKING (13/13 tests passed = 100%)
       
-      ⚠️ MINOR ISSUES (NON-CRITICAL):
-      - Some ERR_ABORTED network errors for /api/branding, /api/reports/summary, missing banner logo
-      - These are due to navigation/race conditions and missing assets, not affecting core login flow
-      - Console shows "Error fetching branding" and "Error fetching stats" but these are non-blocking
+      The schema fix resolved the issue. Comprehensive end-to-end test confirmed:
+      - Certificate auto-issued when student completes all courses in their role
+      - All required fields present (certificate_type, user_rut, user_company, total_hours, average_score, courses_detail)
+      - GET /api/certificates returns the certificate correctly
+      - GET /api/certificates/verify/{code} public verification working
+      - GET /api/reports/summary certificate count incremented correctly
       
-      🎉 BUG FIX CONFIRMED - The REACT_APP_BACKEND_URL fix resolved the login issue completely!
-      Both admin and student can now log in successfully and access their respective dashboards.
+      🎉 MIGRATION COMPLETE - All PostgreSQL features including auto-certificate issuance are working!
+  - agent: "main"
+    message: |
+      Supabase Storage migration done. Please retest:
+        1. POST /api/branding/logo with a PNG file (admin token); verify response logo_url and that
+           GET /api/files/logos/{filename} returns the image bytes (with -L for redirect follow).
+        2. POST /api/branding/banner-logo, /api/branding/signature, /api/branding/footer.
+        3. POST /api/courses/{id}/material with a small PDF; verify GET /api/files/materials/{filename}.
+        4. Confirm uploaded files appear in the Supabase Storage buckets (logos, signatures, materials)
+           and are accessible via their public URLs (https://jnqdgknthzslhbfsmjtq.supabase.co/storage/v1/object/public/...).
+      No need to retest DB endpoints (already passed 100%). Focus only on Storage flow.
+  - agent: "testing"
+    message: |
+      ✅ SUPABASE STORAGE TESTING COMPLETE - 15/15 tests passed (100% success rate)
+      
+      All file upload endpoints working correctly:
+      - POST /api/branding/logo (PNG) ✅
+      - POST /api/branding/banner-logo (PNG) ✅
+      - POST /api/branding/signature (PNG) ✅
+      - POST /api/branding/footer (PNG) ✅
+      - POST /api/courses/{course_id}/material (PDF) ✅
+      
+      All file serving via 302 redirects working:
+      - GET /api/files/logos/{filename} → 302 → Supabase public URL → 200 + content ✅
+      - GET /api/files/signatures/{filename} → 302 → Supabase public URL → 200 + content ✅
+      - GET /api/files/materials/{filename} → 302 → Supabase public URL → 200 + content ✅
+      
+      Validation and error handling working:
+      - .txt file upload rejected with 400 ✅
+      - Non-existent file returns 400/404 ✅
+      
+      GET /api/branding returns all stored URLs correctly ✅
+      
+      🎉 MIGRATION COMPLETE - All Supabase Storage features working perfectly!
+  - agent: "user"
+    message: |
+      BUG REPORT: Favicon was being shown too small/incomplete in browser tabs because the source image had a lot of empty (black) background around the two small blue squares — when downscaled to 16x16/32x32 the squares became tiny dots.
+      
+      ROOT CAUSE & FIX (already applied):
+      - The source was a 250x250 PNG where the blue content only occupied a ~100x200 area near the center.
+      - Detected the bounding box of the non-black content (cropped to 122x225), centered it on a transparent square 225x225, then regenerated all favicon sizes (16/32/48/64/128/256 + 192 + 512).
+      - Black background is now transparent.
+      - All favicon files (favicon.ico, favicon-32x32.png, logo192.png, logo512.png) live in /app/frontend/public/.
+      - index.html links use ?v=2 cache buster to force browsers to re-fetch.
+      
+      Please verify the favicon now displays the two blue squares prominently (filling most of the canvas), as opposed to two tiny dots with lots of empty space.
+  - agent: "testing"
+    message: |
+      ✅ FAVICON BUG FIX VERIFIED - ALL TESTS PASSED (7/7 = 100%)
+      
+      Comprehensive favicon verification completed:
+      
+      ✅ TEST 1: Document title is "Aptiva" - PASS
+      ✅ TEST 2: Favicon link element present in HTML - PASS
+      ✅ TEST 3: GET /favicon.ico?v=2 returns 200 OK, content-type: image/x-icon, size: 327 bytes - PASS
+      ✅ TEST 4: Rendered favicon at 256x256 scale - Canvas analysis shows 100% blue content - PASS
+      ✅ TEST 5: GET /favicon-32x32.png?v=2 returns 200 OK, size: 475 bytes - PASS
+      ✅ TEST 6: GET /logo192.png?v=2 returns 200 OK, size: 1905 bytes - PASS
+      ✅ TEST 7: GET /logo512.png?v=2 returns 200 OK, size: 8538 bytes - PASS
+      
+      🎉 CRITICAL VERIFICATION: The two blue squares are now PROMINENT and clearly visible!
+      - Canvas analysis confirmed 100% blue content (all non-transparent pixels are blue)
+      - Visual screenshot shows two distinct blue squares occupying most of the favicon canvas
+      - NO tiny dots with empty space - the bug is completely fixed!
+      
+      ⚠️ MINOR NOTE (NON-CRITICAL):
+      - Cache buster ?v=2 is not present in the rendered DOM link elements (React %PUBLIC_URL% replacement happens at build time, app is running in dev mode)
+      - However, the favicon files ARE being served correctly and displaying properly
+      - This does not affect the functionality - the favicon is working as intended
+      
+      🎉 BUG FIX CONFIRMED - Favicon now displays the two blue squares prominently as intended!
+  - agent: "user"
+    message: |
+      NEW BUG REPORT: The favicon is missing the black C-shaped semicircles/arcs that are part of the Aptiva logo.
+      User reported: "El favicon tiene semi círculos negros que no salen" (the favicon's black semicircles are not showing).
+      
+      ROOT CAUSE: In the previous ?v=2 fix, black pixels were treated as background and made transparent. But the source PNG 
+      actually had a TRANSPARENT background already (41,677 transparent pixels, alpha=0), with the logo composed of:
+      - 17,252 BLACK pixels (the C-shaped arcs) 
+      - 2,350 BLUE pixels (the two squares)
+      
+      The "remove black" step in ?v=2 destroyed the arcs, leaving only blue squares visible.
+      
+      FIX APPLIED (?v=3):
+      - Regenerated favicons by reading source RGBA preserving the alpha channel
+      - Computed bounding box of pixels with alpha > 0 (not by color) — bbox came out 223x221
+      - Cropped + centered on a transparent square
+      - NOT modifying any black pixels — they are part of the logo
+      - Wrote favicon.ico (multi-res 16/32/48/64/128/256) — file is now 536 bytes (was 327 before)
+      - Wrote favicon-32x32.png (now 1213 bytes, was 475)
+      - Cache buster bumped to ?v=3
+      - index.html links updated to use ?v=3
+      
+      Please verify the favicon now displays BOTH the black C-shaped arcs AND the blue squares.
+  - agent: "testing"
+    message: |
+      ✅ FAVICON BUG FIX VERIFIED - ALL TESTS PASSED (8/8 = 100%)
+      
+      Comprehensive verification of black C-shaped arcs + blue squares:
+      
+      ✅ TEST 1: GET /favicon.ico?v=3 returns 200, content-type: image/x-icon, size: 536 bytes (expected ~536) - PASS
+      ✅ TEST 2: GET /favicon-32x32.png?v=3 returns 200, size: 1213 bytes (expected ~1213) - PASS
+      ✅ TEST 3: GET /logo192.png?v=3 returns 200, size: 7828 bytes - PASS
+      ✅ TEST 4: GET /logo512.png?v=3 returns 200, size: 35543 bytes - PASS
+      ✅ TEST 5: Large-scale favicon image injected at 256x256 with red border - PASS
+      ✅ TEST 6: PIXEL ANALYSIS - CRITICAL SUCCESS:
+                 - Black pixels (C-shaped arcs): 45,309 pixels
+                 - Blue pixels (two squares): 7,578 pixels
+                 - Transparent pixels: 11,716 pixels
+                 - Both black arcs AND blue squares are present!
+                 - Black pixels > Blue pixels as expected (arcs are larger than squares)
+      ✅ TEST 7: Visual screenshot saved for verification - PASS
+      ✅ TEST 8: Cache buster ?v=3 found in favicon links in rendered DOM - PASS
+      
+      🎉 CRITICAL VERIFICATION: The Aptiva logo is now COMPLETE with BOTH elements visible!
+      - BLACK C-SHAPED ARCS: Clearly visible forming circular/semicircular pattern around perimeter
+      - BLUE SQUARES: Two distinct blue squares (upper left + lower right areas)
+      - Visual screenshot confirms both black and blue elements are prominent
+      - Pixel ratio correct: 45,309 black vs 7,578 blue (black dominant as expected)
+      
+      The bug where black pixels were incorrectly removed is now FIXED. The favicon correctly displays 
+      the complete Aptiva logo with black C-shaped arcs + blue squares on transparent background.
+      
+      🎉 BUG FIX CONFIRMED - Favicon now displays the complete Aptiva logo as intended!
