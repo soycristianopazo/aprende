@@ -30,7 +30,7 @@ print('User ID: ' + userId);
 
 ## Step 2: Test Backend API
 ```bash
-API_URL="https://elearn-hub-16.preview.emergentagent.com/api"
+API_URL="https://user-credentials-6.preview.emergentagent.com/api"
 
 # Login
 TOKEN=$(curl -s -X POST "$API_URL/auth/login" \
@@ -54,7 +54,7 @@ await page.context.add_cookies([{
     "secure": true,
     "sameSite": "None"
 }]);
-await page.goto("https://elearn-hub-16.preview.emergentagent.com");
+await page.goto("https://user-credentials-6.preview.emergentagent.com");
 ```
 
 ## Quick Debug

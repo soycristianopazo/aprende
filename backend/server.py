@@ -1715,7 +1715,7 @@ app.include_router(api_router)
 ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "https://localhost:3000",
-    os.environ.get("FRONTEND_URL", "https://elearn-hub-16.preview.emergentagent.com"),
+    os.environ.get("FRONTEND_URL", "https://user-credentials-6.preview.emergentagent.com"),
 ]
 
 app.add_middleware(
