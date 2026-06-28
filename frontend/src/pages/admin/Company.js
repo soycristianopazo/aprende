@@ -15,6 +15,7 @@ const emptyForm = {
   business_name: '',
   rut: '',
   industry: '',
+  company_type: '',
   contact_email: '',
   contact_phone: '',
   website: '',
@@ -109,6 +110,35 @@ const Company = () => {
             <Field label="Razón social" value={form.business_name} onChange={update('business_name')} placeholder="Ej: Aptiva Demo SpA" testid="company-business-name" />
             <Field label="RUT" value={form.rut} onChange={update('rut')} placeholder="76.000.000-1" testid="company-rut" />
             <Field label="Industria / Rubro" value={form.industry} onChange={update('industry')} placeholder="Minería, construcción, energía..." testid="company-industry" />
+            <div className="md:col-span-2">
+              <Label className="text-xs text-slate-500">Tipo de empresa</Label>
+              <div className="flex items-center gap-2 mt-1.5" data-testid="company-type-display">
+                {form.company_type === 'contratista' && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-sm font-semibold">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                    Contratista
+                  </span>
+                )}
+                {form.company_type === 'mandante' && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-50 text-violet-700 border border-violet-200 text-sm font-semibold">
+                    <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />
+                    Mandante
+                  </span>
+                )}
+                {!form.company_type && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-500 border border-slate-200 text-sm">
+                    Sin definir
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-400 mt-1.5">
+                Definido por el SuperAdmin. {form.company_type === 'contratista'
+                  ? 'Puedes registrar mandantes y contratos comerciales.'
+                  : form.company_type === 'mandante'
+                  ? 'Puedes registrar gerencias internas.'
+                  : 'Contacta al SuperAdmin para clasificar tu empresa.'}
+              </p>
+            </div>
           </CardContent>
         </Card>
 
