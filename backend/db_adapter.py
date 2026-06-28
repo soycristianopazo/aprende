@@ -127,6 +127,18 @@ TABLES: Dict[str, Dict[str, Any]] = {
         "json_cols": set(),
         "ts_cols": {"created_at"},
     },
+    "mandante_standard_categories": {
+        "pk": "category_id",
+        "array_cols": set(),
+        "json_cols": set(),
+        "ts_cols": {"created_at"},
+    },
+    "mandante_standard_items": {
+        "pk": "item_id",
+        "array_cols": set(),
+        "json_cols": set(),
+        "ts_cols": {"created_at"},
+    },
     "user_sessions": {
         "pk": "session_token",
         "array_cols": set(),

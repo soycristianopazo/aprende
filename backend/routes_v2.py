@@ -1309,3 +1309,155 @@ async def delete_gerencia(gerencia_id: str, admin: dict = Depends(require_admin)
         raise HTTPException(404, "Gerencia no encontrada")
     return {"deleted": True}
 
+
+
+# ============================================================
+# ESTÁNDAR DE ACREDITACIÓN (por mandante, contratista only)
+# ============================================================
+
+class StandardCategoryCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    order_index: int = 0
+
+
+class StandardCategoryUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    order_index: Optional[int] = None
+
+
+class StandardItemCreate(BaseModel):
+    category_id: str
+    name: str
+    description: Optional[str] = None
+    document_type_id: Optional[str] = None
+    is_required: bool = True
+    order_index: int = 0
+
+
+class StandardItemUpdate(BaseModel):
+    category_id: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    document_type_id: Optional[str] = None
+    is_required: Optional[bool] = None
+    order_index: Optional[int] = None
+
+
+async def _ensure_mandante(admin: dict, mandante_id: str) -> str:
+    """Verify mandante belongs to admin's contratista company. Returns company_id."""
+    company_id = await _require_company_type(admin, "contratista")
+    mandante = await db.mandantes.find_one({"mandante_id": mandante_id, "company_id": company_id})
+    if not mandante:
+        raise HTTPException(404, "Mandante no encontrado")
+    return company_id
+
+
+@v2_router.get("/mandantes/{mandante_id}/standard")
+async def get_mandante_standard(mandante_id: str, admin: dict = Depends(require_admin)):
+    """Returns the full accreditation standard (categories + items) for a mandante."""
+    company_id = await _ensure_mandante(admin, mandante_id)
+    cats = await db.mandante_standard_categories.find(
+        {"mandante_id": mandante_id, "company_id": company_id}
+    ).sort("order_index", 1).to_list(500)
+    items = await db.mandante_standard_items.find(
+        {"mandante_id": mandante_id, "company_id": company_id}
+    ).sort("order_index", 1).to_list(2000)
+    return {"categories": cats, "items": items}
+
+
+@v2_router.post("/mandantes/{mandante_id}/standard/categories")
+async def create_standard_category(mandante_id: str, data: StandardCategoryCreate, admin: dict = Depends(require_admin)):
+    company_id = await _ensure_mandante(admin, mandante_id)
+    existing = await db.mandante_standard_categories.find_one({"mandante_id": mandante_id, "name": data.name})
+    if existing:
+        raise HTTPException(400, f"Categoría '{data.name}' ya existe en este mandante")
+    doc = {
+        "category_id": f"mscat_{uuid.uuid4().hex[:12]}",
+        "company_id": company_id,
+        "mandante_id": mandante_id,
+        "name": data.name,
+        "description": data.description,
+        "order_index": data.order_index,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.mandante_standard_categories.insert_one(doc)
+    return doc
+
+
+@v2_router.put("/mandantes/{mandante_id}/standard/categories/{category_id}")
+async def update_standard_category(mandante_id: str, category_id: str, data: StandardCategoryUpdate, admin: dict = Depends(require_admin)):
+    company_id = await _ensure_mandante(admin, mandante_id)
+    upd = {k: v for k, v in data.model_dump().items() if v is not None}
+    if not upd:
+        raise HTTPException(400, "Nada que actualizar")
+    res = await db.mandante_standard_categories.update_one(
+        {"category_id": category_id, "mandante_id": mandante_id, "company_id": company_id},
+        {"$set": upd},
+    )
+    if res.matched_count == 0:
+        raise HTTPException(404, "Categoría no encontrada")
+    return await db.mandante_standard_categories.find_one({"category_id": category_id})
+
+
+@v2_router.delete("/mandantes/{mandante_id}/standard/categories/{category_id}")
+async def delete_standard_category(mandante_id: str, category_id: str, admin: dict = Depends(require_admin)):
+    company_id = await _ensure_mandante(admin, mandante_id)
+    res = await db.mandante_standard_categories.delete_one(
+        {"category_id": category_id, "mandante_id": mandante_id, "company_id": company_id}
+    )
+    if res.deleted_count == 0:
+        raise HTTPException(404, "Categoría no encontrada")
+    return {"deleted": True}
+
+
+@v2_router.post("/mandantes/{mandante_id}/standard/items")
+async def create_standard_item(mandante_id: str, data: StandardItemCreate, admin: dict = Depends(require_admin)):
+    company_id = await _ensure_mandante(admin, mandante_id)
+    cat = await db.mandante_standard_categories.find_one(
+        {"category_id": data.category_id, "mandante_id": mandante_id}
+    )
+    if not cat:
+        raise HTTPException(404, "Categoría no encontrada")
+    doc = {
+        "item_id": f"msitem_{uuid.uuid4().hex[:12]}",
+        "company_id": company_id,
+        "mandante_id": mandante_id,
+        "category_id": data.category_id,
+        "name": data.name,
+        "description": data.description,
+        "document_type_id": data.document_type_id,
+        "is_required": data.is_required,
+        "order_index": data.order_index,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.mandante_standard_items.insert_one(doc)
+    return doc
+
+
+@v2_router.put("/mandantes/{mandante_id}/standard/items/{item_id}")
+async def update_standard_item(mandante_id: str, item_id: str, data: StandardItemUpdate, admin: dict = Depends(require_admin)):
+    company_id = await _ensure_mandante(admin, mandante_id)
+    upd = {k: v for k, v in data.model_dump().items() if v is not None}
+    if not upd:
+        raise HTTPException(400, "Nada que actualizar")
+    res = await db.mandante_standard_items.update_one(
+        {"item_id": item_id, "mandante_id": mandante_id, "company_id": company_id},
+        {"$set": upd},
+    )
+    if res.matched_count == 0:
+        raise HTTPException(404, "Ítem no encontrado")
+    return await db.mandante_standard_items.find_one({"item_id": item_id})
+
+
+@v2_router.delete("/mandantes/{mandante_id}/standard/items/{item_id}")
+async def delete_standard_item(mandante_id: str, item_id: str, admin: dict = Depends(require_admin)):
+    company_id = await _ensure_mandante(admin, mandante_id)
+    res = await db.mandante_standard_items.delete_one(
+        {"item_id": item_id, "mandante_id": mandante_id, "company_id": company_id}
+    )
+    if res.deleted_count == 0:
+        raise HTTPException(404, "Ítem no encontrado")
+    return {"deleted": True}
+

@@ -28,6 +28,7 @@ import AdminWorkerCompetencies from "./pages/admin/WorkerCompetencies";
 import AdminCompliance from "./pages/admin/Compliance";
 import AdminCompany from "./pages/admin/Company";
 import AdminMandantes from "./pages/admin/Mandantes";
+import AdminMandanteStandard from "./pages/admin/MandanteStandard";
 import AdminGerencias from "./pages/admin/Gerencias";
 import AdminCertificates from "./pages/admin/Certificates";
 import AdminReports from "./pages/admin/Reports";
@@ -140,6 +141,7 @@ function AppRouter() {
         <Route path="compliance" element={<AdminCompliance />} />
         <Route path="company" element={<AdminCompany />} />
         <Route path="mandantes" element={<AdminMandantes />} />
+        <Route path="mandantes/:mandanteId/standard" element={<AdminMandanteStandard />} />
         <Route path="gerencias" element={<AdminGerencias />} />
         <Route path="certificates" element={<AdminCertificates />} />
         <Route path="reports" element={<AdminReports />} />

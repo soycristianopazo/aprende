@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -11,7 +12,7 @@ import {
   DialogHeader, DialogTitle, DialogTrigger,
 } from '../../components/ui/dialog';
 import {
-  Plus, Edit2, Trash2, Loader2, Building2, FileSignature, Users as UsersIcon, ChevronDown, ChevronRight,
+  Plus, Edit2, Trash2, Loader2, Building2, FileSignature, Users as UsersIcon, ChevronDown, ChevronRight, ListChecks,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -230,6 +231,12 @@ const Mandantes = () => {
                       </div>
                     </button>
                     <div className="flex gap-2 shrink-0">
+                      <Link to={`/admin/mandantes/${m.mandante_id}/standard`}>
+                        <Button size="sm" variant="outline" className="text-blue-700 border-blue-200 hover:bg-blue-50" data-testid={`standard-btn-${m.mandante_id}`}>
+                          <ListChecks className="w-4 h-4 mr-1.5" />
+                          Estándar
+                        </Button>
+                      </Link>
                       <Button size="sm" variant="outline" onClick={() => { setEditingMandante(m); setMForm({ name: m.name || '', rut: m.rut || '', contact_email: m.contact_email || '', contact_phone: m.contact_phone || '', address: m.address || '', notes: m.notes || '' }); setMandanteDialog(true); }}>
                         <Edit2 className="w-4 h-4" />
                       </Button>
