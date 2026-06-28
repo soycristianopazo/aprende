@@ -109,6 +109,24 @@ TABLES: Dict[str, Dict[str, Any]] = {
         "json_cols": set(),
         "ts_cols": {"acquired_at", "expiry_date", "created_at"},
     },
+    "mandantes": {
+        "pk": "mandante_id",
+        "array_cols": set(),
+        "json_cols": set(),
+        "ts_cols": {"created_at"},
+    },
+    "contracts": {
+        "pk": "contract_id",
+        "array_cols": {"worker_ids"},
+        "json_cols": set(),
+        "ts_cols": {"start_date", "end_date", "created_at"},
+    },
+    "gerencias": {
+        "pk": "gerencia_id",
+        "array_cols": {"worker_ids"},
+        "json_cols": set(),
+        "ts_cols": {"created_at"},
+    },
     "user_sessions": {
         "pk": "session_token",
         "array_cols": set(),

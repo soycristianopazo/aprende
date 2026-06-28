@@ -40,6 +40,7 @@ class CompanyCreate(BaseModel):
     contact_email: Optional[EmailStr] = None
     contact_phone: Optional[str] = None
     address: Optional[str] = None
+    company_type: Optional[str] = None  # 'mandante' | 'contratista' | None
     primary_color: str = "#2563EB"
     secondary_color: str = "#3B82F6"
 
@@ -57,6 +58,7 @@ class CompanyUpdate(BaseModel):
     industry: Optional[str] = None
     legal_representative: Optional[str] = None
     legal_representative_rut: Optional[str] = None
+    company_type: Optional[str] = None
     is_active: Optional[bool] = None
     primary_color: Optional[str] = None
     secondary_color: Optional[str] = None
@@ -144,6 +146,7 @@ async def create_company(data: CompanyCreate, _user: dict = Depends(require_supe
         "contact_email": data.contact_email,
         "contact_phone": data.contact_phone,
         "address": data.address,
+        "company_type": data.company_type,
         "is_active": True,
         "primary_color": data.primary_color,
         "secondary_color": data.secondary_color,
@@ -1041,7 +1044,7 @@ async def export_compliance_heatmap(admin: dict = Depends(require_admin)):
 # ============================================================
 
 # Fields the admin is NOT allowed to change on their own company.
-_PROTECTED_COMPANY_FIELDS = {"is_active"}
+_PROTECTED_COMPANY_FIELDS = {"is_active", "company_type"}
 
 
 @v2_router.get("/company")
@@ -1072,4 +1075,237 @@ async def update_my_company(data: CompanyUpdate, admin: dict = Depends(require_a
     if res.matched_count == 0:
         raise HTTPException(404, "Empresa no encontrada")
     return await db.companies.find_one({"company_id": company_id})
+
+
+
+# ============================================================
+# MANDANTES (only available when company_type == 'contratista')
+# ============================================================
+
+class MandanteCreate(BaseModel):
+    name: str
+    rut: Optional[str] = None
+    contact_email: Optional[EmailStr] = None
+    contact_phone: Optional[str] = None
+    address: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class MandanteUpdate(BaseModel):
+    name: Optional[str] = None
+    rut: Optional[str] = None
+    contact_email: Optional[EmailStr] = None
+    contact_phone: Optional[str] = None
+    address: Optional[str] = None
+    notes: Optional[str] = None
+
+
+async def _require_company_type(admin: dict, expected: str) -> str:
+    """Ensure the admin's company has the expected company_type. Returns company_id."""
+    company_id = admin.get("company_id")
+    if not company_id:
+        raise HTTPException(400, "Sin empresa asociada")
+    company = await db.companies.find_one({"company_id": company_id})
+    if not company:
+        raise HTTPException(404, "Empresa no encontrada")
+    if (company.get("company_type") or "") != expected:
+        raise HTTPException(403, f"Esta funcionalidad solo está disponible para empresas de tipo '{expected}'.")
+    return company_id
+
+
+@v2_router.get("/mandantes")
+async def list_mandantes(admin: dict = Depends(require_admin)):
+    company_id = await _require_company_type(admin, "contratista")
+    return await db.mandantes.find({"company_id": company_id}).sort("name", 1).to_list(500)
+
+
+@v2_router.post("/mandantes")
+async def create_mandante(data: MandanteCreate, admin: dict = Depends(require_admin)):
+    company_id = await _require_company_type(admin, "contratista")
+    existing = await db.mandantes.find_one({"company_id": company_id, "name": data.name})
+    if existing:
+        raise HTTPException(400, f"Mandante '{data.name}' ya existe")
+    doc = {
+        "mandante_id": f"mandante_{uuid.uuid4().hex[:12]}",
+        "company_id": company_id,
+        "name": data.name,
+        "rut": data.rut,
+        "contact_email": data.contact_email,
+        "contact_phone": data.contact_phone,
+        "address": data.address,
+        "notes": data.notes,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.mandantes.insert_one(doc)
+    return doc
+
+
+@v2_router.put("/mandantes/{mandante_id}")
+async def update_mandante(mandante_id: str, data: MandanteUpdate, admin: dict = Depends(require_admin)):
+    company_id = await _require_company_type(admin, "contratista")
+    upd = {k: v for k, v in data.model_dump().items() if v is not None}
+    if not upd:
+        raise HTTPException(400, "Nada que actualizar")
+    res = await db.mandantes.update_one({"mandante_id": mandante_id, "company_id": company_id}, {"$set": upd})
+    if res.matched_count == 0:
+        raise HTTPException(404, "Mandante no encontrado")
+    return await db.mandantes.find_one({"mandante_id": mandante_id})
+
+
+@v2_router.delete("/mandantes/{mandante_id}")
+async def delete_mandante(mandante_id: str, admin: dict = Depends(require_admin)):
+    company_id = await _require_company_type(admin, "contratista")
+    res = await db.mandantes.delete_one({"mandante_id": mandante_id, "company_id": company_id})
+    if res.deleted_count == 0:
+        raise HTTPException(404, "Mandante no encontrado")
+    return {"deleted": True}
+
+
+# ============================================================
+# CONTRATOS (contratista only)
+# ============================================================
+
+class ContractCreate(BaseModel):
+    mandante_id: str
+    contract_number: str
+    glosa: Optional[str] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    status: str = "active"
+    notes: Optional[str] = None
+    worker_ids: List[str] = []
+
+
+class ContractUpdate(BaseModel):
+    mandante_id: Optional[str] = None
+    contract_number: Optional[str] = None
+    glosa: Optional[str] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    status: Optional[str] = None
+    notes: Optional[str] = None
+    worker_ids: Optional[List[str]] = None
+
+
+@v2_router.get("/contracts")
+async def list_contracts(mandante_id: Optional[str] = None, admin: dict = Depends(require_admin)):
+    company_id = await _require_company_type(admin, "contratista")
+    f = {"company_id": company_id}
+    if mandante_id:
+        f["mandante_id"] = mandante_id
+    return await db.contracts.find(f).sort("created_at", -1).to_list(1000)
+
+
+@v2_router.post("/contracts")
+async def create_contract(data: ContractCreate, admin: dict = Depends(require_admin)):
+    company_id = await _require_company_type(admin, "contratista")
+    # Validate mandante
+    mandante = await db.mandantes.find_one({"mandante_id": data.mandante_id, "company_id": company_id})
+    if not mandante:
+        raise HTTPException(404, "Mandante no encontrado")
+    # Unique contract_number per company
+    existing = await db.contracts.find_one({"company_id": company_id, "contract_number": data.contract_number})
+    if existing:
+        raise HTTPException(400, f"Contrato N° '{data.contract_number}' ya existe")
+    doc = {
+        "contract_id": f"contract_{uuid.uuid4().hex[:12]}",
+        "company_id": company_id,
+        "mandante_id": data.mandante_id,
+        "contract_number": data.contract_number,
+        "glosa": data.glosa,
+        "start_date": data.start_date,
+        "end_date": data.end_date,
+        "status": data.status,
+        "notes": data.notes,
+        "worker_ids": data.worker_ids,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.contracts.insert_one(doc)
+    return doc
+
+
+@v2_router.put("/contracts/{contract_id}")
+async def update_contract(contract_id: str, data: ContractUpdate, admin: dict = Depends(require_admin)):
+    company_id = await _require_company_type(admin, "contratista")
+    upd = {k: v for k, v in data.model_dump().items() if v is not None}
+    if not upd:
+        raise HTTPException(400, "Nada que actualizar")
+    if "mandante_id" in upd:
+        m = await db.mandantes.find_one({"mandante_id": upd["mandante_id"], "company_id": company_id})
+        if not m:
+            raise HTTPException(404, "Mandante no encontrado")
+    res = await db.contracts.update_one({"contract_id": contract_id, "company_id": company_id}, {"$set": upd})
+    if res.matched_count == 0:
+        raise HTTPException(404, "Contrato no encontrado")
+    return await db.contracts.find_one({"contract_id": contract_id})
+
+
+@v2_router.delete("/contracts/{contract_id}")
+async def delete_contract(contract_id: str, admin: dict = Depends(require_admin)):
+    company_id = await _require_company_type(admin, "contratista")
+    res = await db.contracts.delete_one({"contract_id": contract_id, "company_id": company_id})
+    if res.deleted_count == 0:
+        raise HTTPException(404, "Contrato no encontrado")
+    return {"deleted": True}
+
+
+# ============================================================
+# GERENCIAS (mandante only)
+# ============================================================
+
+class GerenciaCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    worker_ids: List[str] = []
+
+
+class GerenciaUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    worker_ids: Optional[List[str]] = None
+
+
+@v2_router.get("/gerencias")
+async def list_gerencias(admin: dict = Depends(require_admin)):
+    company_id = await _require_company_type(admin, "mandante")
+    return await db.gerencias.find({"company_id": company_id}).sort("name", 1).to_list(500)
+
+
+@v2_router.post("/gerencias")
+async def create_gerencia(data: GerenciaCreate, admin: dict = Depends(require_admin)):
+    company_id = await _require_company_type(admin, "mandante")
+    existing = await db.gerencias.find_one({"company_id": company_id, "name": data.name})
+    if existing:
+        raise HTTPException(400, f"Gerencia '{data.name}' ya existe")
+    doc = {
+        "gerencia_id": f"gerencia_{uuid.uuid4().hex[:12]}",
+        "company_id": company_id,
+        "name": data.name,
+        "description": data.description,
+        "worker_ids": data.worker_ids,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.gerencias.insert_one(doc)
+    return doc
+
+
+@v2_router.put("/gerencias/{gerencia_id}")
+async def update_gerencia(gerencia_id: str, data: GerenciaUpdate, admin: dict = Depends(require_admin)):
+    company_id = await _require_company_type(admin, "mandante")
+    upd = {k: v for k, v in data.model_dump().items() if v is not None}
+    if not upd:
+        raise HTTPException(400, "Nada que actualizar")
+    res = await db.gerencias.update_one({"gerencia_id": gerencia_id, "company_id": company_id}, {"$set": upd})
+    if res.matched_count == 0:
+        raise HTTPException(404, "Gerencia no encontrada")
+    return await db.gerencias.find_one({"gerencia_id": gerencia_id})
+
+
+@v2_router.delete("/gerencias/{gerencia_id}")
+async def delete_gerencia(gerencia_id: str, admin: dict = Depends(require_admin)):
+    company_id = await _require_company_type(admin, "mandante")
+    res = await db.gerencias.delete_one({"gerencia_id": gerencia_id, "company_id": company_id})
+    if res.deleted_count == 0:
+        raise HTTPException(404, "Gerencia no encontrada")
+    return {"deleted": True}
 

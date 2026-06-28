@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Users, FolderTree, GraduationCap, BookOpen,
   ClipboardCheck, Award, BadgeCheck, BarChart3, Palette, LogOut, Menu, X, ChevronRight, ChevronDown,
   Building, FileText, FolderOpen, Upload, ShieldCheck, Flame,
-  Home, Network, Archive, Settings
+  Home, Network, Archive, Settings, Briefcase, FileSignature
 } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import { useBranding } from '../hooks/useBranding';
@@ -20,66 +20,88 @@ const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const branding = useBranding();
 
-  const menuGroups = useMemo(() => ([
-    {
-      id: 'general',
-      label: 'General',
-      icon: Home,
-      items: [
-        { path: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
-        { path: '/admin/compliance', icon: Flame, label: 'Cumplimiento' },
-      ],
-    },
-    {
-      id: 'personas',
-      label: 'Personas',
-      icon: Users,
-      items: [
-        { path: '/admin/users', icon: Users, label: 'Trabajadores' },
-        { path: '/admin/users-import', icon: Upload, label: 'Importar Trabajadores' },
-      ],
-    },
-    {
-      id: 'organizacion',
-      label: 'Organización',
-      icon: Network,
-      items: [
-        { path: '/admin/areas', icon: Building, label: 'Áreas' },
-        { path: '/admin/roles', icon: FolderTree, label: 'Actividades' },
-      ],
-    },
-    {
-      id: 'competencias',
-      label: 'Formación',
-      icon: GraduationCap,
-      items: [
-        { path: '/admin/competencies', icon: ShieldCheck, label: 'Competencias' },
-        { path: '/admin/worker-competencies', icon: Award, label: 'Matriz Competencias' },
-        { path: '/admin/courses', icon: BookOpen, label: 'Cursos' },
-        { path: '/admin/evaluations', icon: ClipboardCheck, label: 'Evaluaciones' },
-      ],
-    },
-    {
-      id: 'evidencia',
-      label: 'Evidencia Digital',
-      icon: Archive,
-      items: [
-        { path: '/admin/document-types', icon: FileText, label: 'Tipos de Documentos' },
-        { path: '/admin/worker-documents', icon: FolderOpen, label: 'Expedientes' },
-        { path: '/admin/certificates', icon: BadgeCheck, label: 'Certificados' },
-      ],
-    },
-    {
-      id: 'configuracion',
-      label: 'Configuración',
-      icon: Settings,
-      items: [
-        { path: '/admin/company', icon: Building, label: 'Mi Empresa' },
-        { path: '/admin/reports', icon: BarChart3, label: 'Reportes' },
-        { path: '/admin/branding', icon: Palette, label: 'Branding' },
-      ],
-    },
-  ]), []);
+  // Fetch own company (for sidebar profile card + conditional menu items).
+  const [company, setCompany] = useState(null);
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    fetch(`${BACKEND_URL}/api/company`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((c) => c && setCompany(c))
+      .catch(() => {});
+  }, []);
+
+  const companyType = company?.company_type;
+
+  const menuGroups = useMemo(() => {
+    const organizacionItems = [
+      { path: '/admin/areas', icon: Building, label: 'Áreas' },
+      { path: '/admin/roles', icon: FolderTree, label: 'Actividades' },
+    ];
+    if (companyType === 'contratista') {
+      organizacionItems.push({ path: '/admin/mandantes', icon: FileSignature, label: 'Mandantes y Contratos' });
+    } else if (companyType === 'mandante') {
+      organizacionItems.push({ path: '/admin/gerencias', icon: Briefcase, label: 'Gerencias' });
+    }
+
+    return [
+      {
+        id: 'general',
+        label: 'General',
+        icon: Home,
+        items: [
+          { path: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
+          { path: '/admin/compliance', icon: Flame, label: 'Cumplimiento' },
+        ],
+      },
+      {
+        id: 'personas',
+        label: 'Personas',
+        icon: Users,
+        items: [
+          { path: '/admin/users', icon: Users, label: 'Trabajadores' },
+          { path: '/admin/users-import', icon: Upload, label: 'Importar Trabajadores' },
+        ],
+      },
+      {
+        id: 'organizacion',
+        label: 'Organización',
+        icon: Network,
+        items: organizacionItems,
+      },
+      {
+        id: 'competencias',
+        label: 'Formación',
+        icon: GraduationCap,
+        items: [
+          { path: '/admin/competencies', icon: ShieldCheck, label: 'Competencias' },
+          { path: '/admin/worker-competencies', icon: Award, label: 'Matriz Competencias' },
+          { path: '/admin/courses', icon: BookOpen, label: 'Cursos' },
+          { path: '/admin/evaluations', icon: ClipboardCheck, label: 'Evaluaciones' },
+        ],
+      },
+      {
+        id: 'evidencia',
+        label: 'Evidencia Digital',
+        icon: Archive,
+        items: [
+          { path: '/admin/document-types', icon: FileText, label: 'Tipos de Documentos' },
+          { path: '/admin/worker-documents', icon: FolderOpen, label: 'Expedientes' },
+          { path: '/admin/certificates', icon: BadgeCheck, label: 'Certificados' },
+        ],
+      },
+      {
+        id: 'configuracion',
+        label: 'Configuración',
+        icon: Settings,
+        items: [
+          { path: '/admin/company', icon: Building, label: 'Mi Empresa' },
+          { path: '/admin/reports', icon: BarChart3, label: 'Reportes' },
+          { path: '/admin/branding', icon: Palette, label: 'Branding' },
+        ],
+      },
+    ];
+  }, [companyType]);
 
   const isActive = (path, exact = false) => {
     if (exact) return location.pathname === path;
@@ -105,17 +127,6 @@ const AdminLayout = () => {
   const toggleGroup = (id) => {
     setOpenGroup((prev) => (prev === id ? null : id));
   };
-
-  // Fetch own company for the sidebar profile card.
-  const [company, setCompany] = useState(null);
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-    fetch(`${BACKEND_URL}/api/company`, { headers: { Authorization: `Bearer ${token}` } })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((c) => c && setCompany(c))
-      .catch(() => {});
-  }, []);
 
   const handleLogout = async () => {
     await logout();
@@ -238,6 +249,15 @@ const AdminLayout = () => {
                 <p className="text-xs text-slate-500 truncate">
                   {company?.rut ? `RUT ${company.rut}` : (user?.email || 'Configurar datos')}
                 </p>
+                {companyType && (
+                  <span className={`inline-block mt-1 text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                    companyType === 'contratista'
+                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                      : 'bg-violet-50 text-violet-700 border border-violet-200'
+                  }`} data-testid="sidebar-company-type">
+                    {companyType === 'contratista' ? 'Contratista' : 'Mandante'}
+                  </span>
+                )}
               </div>
               <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-blue-600 transition-colors" />
             </Link>

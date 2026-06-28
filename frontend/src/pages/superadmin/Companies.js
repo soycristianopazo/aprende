@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-const emptyForm = { name: '', rut: '', contact_email: '', contact_phone: '', address: '', primary_color: '#2563EB', secondary_color: '#3B82F6' };
+const emptyForm = { name: '', rut: '', contact_email: '', contact_phone: '', address: '', company_type: '', primary_color: '#2563EB', secondary_color: '#3B82F6' };
 const emptyAdmin = { email: '', password: '', full_name: '', rut: '' };
 
 const SuperAdminCompanies = () => {
@@ -105,6 +105,7 @@ const SuperAdminCompanies = () => {
     setForm({
       name: c.name || '', rut: c.rut || '', contact_email: c.contact_email || '',
       contact_phone: c.contact_phone || '', address: c.address || '',
+      company_type: c.company_type || '',
       primary_color: c.primary_color || '#2563EB', secondary_color: c.secondary_color || '#3B82F6',
     });
     setOpenCreate(true);
@@ -153,6 +154,22 @@ const SuperAdminCompanies = () => {
                   <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
                 </div>
               </div>
+              <div>
+                <Label>Tipo de empresa</Label>
+                <select
+                  value={form.company_type}
+                  onChange={(e) => setForm({ ...form, company_type: e.target.value })}
+                  className="w-full h-10 px-3 rounded-md border border-slate-200 bg-white text-sm"
+                  data-testid="company-type-select"
+                >
+                  <option value="">— Sin definir —</option>
+                  <option value="mandante">Mandante</option>
+                  <option value="contratista">Contratista</option>
+                </select>
+                <p className="text-xs text-slate-400 mt-1">
+                  Mandante: crea Gerencias. Contratista: crea Mandantes y Contratos.
+                </p>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Color primario</Label>
@@ -187,9 +204,22 @@ const SuperAdminCompanies = () => {
                     <p className="text-xs text-slate-500">{c.rut || 'Sin RUT'}</p>
                   </div>
                 </div>
-                <span className={`text-xs font-semibold px-2 py-1 rounded ${c.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
-                  {c.is_active ? 'Activa' : 'Inactiva'}
-                </span>
+                <div className="flex items-center gap-2">
+                  {c.company_type && (
+                    <span
+                      className={`text-xs font-semibold px-2 py-1 rounded ${
+                        c.company_type === 'contratista'
+                          ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                          : 'bg-violet-50 text-violet-700 border border-violet-200'
+                      }`}
+                    >
+                      {c.company_type === 'contratista' ? 'Contratista' : 'Mandante'}
+                    </span>
+                  )}
+                  <span className={`text-xs font-semibold px-2 py-1 rounded ${c.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+                    {c.is_active ? 'Activa' : 'Inactiva'}
+                  </span>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
