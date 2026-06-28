@@ -3,9 +3,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { ScrollArea } from '../components/ui/scroll-area';
 import { 
-  LayoutDashboard, Users, FolderTree, GraduationCap, 
-  ClipboardCheck, Award, BarChart3, Palette, LogOut, Menu, X, ChevronRight, ChevronDown,
-  Building, FileText, FolderOpen, Upload, ShieldCheck, Flame
+  LayoutDashboard, Users, FolderTree, GraduationCap, BookOpen,
+  ClipboardCheck, Award, BadgeCheck, BarChart3, Palette, LogOut, Menu, X, ChevronRight, ChevronDown,
+  Building, FileText, FolderOpen, Upload, ShieldCheck, Flame,
+  Home, Network, Archive, Settings
 } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import { useBranding } from '../hooks/useBranding';
@@ -23,6 +24,7 @@ const AdminLayout = () => {
     {
       id: 'general',
       label: 'General',
+      icon: Home,
       items: [
         { path: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
         { path: '/admin/compliance', icon: Flame, label: 'Cumplimiento' },
@@ -31,6 +33,7 @@ const AdminLayout = () => {
     {
       id: 'personas',
       label: 'Personas',
+      icon: Users,
       items: [
         { path: '/admin/users', icon: Users, label: 'Trabajadores' },
         { path: '/admin/users-import', icon: Upload, label: 'Importar Trabajadores' },
@@ -39,6 +42,7 @@ const AdminLayout = () => {
     {
       id: 'organizacion',
       label: 'Organización',
+      icon: Network,
       items: [
         { path: '/admin/areas', icon: Building, label: 'Áreas' },
         { path: '/admin/roles', icon: FolderTree, label: 'Actividades' },
@@ -46,26 +50,29 @@ const AdminLayout = () => {
     },
     {
       id: 'competencias',
-      label: 'Competencias y Capacitaciones',
+      label: 'Formación',
+      icon: GraduationCap,
       items: [
         { path: '/admin/competencies', icon: ShieldCheck, label: 'Competencias' },
         { path: '/admin/worker-competencies', icon: Award, label: 'Matriz Competencias' },
-        { path: '/admin/courses', icon: GraduationCap, label: 'Cursos' },
+        { path: '/admin/courses', icon: BookOpen, label: 'Cursos' },
         { path: '/admin/evaluations', icon: ClipboardCheck, label: 'Evaluaciones' },
       ],
     },
     {
       id: 'evidencia',
       label: 'Evidencia Digital',
+      icon: Archive,
       items: [
         { path: '/admin/document-types', icon: FileText, label: 'Tipos de Documentos' },
         { path: '/admin/worker-documents', icon: FolderOpen, label: 'Expedientes' },
-        { path: '/admin/certificates', icon: Award, label: 'Certificados' },
+        { path: '/admin/certificates', icon: BadgeCheck, label: 'Certificados' },
       ],
     },
     {
       id: 'configuracion',
-      label: 'Insights y Configuración',
+      label: 'Configuración',
+      icon: Settings,
       items: [
         { path: '/admin/reports', icon: BarChart3, label: 'Reportes' },
         { path: '/admin/branding', icon: Palette, label: 'Branding' },
@@ -157,15 +164,16 @@ const AdminLayout = () => {
                     <button
                       type="button"
                       onClick={() => toggleGroup(group.id)}
-                      className={`w-full flex items-center justify-between px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wider transition-colors ${
+                      className={`w-full flex items-center gap-2 px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wider transition-colors ${
                         expanded ? 'text-blue-700' : 'text-slate-400 hover:text-slate-600'
                       }`}
                       aria-expanded={expanded}
                       data-testid={`admin-menu-group-toggle-${group.id}`}
                     >
-                      <span>{group.label}</span>
+                      <group.icon className={`w-3.5 h-3.5 ${expanded ? 'text-blue-600' : 'text-slate-400'}`} />
+                      <span className="truncate flex-1 text-left">{group.label}</span>
                       <ChevronDown
-                        className={`w-3.5 h-3.5 transition-transform ${expanded ? '' : '-rotate-90'}`}
+                        className={`w-3.5 h-3.5 shrink-0 transition-transform ${expanded ? '' : '-rotate-90'}`}
                       />
                     </button>
                     {expanded && (
