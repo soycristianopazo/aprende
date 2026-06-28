@@ -67,6 +67,11 @@ Vendor / dueño del producto: **DoSoft**.
 - Footers: "© <year> DoSoft · Aptiva — Gestión de Competencias, Capacitaciones y Storage".
 
 ## What's Been Implemented (CHANGELOG)
+### 2026-02 — Landing v2 (Evidencia Digital)
+- [x] Landing reescrita con nueva narrativa "Cada trabajador competente. Cada requisito respaldado.": hero + 7 dimensiones de requerimientos (Cargo/Área/Actividad/Proyecto/Riesgos/Legal/Procedimientos), control total (5 items), verificación en terreno (5 checks), anticípate al incumplimiento (3 cards Vigente/Por vencer/Vencido), sección oscura "Protege a tu organización" (6 puntos legales + 3 métricas 100%/Multi-empresa/24/7), CTA y footer.
+- [x] Title HTML + meta description + OG actualizados a "Evidencia Digital".
+- [x] Smoke test visual confirmado (7 cards requirements, 5 control, 5 field-checks, 6 legal-proofs renderizados).
+
 ### 2026-02 — F6 (Mapa de Calor de Cumplimiento)
 - [x] Backend: `GET /api/compliance/heatmap` (admin) que entrega `activities`, `competencies`, `cells` (actividad × competencia × {acquired, expired, pending, percentage}), `summary` (avg %, críticas, en verde, total trabajadores) y `generated_at`.
 - [x] Backend: `GET /api/compliance/heatmap/export` que devuelve CSV "Listo para auditoría" (UTF-8 BOM, `;` separador, Empresa/RUT/Generado headers + matriz + Resumen, filename `aptiva_cumplimiento_YYYYMMDD_HHMM.csv`).
