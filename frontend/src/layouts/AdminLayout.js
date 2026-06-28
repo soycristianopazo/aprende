@@ -7,7 +7,7 @@ import {
   ClipboardCheck, Award, BarChart3, Palette, LogOut, Menu, X, ChevronRight, ChevronDown,
   Building, FileText, FolderOpen, Upload, ShieldCheck, Flame
 } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useBranding } from '../hooks/useBranding';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -78,26 +78,24 @@ const AdminLayout = () => {
     return location.pathname.startsWith(path);
   };
 
-  // Open groups: by default all open; persist user toggles in localStorage.
-  const [collapsedGroups, setCollapsedGroups] = useState(() => {
-    try {
-      const saved = localStorage.getItem('aptiva.adminMenuCollapsed');
-      return saved ? JSON.parse(saved) : {};
-    } catch {
-      return {};
+  // Accordion behavior: only one group open at a time. The group that contains
+  // the active route auto-opens; user can collapse it or open another one.
+  const activeGroupId = useMemo(() => {
+    const found = menuGroups.find((g) => g.items.some((it) => isActive(it.path, it.exact)));
+    return found?.id || null;
+  }, [location.pathname, menuGroups]);
+
+  const [openGroup, setOpenGroup] = useState(activeGroupId);
+
+  // Whenever the route changes to a different group, switch to that one.
+  useEffect(() => {
+    if (activeGroupId && activeGroupId !== openGroup) {
+      setOpenGroup(activeGroupId);
     }
-  });
+  }, [activeGroupId]);
 
   const toggleGroup = (id) => {
-    setCollapsedGroups((prev) => {
-      const next = { ...prev, [id]: !prev[id] };
-      try {
-        localStorage.setItem('aptiva.adminMenuCollapsed', JSON.stringify(next));
-      } catch {
-        // Ignore quota / private mode errors
-      }
-      return next;
-    });
+    setOpenGroup((prev) => (prev === id ? null : id));
   };
 
   const handleLogout = async () => {
@@ -153,23 +151,24 @@ const AdminLayout = () => {
           <ScrollArea className="flex-1 px-3 py-3">
             <nav className="space-y-3" data-testid="admin-sidebar-nav">
               {menuGroups.map((group) => {
-                const groupHasActive = group.items.some((it) => isActive(it.path, it.exact));
-                // If group is in saved-collapsed state but contains the active route, force-open it.
-                const collapsed = collapsedGroups[group.id] && !groupHasActive;
+                const expanded = openGroup === group.id;
                 return (
                   <div key={group.id} className="space-y-1" data-testid={`admin-menu-group-${group.id}`}>
                     <button
                       type="button"
                       onClick={() => toggleGroup(group.id)}
-                      className="w-full flex items-center justify-between px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400 hover:text-slate-600 transition-colors"
+                      className={`w-full flex items-center justify-between px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wider transition-colors ${
+                        expanded ? 'text-blue-700' : 'text-slate-400 hover:text-slate-600'
+                      }`}
+                      aria-expanded={expanded}
                       data-testid={`admin-menu-group-toggle-${group.id}`}
                     >
                       <span>{group.label}</span>
                       <ChevronDown
-                        className={`w-3.5 h-3.5 transition-transform ${collapsed ? '-rotate-90' : ''}`}
+                        className={`w-3.5 h-3.5 transition-transform ${expanded ? '' : '-rotate-90'}`}
                       />
                     </button>
-                    {!collapsed && (
+                    {expanded && (
                       <div className="space-y-0.5">
                         {group.items.map((item) => {
                           const active = isActive(item.path, item.exact);
