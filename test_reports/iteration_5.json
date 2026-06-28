@@ -1,0 +1,34 @@
+{
+  "summary": "Fase 5 'Ruta Aptiva' (competency-driven /api/student/progress + Dashboard widget) end-to-end verification. All 6 pytest tests PASS for the backend filter logic. Frontend widget renders exactly as expected (title + narrative + 0/1 acreditadas + amber 'Trabajo en Altura - Competencia base' badge). Three-role login regression and other student/admin pages still work.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_f5_ruta_aptiva.py",
+    "/app/test_reports/pytest/f5_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py::get_student_progress (line ~1480-1629) is clean: required_comp_ids built from worker activities, acquired_active vs acquired_expired computed from worker_competencies.expiry_date (handles ISO string, naive→UTC, null=lifetime), then 3 keep-rules applied (general / grants∩missing / completed-for-history). Legacy fallback (no required_comp_ids) preserves prior behavior.",
+    "Response shape stable: adds 'missing_competencies' (with per-item status pending/expired and expiry_date), 'required_competencies_total', 'acquired_competencies_total' — no breaking changes for existing UI consumers.",
+    "Dashboard.js correctly gates the widget on `(progress?.required_competencies_total || 0) > 0` so legacy workers (req=0) do not see it — matches spec.",
+    "Badge color: missing-comp-* badges use amber-tinted classes when status='pending' and red-tinted when status='expired' (verified by code inspection — only the 'pending' state was rendered in this test run because the demo worker has 0 wc rows).",
+    "Minor (pre-existing, out-of-scope): /superadmin still logs 'Error fetching stats: TypeError: Failed to fetch' and PostHog 'Failed to fetch' on /login — already documented in iteration_3 & iteration_4."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_f5_ruta_aptiva.py (new pytest file, 6 tests)"
+  ],
+  "success_rate": {"backend": "100% (6/6 passed)", "frontend": "100% on the F5 flows (widget render + acreditadas badge + missing-comp-* badge + 3-role login regression + admin/competencies, admin/worker-competencies, admin/courses, student/my-file, my-certificates, my-competencies all load OK)"},
+  "test_credentials": "superadmin@aptiva.com/superadmin123, admin@aptivademo.com/admin123, trabajador@aptivademo.com/trabajador123 — all working.",
+  "seed_data_creation": "Tests self-clean: each test creates TEST_F5_* prefixed courses + worker_competencies inside try/finally and deletes them at teardown. After full pytest run, admin /admin/courses list shows only the 3 original seed courses (no leftover TEST_F5_ data).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "F5 pytest at /app/backend/tests/test_f5_ruta_aptiva.py — re-run with: pytest /app/backend/tests/test_f5_ruta_aptiva.py -v. Covered: (a) response-shape + seed assertions; (b) strict filter hides course when grant-only competency is acquired with future expiry; (c) past-expiry yields status='expired' AND re-includes the course; (d) general courses (empty grants) always kept; (e) course granting only a non-required competency is filtered out. Did NOT explicitly test 'completed course always kept' as a standalone test (the seed already exercises this — the worker has 3 completed courses that all appear in the progress list, asserted in test_progress_shape_and_seed_expectations). The 'expired' badge color path was not visually exercised because creating a true expired state on the demo worker requires inserting and cleaning a worker_competency row; functionally it is unit-covered by the backend test.",
+  "rca of the issue": "No bug detected. Implementation matches the spec exactly."
+}

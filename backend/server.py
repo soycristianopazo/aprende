@@ -1480,43 +1480,118 @@ async def export_certificates_csv(admin: dict = Depends(require_admin)):
 @api_router.get("/student/progress")
 async def get_student_progress(user: dict = Depends(get_current_user)):
     """
-    Student progress (multi-tenant): courses are derived from user's area_ids/activity_ids
-    and the courses tagged with matching areas/activities (or untagged = applies to all).
+    Student progress / Ruta Aptiva (multi-tenant + competency-driven).
+    Returns only the courses the worker actually needs to acquire missing
+    competencies (plus general courses without grants). Already-completed
+    courses are kept in the list for history/visibility.
     """
     company_id = user.get("company_id")
     if not company_id:
         return {"courses": [], "total_courses": 0, "completed_courses": 0,
-                "completion_percentage": 0, "role_names": None, "roles": []}
-    
+                "completion_percentage": 0, "role_names": None, "roles": [],
+                "missing_competencies": [], "acquired_competencies": []}
+
     user_areas = set(user.get("area_ids") or [])
     user_acts = set(user.get("activity_ids") or [])
-    
+
+    # All published courses scoped by area/activity
     all_courses = await db.courses.find({"company_id": company_id, "status": "published"}).to_list(500)
-    courses = []
+    scope_courses = []
     for c in all_courses:
         c_areas = set(c.get("area_ids") or [])
         c_acts = set(c.get("activity_ids") or [])
         if (not c_areas and not c_acts) or (c_areas & user_areas) or (c_acts & user_acts):
-            courses.append(c)
-    
-    completions = await db.course_completions.find({"user_id": user["user_id"]}).to_list(500)
-    completed_ids = {c["course_id"] for c in completions}
-    
-    certificates = await db.certificates.find({"user_id": user["user_id"]}).to_list(500)
-    cert_by_course = {c.get("course_id"): c for c in certificates if c.get("course_id")}
-    
-    course_map = {c["course_id"]: c for c in courses}
-    
-    # Get user's activities (for display names)
+            scope_courses.append(c)
+
+    # ------ F5: Competency-driven filtering ------
+    # 1) Required competency_ids from the worker's activities
+    required_comp_ids: set = set()
     act_objs = []
     if user_acts:
         act_objs = await db.activities.find({"activity_id": {"$in": list(user_acts)}}).to_list(100)
-    
+        for a in act_objs:
+            for cid in (a.get("competency_ids") or []):
+                required_comp_ids.add(cid)
+
+    # 2) Worker's acquired competencies and their vigency
+    wcs = await db.worker_competencies.find({"user_id": user["user_id"], "company_id": company_id}).to_list(500)
+    now = datetime.now(timezone.utc)
+    acquired_active: set = set()
+    acquired_expired: set = set()
+    wc_by_comp = {w["competency_id"]: w for w in wcs}
+    for w in wcs:
+        exp = w.get("expiry_date")
+        if exp:
+            try:
+                dt = datetime.fromisoformat(exp.replace("Z", "+00:00")) if isinstance(exp, str) else exp
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+                if dt > now:
+                    acquired_active.add(w["competency_id"])
+                else:
+                    acquired_expired.add(w["competency_id"])
+            except Exception:
+                acquired_active.add(w["competency_id"])
+        else:
+            # No expiry = lifetime
+            acquired_active.add(w["competency_id"])
+
+    missing_comp_ids = (required_comp_ids - acquired_active)    # 3) Filter courses to those that help acquire missing competencies
+    #    - If a course has no grants_competency_ids → considered "general" and kept
+    #    - Else, keep it only if it grants at least one missing competency
+    #    - Already-completed courses ALWAYS kept (for history); they show as completed.
+    completions = await db.course_completions.find({"user_id": user["user_id"]}).to_list(500)
+    completed_ids = {c["course_id"] for c in completions}
+
+    courses = []
+    if required_comp_ids:
+        # Competency-driven mode
+        for c in scope_courses:
+            grants = set(c.get("grants_competency_ids") or [])
+            if c["course_id"] in completed_ids:
+                # keep completed (history)
+                courses.append(c)
+                continue
+            if not grants:
+                # general course → keep
+                courses.append(c)
+                continue
+            if grants & missing_comp_ids:
+                courses.append(c)
+        # else: filtered out
+    else:
+        # Legacy fallback: no competency_ids configured on the worker's activities
+        # → show all area/activity-scoped courses (previous behavior)
+        courses = scope_courses
+
+    # ------ Resolve missing competency objects for the UI ------
+    missing_competencies = []
+    if missing_comp_ids or acquired_expired:
+        all_missing_ids = missing_comp_ids | acquired_expired
+        comps = await db.competencies.find({"competency_id": {"$in": list(all_missing_ids)}, "company_id": company_id}).to_list(200)
+        for c in comps:
+            wc = wc_by_comp.get(c["competency_id"])
+            status = "expired" if c["competency_id"] in acquired_expired else "pending"
+            missing_competencies.append({
+                "competency_id": c["competency_id"],
+                "name": c.get("name"),
+                "description": c.get("description"),
+                "validity_months": c.get("validity_months"),
+                "status": status,
+                "expiry_date": (wc or {}).get("expiry_date") if wc else None,
+            })
+
+    # ------ Certificates and final progress shape ------
+    certificates = await db.certificates.find({"user_id": user["user_id"]}).to_list(500)
+    cert_by_course = {c.get("course_id"): c for c in certificates if c.get("course_id")}
+
+    course_map = {c["course_id"]: c for c in courses}
+
     progress = []
     for idx, course in enumerate(courses):
         is_completed = course["course_id"] in completed_ids
         certificate = cert_by_course.get(course["course_id"])
-        
+
         prerequisites = course.get("prerequisites") or []
         missing_prerequisites = []
         is_locked = False
@@ -1526,27 +1601,31 @@ async def get_student_progress(user: dict = Depends(get_current_user)):
                 pre = course_map.get(prereq_id)
                 if pre:
                     missing_prerequisites.append({"course_id": prereq_id, "name": pre["name"]})
-        
+
         progress.append({
             "course": course,
             "is_completed": is_completed,
             "certificate": certificate,
             "order": idx + 1,
             "is_locked": is_locked,
-            "missing_prerequisites": missing_prerequisites
+            "missing_prerequisites": missing_prerequisites,
+            "grants_competency_ids": course.get("grants_competency_ids") or [],
         })
-    
+
     total_courses = len(courses)
     completed_courses = len(completed_ids & {c["course_id"] for c in courses})
     role_names = ", ".join([a["name"] for a in act_objs]) if act_objs else None
-    
+
     return {
         "courses": progress,
         "total_courses": total_courses,
         "completed_courses": completed_courses,
         "completion_percentage": int((completed_courses / total_courses * 100) if total_courses > 0 else 0),
         "role_names": role_names,
-        "roles": [{"role_id": a["activity_id"], "name": a["name"]} for a in act_objs]
+        "roles": [{"role_id": a["activity_id"], "name": a["name"]} for a in act_objs],
+        "missing_competencies": missing_competencies,
+        "required_competencies_total": len(required_comp_ids),
+        "acquired_competencies_total": len(required_comp_ids & acquired_active),
     }
 
 @api_router.get("/activities/{activity_id}/curriculum")

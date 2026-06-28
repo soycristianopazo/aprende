@@ -7,7 +7,7 @@ import { Badge } from '../../components/ui/badge';
 import { Progress } from '../../components/ui/progress';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../components/ui/dialog';
 import { toast } from 'sonner';
-import { BookOpen, Award, Clock, PlayCircle, CheckCircle, Loader2, ArrowRight, Lock, AlertCircle, FolderTree, ChevronRight } from 'lucide-react';
+import { BookOpen, Award, Clock, PlayCircle, CheckCircle, Loader2, ArrowRight, Lock, AlertCircle, FolderTree, ChevronRight, ShieldCheck, ShieldAlert } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -205,6 +205,70 @@ const StudentDashboard = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Competencies widget — Ruta Aptiva (F5) */}
+      {(progress?.required_competencies_total || 0) > 0 && (
+        <Card className="border-slate-200" data-testid="competencies-widget">
+          <CardContent className="pt-6">
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div className="flex items-start gap-3">
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                  (progress?.missing_competencies?.length || 0) === 0 ? 'bg-emerald-50' : 'bg-amber-50'
+                }`}>
+                  {(progress?.missing_competencies?.length || 0) === 0 ? (
+                    <ShieldCheck className="w-5 h-5 text-emerald-700" />
+                  ) : (
+                    <ShieldAlert className="w-5 h-5 text-amber-700" />
+                  )}
+                </div>
+                <div>
+                  <h3 className="font-semibold text-slate-900">Tu Ruta Aptiva</h3>
+                  <p className="text-sm text-slate-600 mt-0.5">
+                    {(progress?.missing_competencies?.length || 0) === 0 ? (
+                      <>Tienes todas tus competencias requeridas acreditadas y vigentes. ¡Excelente!</>
+                    ) : (
+                      <>
+                        Te {progress.missing_competencies.length === 1 ? 'falta' : 'faltan'}{' '}
+                        <span className="font-semibold text-amber-700">{progress.missing_competencies.length}</span>{' '}
+                        {progress.missing_competencies.length === 1 ? 'competencia' : 'competencias'} por acreditar. Los cursos a continuación están alineados con esas brechas.
+                      </>
+                    )}
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-slate-500">Acreditadas</p>
+                <p className="text-2xl font-bold text-emerald-700" data-testid="acquired-comp-count">
+                  {progress?.acquired_competencies_total || 0}
+                  <span className="text-base font-medium text-slate-400">/{progress?.required_competencies_total || 0}</span>
+                </p>
+              </div>
+            </div>
+
+            {(progress?.missing_competencies?.length || 0) > 0 && (
+              <div className="mt-4 pt-4 border-t border-slate-100">
+                <p className="text-xs text-slate-500 mb-2">Competencias pendientes:</p>
+                <div className="flex flex-wrap gap-2">
+                  {progress.missing_competencies.map((c) => (
+                    <Badge
+                      key={c.competency_id}
+                      variant="outline"
+                      className={c.status === 'expired'
+                        ? 'bg-red-50 text-red-700 border-red-200 gap-1'
+                        : 'bg-amber-50 text-amber-700 border-amber-200 gap-1'}
+                      data-testid={`missing-comp-${c.competency_id}`}
+                    >
+                      <Award className="w-3 h-3" />
+                      {c.name}
+                      {c.status === 'expired' && <span className="text-[10px]">· vencida</span>}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Courses Grid */}
       <div>
