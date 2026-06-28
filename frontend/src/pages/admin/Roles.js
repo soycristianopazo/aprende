@@ -12,6 +12,7 @@ import {
 } from '../../components/ui/dialog';
 import { Plus, Edit2, Trash2, Loader2, FolderTree, Sparkles, Award } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirm } from '../../components/ui/confirm';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -29,6 +30,7 @@ const Roles = () => {
 
   const token = localStorage.getItem('token');
   const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+  const confirm = useConfirm();
 
   const fetchAll = async () => {
     try {
@@ -92,14 +94,24 @@ const Roles = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('¿Eliminar esta actividad? Los trabajadores asignados perderán esta etiqueta.')) return;
+    const ok = await confirm({
+      title: '¿Eliminar actividad?',
+      description: 'Los trabajadores asignados perderán esta etiqueta.',
+      confirmText: 'Eliminar', destructive: true,
+    });
+    if (!ok) return;
     const r = await fetch(`${API}/activities/${id}`, { method: 'DELETE', headers });
     if (r.ok) { toast.success('Actividad eliminada'); fetchAll(); }
     else toast.error('No se pudo eliminar');
   };
 
   const handleInitPredefined = async () => {
-    if (!window.confirm('¿Crear las 19 actividades predefinidas (Trabajo en altura, Soldador, etc.)?')) return;
+    const ok = await confirm({
+      title: 'Crear actividades predefinidas',
+      description: 'Se crearán las 19 actividades predefinidas (Trabajo en altura, Soldador, etc.).',
+      confirmText: 'Crear',
+    });
+    if (!ok) return;
     const r = await fetch(`${API}/activities/predefined/init`, { method: 'POST', headers });
     if (r.ok) {
       const data = await r.json();

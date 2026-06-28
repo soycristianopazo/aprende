@@ -15,6 +15,7 @@ import {
   Plus, Edit2, Trash2, Loader2, Building2, FileSignature, Users as UsersIcon, ChevronDown, ChevronRight, ListChecks,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirm } from '../../components/ui/confirm';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -46,6 +47,7 @@ const Mandantes = () => {
 
   const token = localStorage.getItem('token');
   const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+  const confirm = useConfirm();
 
   const refresh = async () => {
     const [m, w] = await Promise.all([
@@ -121,13 +123,19 @@ const Mandantes = () => {
   };
 
   const deleteMandante = async (id) => {
-    if (!window.confirm('¿Eliminar mandante? Se eliminarán también sus contratos.')) return;
+    const ok = await confirm({
+      title: '¿Eliminar mandante?',
+      description: 'Se eliminarán también todos sus contratos.',
+      confirmText: 'Eliminar', destructive: true,
+    });
+    if (!ok) return;
     const r = await fetch(`${API}/mandantes/${id}`, { method: 'DELETE', headers });
     if (r.ok) { toast.success('Mandante eliminado'); refresh(); } else toast.error('Error');
   };
 
   const deleteContract = async (id) => {
-    if (!window.confirm('¿Eliminar contrato?')) return;
+    const ok = await confirm({ title: '¿Eliminar contrato?', confirmText: 'Eliminar', destructive: true });
+    if (!ok) return;
     const r = await fetch(`${API}/contracts/${id}`, { method: 'DELETE', headers });
     if (r.ok) { toast.success('Contrato eliminado'); refresh(); } else toast.error('Error');
   };

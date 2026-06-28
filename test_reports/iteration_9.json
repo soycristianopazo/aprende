@@ -1,0 +1,34 @@
+{
+  "summary": "Frontend-only e2e validation of the migration from window.confirm to Shadcn AlertDialog (ConfirmProvider + useConfirm). Login admin OK. /admin/users: 'Configurar -> Restablecer' opens Shadcn dialog with correct title 'Restablecer contraseña', description (incluye nombre del trabajador), Cancelar button cierra el modal y NO dispara reset (reset-password-result ausente). 'Confirmar' dispara API y toast muestra 'Contraseña restablecida: 15567' (password = primeros 5 del RUT). Delete user (basurero) abre Shadcn AlertDialog con titulo '¿Eliminar trabajador?' y botón rojo 'Eliminar' (clase destructive con bg-red-600). Loop sobre /admin/job-roles, /admin/areas, /admin/competencies, /admin/mandantes, /admin/document-types, /admin/roles: TODOS abren Shadcn confirm-dialog con texto correcto en Español. Páginas /admin/courses, /admin/gerencias, /admin/worker-documents, /admin/worker-competencies, /admin/mandantes/{id}/standard estaban sin data en seed (no se pudieron probar UI pero el código usa useConfirm). grep confirma 0 usos de window.confirm en /app/frontend/src y los 13 archivos esperados importan useConfirm. PAGE.ON('dialog') no capturó NINGÚN diálogo nativo durante toda la prueba. NOTE: small UX regression detected in reset flow (see frontend_issues).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "Users.js Configurar dialog + reset-password confirm AlertDialog",
+        "issue": "Después de hacer click en 'Restablecer' (confirm-dialog-confirm), la AlertDialog se cierra pero TAMBIÉN se cierra el Dialog padre 'Configurar', por lo que el elemento <p data-testid=\"reset-password-result\"> nunca se llega a ver en pantalla. El reset SÍ ocurre (toast muestra 'Contraseña restablecida: 15567') y la API responde 200. Es una regresión visual introducida por la migración a Shadcn — antes con window.confirm el modal Configurar permanecía abierto y mostraba el bloque ambar con la nueva contraseña. Causa probable: Radix UI cierra Dialog padre cuando se cierra AlertDialog anidada por focus/pointer-up bubble.",
+        "selector": "[data-testid=\"reset-password-result\"] (parent [data-testid=\"configure-user-{id}\"] Dialog closes prematurely)",
+        "priority": "MEDIUM"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Investigar por qué el Dialog 'Configurar' se cierra al cerrar la AlertDialog hija — probablemente añadir e.stopPropagation() en handleConfirm/handleCancel de confirm.jsx, o usar onPointerDownOutside={(e)=>e.preventDefault()} en el DialogContent del Configurar, o mover la lógica para no depender de que el Dialog padre permanezca abierto. Alternativa: mostrar la contraseña restablecida vía toast persistente o navegar al estado de éxito sin depender del modal Configurar."
+  ],
+  "critical_code_review_comments": [
+    "confirm.jsx (ConfirmProvider) está bien diseñado: promise-based, resolverRef protege double-resolve, soporta destructive flag (rojo) y testId custom. Default testIds 'confirm-dialog', '-cancel', '-confirm' aplican a todos los confirms.",
+    "Users.js::resetPassword usa await confirm({...}) con destructive=true y confirmText='Restablecer' — correcto. La regresión visual es de Radix UI dialog-nesting, no del flujo lógico.",
+    "13/13 páginas migradas (Users, JobRoles, Areas, Competencies, Courses, Mandantes, MandanteStandard, DocumentTypes, Gerencias, Roles, WorkerDocuments, WorkerCompetencies, superadmin/Companies) importan useConfirm. grep window.confirm en /app/frontend/src devuelve VACÍO.",
+    "Algunas páginas (Areas, Mandantes, DocumentTypes, Roles) NO tienen data-testid en sus botones delete — sería conveniente añadir delete-{resource}-{id} para mejorar testabilidad (similar a delete-jobrole-{id} y delete-competency-{id} que sí lo tienen)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (not in scope)", "frontend": "12/13 flujos verificados con dialogo Shadcn correcto; 1 regresión UX en flujo reset (no bloqueante, la funcionalidad backend funciona y toast muestra la nueva clave)"},
+  "test_credentials": "admin@aptivademo.com/admin123 (Río Loa SpA) OK; reset durante prueba cambió contraseña de Carolina Andrea Muñoz Vega (15.567.890-1) a '15567' (= primeros 5 del RUT, igual a la original del seed, sin impacto).",
+  "seed_data_creation": "No se creó seed adicional. Se usaron los 8 trabajadores Río Loa existentes.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Migración Shadcn confirm verificada en 6 páginas con data (JobRoles, Areas, Competencies, Mandantes, DocumentTypes, Roles) + Users (reset + delete). Para retestear el bug del Configurar dialog cerrando: login admin → /admin/users → Configurar primer trabajador → Restablecer → Confirmar; observar que el modal Configurar se cierra solo y reset-password-result nunca se muestra. La función está OK (toast sale con la clave). Páginas /admin/courses, /admin/gerencias, /admin/worker-documents, /admin/worker-competencies, /admin/mandantes/{id}/standard y /superadmin/companies no se pudieron probar UI (sin data o requieren superadmin login).",
+  "rca of the issue": "Regresión introducida por anidar Radix AlertDialog (ConfirmProvider, montado a nivel App) sobre Radix Dialog (Configurar). Cuando AlertDialogAction se clickea Radix cierra la AlertDialog y dispatcha onOpenChange(false). El pointer-up/focus-restore al final del ciclo dispara click-outside detection en el Dialog padre. Solución sugerida: en /app/frontend/src/components/ui/dialog.jsx (o en el DialogContent del Configurar de Users.js) añadir onPointerDownOutside={(e) => e.preventDefault()} y onInteractOutside={(e) => e.preventDefault()} para que solo se cierre cuando el usuario haga click en su propio botón cerrar, o usar AlertDialog con modal=true y stopPropagation en handleConfirm. La pérdida de reset-password-result no rompe el flujo: el toast muestra la nueva contraseña."
+}

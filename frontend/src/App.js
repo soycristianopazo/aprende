@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Toaster } from "./components/ui/sonner";
+import { ConfirmProvider } from "./components/ui/confirm";
 
 // Contexts
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
@@ -174,8 +175,10 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AppRouter />
-        <Toaster position="top-right" richColors />
+        <ConfirmProvider>
+          <AppRouter />
+          <Toaster position="top-right" richColors />
+        </ConfirmProvider>
       </AuthProvider>
     </BrowserRouter>
   );

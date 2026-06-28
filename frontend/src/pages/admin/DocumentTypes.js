@@ -13,6 +13,7 @@ import {
 import { Badge } from '../../components/ui/badge';
 import { Plus, Edit2, Trash2, Loader2, FileText, CalendarClock } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirm } from '../../components/ui/confirm';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -31,6 +32,7 @@ const DocumentTypes = () => {
 
   const token = localStorage.getItem('token');
   const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+  const confirm = useConfirm();
 
   const fetchAll = async () => {
     const [d, a, act] = await Promise.all([
@@ -77,7 +79,12 @@ const DocumentTypes = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('¿Eliminar tipo de documento? Los expedientes ya cargados se borrarán.')) return;
+    const ok = await confirm({
+      title: '¿Eliminar tipo de documento?',
+      description: 'Los expedientes ya cargados con este tipo se borrarán.',
+      confirmText: 'Eliminar', destructive: true,
+    });
+    if (!ok) return;
     const r = await fetch(`${API}/document-types/${id}`, { method: 'DELETE', headers });
     if (r.ok) { toast.success('Eliminado'); fetchAll(); }
     else toast.error('Error');

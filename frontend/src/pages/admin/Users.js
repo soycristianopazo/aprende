@@ -15,6 +15,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '../../components/ui/table';
 import { toast } from 'sonner';
+import { useConfirm } from '../../components/ui/confirm';
 import {
   Plus, Search, Trash2, Loader2, UserCheck, UserX, Settings, Upload, Download,
   CheckCircle, XCircle, FileWarning, KeyRound,
@@ -59,6 +60,7 @@ const AdminUsers = () => {
   const token = localStorage.getItem('token');
   const authHeaders = { Authorization: `Bearer ${token}` };
   const jsonHeaders = { ...authHeaders, 'Content-Type': 'application/json' };
+  const confirm = useConfirm();
 
   const fetchAll = async () => {
     setLoading(true);
@@ -142,7 +144,13 @@ const AdminUsers = () => {
 
   const resetPassword = async () => {
     if (!configUser) return;
-    if (!window.confirm(`Restablecer la contraseña de ${configUser.full_name} a los primeros 5 dígitos de su RUT?`)) return;
+    const ok = await confirm({
+      title: 'Restablecer contraseña',
+      description: `La contraseña de ${configUser.full_name} se restablecerá a los primeros 5 dígitos de su RUT.`,
+      confirmText: 'Restablecer',
+      destructive: true,
+    });
+    if (!ok) return;
     setResetting(true);
     try {
       const r = await fetch(`${API}/users/${configUser.user_id}/reset-password`, {
@@ -199,7 +207,13 @@ const AdminUsers = () => {
 
   // ----- delete / toggle -----
   const remove = async (u) => {
-    if (!window.confirm(`¿Eliminar al trabajador ${u.full_name}?`)) return;
+    const ok = await confirm({
+      title: '¿Eliminar trabajador?',
+      description: `${u.full_name} será eliminado permanentemente junto con sus documentos y competencias asociadas.`,
+      confirmText: 'Eliminar',
+      destructive: true,
+    });
+    if (!ok) return;
     const r = await fetch(`${API}/users/${u.user_id}`, { method: 'DELETE', headers: authHeaders });
     if (r.ok) { toast.success('Trabajador eliminado'); fetchAll(); }
     else toast.error('Error al eliminar');

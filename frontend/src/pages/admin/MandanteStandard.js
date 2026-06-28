@@ -15,6 +15,7 @@ import {
   Plus, Edit2, Trash2, Loader2, FolderTree, FileText, ArrowLeft, Link2,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirm } from '../../components/ui/confirm';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -48,6 +49,7 @@ const MandanteStandard = () => {
 
   const token = localStorage.getItem('token');
   const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+  const confirm = useConfirm();
 
   const fetchAll = async () => {
     const [m, std, dt, ar, ac, jr] = await Promise.all([
@@ -157,13 +159,19 @@ const MandanteStandard = () => {
   };
 
   const deleteCategory = async (id) => {
-    if (!window.confirm('¿Eliminar esta categoría? Se eliminarán también todos sus ítems.')) return;
+    const ok = await confirm({
+      title: '¿Eliminar categoría?',
+      description: 'Se eliminarán también todos sus ítems.',
+      confirmText: 'Eliminar', destructive: true,
+    });
+    if (!ok) return;
     const r = await fetch(`${API}/mandantes/${mandanteId}/standard/categories/${id}`, { method: 'DELETE', headers });
     if (r.ok) { toast.success('Eliminada'); fetchAll(); } else toast.error('Error');
   };
 
   const deleteItem = async (id) => {
-    if (!window.confirm('¿Eliminar este ítem?')) return;
+    const ok = await confirm({ title: '¿Eliminar ítem?', confirmText: 'Eliminar', destructive: true });
+    if (!ok) return;
     const r = await fetch(`${API}/mandantes/${mandanteId}/standard/items/${id}`, { method: 'DELETE', headers });
     if (r.ok) { toast.success('Eliminado'); fetchAll(); } else toast.error('Error');
   };

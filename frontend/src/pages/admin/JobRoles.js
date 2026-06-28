@@ -13,6 +13,7 @@ import {
 } from '../../components/ui/table';
 import { Briefcase, Plus, Edit2, Trash2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirm } from '../../components/ui/confirm';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -27,6 +28,7 @@ const JobRoles = () => {
 
   const token = localStorage.getItem('token');
   const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+  const confirm = useConfirm();
 
   const fetchRoles = async () => {
     setLoading(true);
@@ -76,7 +78,12 @@ const JobRoles = () => {
   };
 
   const remove = async (role) => {
-    if (!window.confirm(`¿Eliminar el cargo "${role.name}"? Los trabajadores asignados quedarán sin cargo.`)) return;
+    const ok = await confirm({
+      title: `¿Eliminar el cargo "${role.name}"?`,
+      description: 'Los trabajadores asignados quedarán sin cargo.',
+      confirmText: 'Eliminar', destructive: true,
+    });
+    if (!ok) return;
     const r = await fetch(`${API}/job-roles/${role.role_id}`, { method: 'DELETE', headers });
     if (r.ok) { toast.success('Cargo eliminado'); fetchRoles(); }
     else toast.error('Error al eliminar');

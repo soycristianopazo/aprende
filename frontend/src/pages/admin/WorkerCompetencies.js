@@ -17,6 +17,7 @@ import {
   Loader2, Award, Upload, Trash2, CheckCircle2, AlertTriangle, Clock, FileWarning, FileText, ExternalLink,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirm } from '../../components/ui/confirm';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -69,6 +70,7 @@ const WorkerCompetencies = () => {
 
   const token = localStorage.getItem('token');
   const headers = { Authorization: `Bearer ${token}` };
+  const confirm = useConfirm();
 
   useEffect(() => {
     const init = async () => {
@@ -140,7 +142,8 @@ const WorkerCompetencies = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('¿Eliminar este registro de competencia?')) return;
+    const ok = await confirm({ title: '¿Eliminar este registro de competencia?', confirmText: 'Eliminar', destructive: true });
+    if (!ok) return;
     const r = await fetch(`${API}/worker-competencies/${id}`, { method: 'DELETE', headers });
     if (r.ok) { toast.success('Registro eliminado'); loadWorkerCompetencies(selectedWorker); }
     else toast.error('Error');

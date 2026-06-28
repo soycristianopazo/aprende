@@ -13,6 +13,7 @@ import {
 import { Loader2, Upload, FolderOpen, FileText, Trash2, ExternalLink, AlertTriangle } from 'lucide-react';
 import { Badge } from '../../components/ui/badge';
 import { toast } from 'sonner';
+import { useConfirm } from '../../components/ui/confirm';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -31,6 +32,7 @@ const WorkerDocuments = () => {
 
   const token = localStorage.getItem('token');
   const headers = { Authorization: `Bearer ${token}` };
+  const confirm = useConfirm();
   const jheaders = { ...headers, 'Content-Type': 'application/json' };
 
   const fetchInit = async () => {
@@ -70,7 +72,8 @@ const WorkerDocuments = () => {
   };
 
   const handleDeleteFile = async (wdId, fileIdx) => {
-    if (!window.confirm('¿Eliminar este archivo?')) return;
+    const ok = await confirm({ title: '¿Eliminar este archivo?', confirmText: 'Eliminar', destructive: true });
+    if (!ok) return;
     const r = await fetch(`${API}/worker-documents/${wdId}/files/${fileIdx}`, { method: 'DELETE', headers });
     if (r.ok) { toast.success('Archivo eliminado'); loadWorkerDocs(selectedWorker); }
     else toast.error('Error');

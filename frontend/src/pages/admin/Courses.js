@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { toast } from 'sonner';
+import { useConfirm } from '../../components/ui/confirm';
 import { GraduationCap, Plus, Search, Edit, Trash2, Loader2, PlayCircle, Eye, EyeOff, Clock } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -30,6 +31,7 @@ const AdminCourses = () => {
     video_url: '',
     status: 'draft'
   });
+  const confirm = useConfirm();
 
   useEffect(() => {
     fetchCourses();
@@ -82,7 +84,12 @@ const AdminCourses = () => {
   };
 
   const handleDelete = async (courseId) => {
-    if (!window.confirm('¿Estás seguro de eliminar este curso?')) return;
+    const ok = await confirm({
+      title: '¿Eliminar este curso?',
+      description: 'Se eliminarán también sus evaluaciones y avances asociados.',
+      confirmText: 'Eliminar', destructive: true,
+    });
+    if (!ok) return;
 
     try {
       const token = localStorage.getItem('token');

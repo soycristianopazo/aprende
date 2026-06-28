@@ -9,6 +9,7 @@ import {
 } from '../../components/ui/dialog';
 import { Building2, Plus, Trash2, UserPlus, Loader2, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirm } from '../../components/ui/confirm';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -30,6 +31,7 @@ const SuperAdminCompanies = () => {
 
   const token = localStorage.getItem('token');
   const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+  const confirm = useConfirm();
 
   const fetchCompanies = async () => {
     const r = await fetch(`${API}/superadmin/companies`, { headers });
@@ -70,7 +72,12 @@ const SuperAdminCompanies = () => {
   };
 
   const handleDelete = async (companyId) => {
-    if (!window.confirm('¿Eliminar empresa? Se borrarán TODOS sus datos.')) return;
+    const ok = await confirm({
+      title: '¿Eliminar empresa?',
+      description: 'Se borrarán TODOS los datos de la empresa (trabajadores, expedientes, competencias, etc.). Esta acción no se puede deshacer.',
+      confirmText: 'Eliminar empresa', destructive: true,
+    });
+    if (!ok) return;
     const r = await fetch(`${API}/superadmin/companies/${companyId}`, { method: 'DELETE', headers });
     if (r.ok) {
       toast.success('Empresa eliminada');

@@ -10,6 +10,7 @@ import {
 } from '../../components/ui/dialog';
 import { Plus, Edit2, Trash2, Loader2, Building } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirm } from '../../components/ui/confirm';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -24,6 +25,7 @@ const Areas = () => {
 
   const token = localStorage.getItem('token');
   const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+  const confirm = useConfirm();
 
   const fetchAreas = async () => {
     const r = await fetch(`${API}/areas`, { headers });
@@ -50,7 +52,8 @@ const Areas = () => {
 
   const handleEdit = (a) => { setEditing(a); setForm({ name: a.name, description: a.description || '' }); setDialogOpen(true); };
   const handleDelete = async (id) => {
-    if (!window.confirm('¿Eliminar área?')) return;
+    const ok = await confirm({ title: '¿Eliminar área?', confirmText: 'Eliminar', destructive: true });
+    if (!ok) return;
     const r = await fetch(`${API}/areas/${id}`, { method: 'DELETE', headers });
     if (r.ok) { toast.success('Eliminada'); fetchAreas(); }
     else toast.error('Error');
