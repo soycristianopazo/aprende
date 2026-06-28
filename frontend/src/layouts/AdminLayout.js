@@ -6,7 +6,7 @@ import { Separator } from '../components/ui/separator';
 import { 
   BookOpen, LayoutDashboard, Users, FolderTree, GraduationCap, 
   ClipboardCheck, Award, BarChart3, Palette, LogOut, Menu, X, ChevronRight,
-  Building, FileText, FolderOpen, Upload, ShieldCheck
+  Building, FileText, FolderOpen, Upload, ShieldCheck, Flame
 } from 'lucide-react';
 import { useState } from 'react';
 import { useBranding } from '../hooks/useBranding';
@@ -23,6 +23,7 @@ const AdminLayout = () => {
 
   const menuItems = [
     { path: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
+    { path: '/admin/compliance', icon: Flame, label: 'Cumplimiento' },
     { path: '/admin/users', icon: Users, label: 'Trabajadores' },
     { path: '/admin/users-import', icon: Upload, label: 'Importar Trabajadores' },
     { path: '/admin/areas', icon: Building, label: 'Áreas' },

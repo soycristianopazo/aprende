@@ -856,3 +856,174 @@ async def grant_competencies_for_course_completion(user_id: str, company_id: str
                 "uploaded_by": None,
                 "created_at": now_iso,
             })
+
+
+
+# ============================================================
+# COMPLIANCE HEATMAP (admin only)
+# ============================================================
+
+def _is_vigent(expiry_value, now: datetime) -> bool:
+    """True if the worker_competency has no expiry or expires in the future."""
+    if not expiry_value:
+        return True
+    try:
+        if isinstance(expiry_value, str):
+            dt = datetime.fromisoformat(expiry_value.replace("Z", "+00:00"))
+        else:
+            dt = expiry_value
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt > now
+    except Exception:
+        return True
+
+
+async def _compute_compliance_matrix(company_id: str):
+    """Build the activity × competency matrix for a company."""
+    now = datetime.now(timezone.utc)
+
+    activities = await db.activities.find({"company_id": company_id}).sort("name", 1).to_list(500)
+    competencies = await db.competencies.find({"company_id": company_id, "is_active": True}).sort("name", 1).to_list(500)
+    workers = await db.users.find({"company_id": company_id, "is_admin": False, "is_super_admin": False}).to_list(2000)
+    wcs = await db.worker_competencies.find({"company_id": company_id}).to_list(5000)
+
+    wc_index: Dict[tuple, Dict[str, Any]] = {}
+    for w in wcs:
+        wc_index[(w["user_id"], w["competency_id"])] = w
+
+    workers_by_activity: Dict[str, List[Dict[str, Any]]] = {}
+    for w in workers:
+        for aid in (w.get("activity_ids") or []):
+            workers_by_activity.setdefault(aid, []).append(w)
+
+    cells: List[Dict[str, Any]] = []
+    for a in activities:
+        a_comp_ids = a.get("competency_ids") or []
+        if not a_comp_ids:
+            continue
+        a_workers = workers_by_activity.get(a["activity_id"], [])
+        for cid in a_comp_ids:
+            comp = next((c for c in competencies if c["competency_id"] == cid), None)
+            if not comp:
+                continue
+            total = len(a_workers)
+            acquired = 0
+            expired = 0
+            pending = 0
+            for w in a_workers:
+                wc = wc_index.get((w["user_id"], cid))
+                if wc and _is_vigent(wc.get("expiry_date"), now):
+                    acquired += 1
+                elif wc and not _is_vigent(wc.get("expiry_date"), now):
+                    expired += 1
+                else:
+                    pending += 1
+            pct = int(round((acquired / total) * 100)) if total > 0 else 0
+            cells.append({
+                "activity_id": a["activity_id"],
+                "activity_name": a["name"],
+                "competency_id": comp["competency_id"],
+                "competency_name": comp["name"],
+                "validity_months": comp.get("validity_months"),
+                "total_workers": total,
+                "acquired": acquired,
+                "expired": expired,
+                "pending": pending,
+                "percentage": pct,
+            })
+
+    total_cells = len(cells)
+    if total_cells:
+        avg_pct = int(round(sum(c["percentage"] for c in cells) / total_cells))
+        critical_cells = [c for c in cells if c["percentage"] < 50]
+        green_cells = [c for c in cells if c["percentage"] >= 80]
+    else:
+        avg_pct = 0
+        critical_cells = []
+        green_cells = []
+
+    return {
+        "activities": [{"activity_id": a["activity_id"], "name": a["name"]} for a in activities if (a.get("competency_ids") or [])],
+        "competencies": [{"competency_id": c["competency_id"], "name": c["name"]} for c in competencies],
+        "cells": cells,
+        "summary": {
+            "total_cells": total_cells,
+            "average_compliance": avg_pct,
+            "critical_count": len(critical_cells),
+            "green_count": len(green_cells),
+            "total_workers": len(workers),
+        },
+        "generated_at": now.isoformat(),
+    }
+
+
+@v2_router.get("/compliance/heatmap")
+async def get_compliance_heatmap(admin: dict = Depends(require_admin)):
+    company_id = admin.get("company_id")
+    if not company_id:
+        raise HTTPException(400, "Company scope required")
+    return await _compute_compliance_matrix(company_id)
+
+
+@v2_router.get("/compliance/heatmap/export")
+async def export_compliance_heatmap(admin: dict = Depends(require_admin)):
+    """Returns the matrix as a CSV file ready for an audit binder."""
+    from fastapi.responses import StreamingResponse
+    company_id = admin.get("company_id")
+    if not company_id:
+        raise HTTPException(400, "Company scope required")
+    company = await db.companies.find_one({"company_id": company_id})
+    matrix = await _compute_compliance_matrix(company_id)
+
+    buf = io.StringIO()
+    writer = csv.writer(buf, delimiter=";", quoting=csv.QUOTE_MINIMAL)
+    writer.writerow(["Aptiva — Reporte de Cumplimiento de Competencias"])
+    writer.writerow([f"Empresa: {company.get('name') if company else ''}"])
+    writer.writerow([f"RUT: {company.get('rut') or '' if company else ''}"])
+    writer.writerow([f"Generado: {matrix['generated_at']}"])
+    writer.writerow([])
+    writer.writerow([
+        "Actividad",
+        "Competencia",
+        "Vigencia (meses)",
+        "Trabajadores en actividad",
+        "Acreditados vigentes",
+        "Vencidos",
+        "Pendientes",
+        "% Cumplimiento",
+        "Estado",
+    ])
+    for c in matrix["cells"]:
+        if c["percentage"] >= 80:
+            state = "OK"
+        elif c["percentage"] >= 50:
+            state = "Atencion"
+        else:
+            state = "Critico"
+        writer.writerow([
+            c["activity_name"],
+            c["competency_name"],
+            c["validity_months"] if c["validity_months"] else "Sin vencimiento",
+            c["total_workers"],
+            c["acquired"],
+            c["expired"],
+            c["pending"],
+            f"{c['percentage']}%",
+            state,
+        ])
+    writer.writerow([])
+    s = matrix["summary"]
+    writer.writerow(["Resumen"])
+    writer.writerow(["Total trabajadores", s["total_workers"]])
+    writer.writerow(["Cumplimiento promedio", f"{s['average_compliance']}%"])
+    writer.writerow(["Celdas criticas (<50%)", s["critical_count"]])
+    writer.writerow(["Celdas en verde (>=80%)", s["green_count"]])
+
+    filename = f"aptiva_cumplimiento_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M')}.csv"
+    content = ("\ufeff" + buf.getvalue()).encode("utf-8")
+    return StreamingResponse(
+        io.BytesIO(content),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

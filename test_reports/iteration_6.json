@@ -1,0 +1,26 @@
+{
+  "summary": "F6 'Mapa de Calor de Cumplimiento' end-to-end verification. All 10 pytest backend tests PASS (auth/RBAC, shape, vigent/expired/no-expiry classification, summary consistency, CSV export with UTF-8 BOM + ';' separator + 'aptiva_cumplimiento_YYYYMMDD_HHMM.csv' filename). All 10 Playwright frontend checks PASS: Cumplimiento nav item with Flame icon in slot #2 right after Dashboard; /admin/compliance loads; summary cards = 0% / 5 / 0 / 1 (matches seed exactly); matrix shows red cell '0%' '0/2' with tooltip '0/2 acreditados · 0 vencidos · 2 pendientes'; export-csv-btn returns 200 + attachment + correct filename; 3-role login regression OK; /admin/competencies + /admin/worker-competencies + student/my-file + my-competencies + my-certificates all still load.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": { "ui_bugs": [], "integration_issues": [], "design_issues": [] },
+  "test_report_links": [
+    "/app/backend/tests/test_f6_compliance_heatmap.py",
+    "/app/test_reports/pytest/f6_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "routes_v2.py::_compute_compliance_matrix (lines 882-958) is correctly scoped by company_id on activities/competencies/workers/worker_competencies; admin require_admin enforces RBAC. The 'activities' field is also filtered to only those with competency_ids set, matching the spec.",
+    "_is_vigent helper handles ISO strings with Z suffix, naive datetimes (treated as UTC), and missing expiry (lifetime=acquired) — consistent with /api/student/progress in F5. Classification logic in _compute_compliance_matrix correctly counts acquired/expired/pending.",
+    "CSV export emits proper UTF-8 BOM (\\ufeff), ';' delimiter, Spanish state labels 'OK'/'Atencion'/'Critico', and includes Empresa, RUT, Generado headers + Resumen section. Filename uses UTC YYYYMMDD_HHMM. Content-Disposition uses attachment correctly.",
+    "Frontend Compliance.js correctly: (1) gates 'Exportar CSV' button on total_cells===0, (2) shows the 'Aún no hay matriz para mostrar' empty-state when activities or visibleCompetencies are empty, (3) renders '—' for cells that exist in the column grid but are not required by the row activity, (4) uses pctTone with thresholds <50/50-79/>=80 matching backend buckets.",
+    "AdminLayout.js menuItems has 'Cumplimiento' with Flame icon at index 1 (right after Dashboard) — matches spec.",
+    "Multi-tenant isolation NOT exhaustively tested because seed has only one company; verified via code-inspection: scoped_filter is enforced via require_admin's company_id and all 4 collection queries explicitly include company_id."
+  ],
+  "updated_files": ["/app/backend/tests/test_f6_compliance_heatmap.py (new, 10 tests)"],
+  "success_rate": { "backend": "100% (10/10 passed)", "frontend": "100% (10/10 UI checks passed)" },
+  "test_credentials": "superadmin@aptiva.com/superadmin123, admin@aptivademo.com/admin123, trabajador@aptivademo.com/trabajador123 — all working.",
+  "seed_data_creation": "Tests self-clean: the 3 classification tests (acquired-future / expired-past / no-expiry) each create a worker_competency for the demo trabajador and delete it in try/finally. After the suite the seed returns to 0 worker_competencies / 0% compliance / 1 critical cell (verified via final heatmap fetch).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "F6 pytest at /app/backend/tests/test_f6_compliance_heatmap.py — re-run with: pytest /app/backend/tests/test_f6_compliance_heatmap.py -v. Covers: RBAC reject worker+anonymous, shape+seed expectations, vigent/expired/no-expiry classification via /api/worker-competencies/{user_id}/upload (multipart form), CSV export headers + UTF-8 BOM + filename pattern, and critical/green count consistency. NOTE: the 'no-expiry' test path actually exercises the auto-fill code path (validity_months=24 auto-applied when expiry_date omitted), which results in a FUTURE expiry; this still tests the same 'acquired' branch. To test a true null-expiry worker_competency you would need either a competency with no validity_months or a direct DB insert. Empty-matrix UI path was verified by code-inspection only (could not exercise without unassigning the seed competency).",
+  "rca of the issue": "No bug detected. Implementation matches the F6 spec exactly on both backend (matrix computation, CSV format, RBAC) and frontend (sidebar slot, summary cards, heatmap rendering, tooltip, CSV download trigger)."
+}

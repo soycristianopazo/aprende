@@ -25,6 +25,7 @@ import AdminDocumentTypes from "./pages/admin/DocumentTypes";
 import AdminWorkerDocuments from "./pages/admin/WorkerDocuments";
 import AdminCompetencies from "./pages/admin/Competencies";
 import AdminWorkerCompetencies from "./pages/admin/WorkerCompetencies";
+import AdminCompliance from "./pages/admin/Compliance";
 import AdminCertificates from "./pages/admin/Certificates";
 import AdminReports from "./pages/admin/Reports";
 import AdminBranding from "./pages/admin/Branding";
@@ -133,6 +134,7 @@ function AppRouter() {
         <Route path="worker-documents" element={<AdminWorkerDocuments />} />
         <Route path="competencies" element={<AdminCompetencies />} />
         <Route path="worker-competencies" element={<AdminWorkerCompetencies />} />
+        <Route path="compliance" element={<AdminCompliance />} />
         <Route path="certificates" element={<AdminCertificates />} />
         <Route path="reports" element={<AdminReports />} />
         <Route path="branding" element={<AdminBranding />} />
