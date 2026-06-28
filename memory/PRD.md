@@ -67,6 +67,13 @@ Vendor / dueño del producto: **DoSoft**.
 - Footers: "© <year> DoSoft · Aptiva — Gestión de Competencias, Capacitaciones y Storage".
 
 ## What's Been Implemented (CHANGELOG)
+### 2026-02 — Fase 5 (Motor "Ruta Aptiva")
+- [x] `/api/student/progress` ahora es competency-driven: para cada trabajador calcula `required_competencies` (desde sus actividades), `acquired_active` y `acquired_expired` (desde worker_competencies), `missing_competencies` (incluye vigentes y vencidas).
+- [x] Filtro de cursos: solo se devuelven los que (a) son generales (sin `grants_competency_ids`), (b) otorgan al menos una competencia faltante, o (c) ya están completados (se mantienen como historial).
+- [x] Legacy fallback: si las actividades del trabajador no tienen `competency_ids`, se muestran todos los cursos por área/actividad (sin regresión para empresas legacy).
+- [x] Frontend Dashboard: nuevo widget "Tu Ruta Aptiva" que muestra X/Y competencias acreditadas + badges de las pendientes/vencidas, solo visible cuando `required_competencies_total > 0`.
+- [x] Tests: 6/6 backend pytest passing (`/app/backend/tests/test_f5_ruta_aptiva.py`). Frontend widget validado por testing agent.
+
 ### 2026-02 — Fase 4 (Módulo Competencias)
 - [x] DB migration aditiva: tabla `competencies`, tabla `worker_competencies`, columnas `activities.competency_ids[]` y `courses.grants_competency_ids[]` (ver `/app/backend/migration_f4_competencies.sql`).
 - [x] Backend: CRUD `/api/competencies`, linkage activity↔competency vía `PUT /api/activities/{id}`, `POST /api/worker-competencies/{user_id}/upload` (multipart con archivo opcional + expiry auto-calculado), `GET /api/worker-competencies/{user_id}`, `DELETE /api/worker-competencies/{id}`, `GET /api/my-competencies` (unión requeridas+adquiridas).
@@ -113,10 +120,10 @@ Vendor / dueño del producto: **DoSoft**.
 ## Prioritized Backlog
 
 ### P0 — Próximo
-- **Fase 5 — Motor "Ruta Aptiva"**: combinar área + actividad + competencias requeridas para auto-armar el plan de capacitación de cada trabajador (la matriz ya está; falta la UI del trabajador que muestre solo los cursos que efectivamente faltan para acreditar sus competencias).
-- Seed: dejar al menos un curso publicado con `grants_competency_ids` + evaluación para poder ejercer el auto-grant end-to-end.
+- **Mapa de Calor de Cumplimiento (Admin Dashboard)**: visualización matricial actividad × competencia × % de trabajadores acreditados + export CSV "listo para auditoría".
 
 ### P1
+- Seed: dejar al menos un curso publicado con `grants_competency_ids` + evaluación para poder ejercer el auto-grant end-to-end sin tener que configurar manualmente.
 - **Fase 4 — Módulo Competencias**:
   - Catálogo de competencias por empresa.
   - Asignación de competencias a actividades.
