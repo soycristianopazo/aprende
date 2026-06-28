@@ -139,6 +139,12 @@ TABLES: Dict[str, Dict[str, Any]] = {
         "json_cols": set(),
         "ts_cols": {"created_at"},
     },
+    "job_roles": {
+        "pk": "role_id",
+        "array_cols": set(),
+        "json_cols": set(),
+        "ts_cols": {"created_at"},
+    },
     "user_sessions": {
         "pk": "session_token",
         "array_cols": set(),

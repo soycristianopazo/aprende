@@ -1334,6 +1334,9 @@ class StandardItemCreate(BaseModel):
     document_type_id: Optional[str] = None
     is_required: bool = True
     order_index: int = 0
+    area_id: Optional[str] = None
+    role_id: Optional[str] = None
+    activity_id: Optional[str] = None
 
 
 class StandardItemUpdate(BaseModel):
@@ -1343,6 +1346,9 @@ class StandardItemUpdate(BaseModel):
     document_type_id: Optional[str] = None
     is_required: Optional[bool] = None
     order_index: Optional[int] = None
+    area_id: Optional[str] = None
+    role_id: Optional[str] = None
+    activity_id: Optional[str] = None
 
 
 async def _ensure_mandante(admin: dict, mandante_id: str) -> str:
@@ -1430,6 +1436,9 @@ async def create_standard_item(mandante_id: str, data: StandardItemCreate, admin
         "document_type_id": data.document_type_id,
         "is_required": data.is_required,
         "order_index": data.order_index,
+        "area_id": data.area_id,
+        "role_id": data.role_id,
+        "activity_id": data.activity_id,
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     await db.mandante_standard_items.insert_one(doc)
@@ -1439,7 +1448,12 @@ async def create_standard_item(mandante_id: str, data: StandardItemCreate, admin
 @v2_router.put("/mandantes/{mandante_id}/standard/items/{item_id}")
 async def update_standard_item(mandante_id: str, item_id: str, data: StandardItemUpdate, admin: dict = Depends(require_admin)):
     company_id = await _ensure_mandante(admin, mandante_id)
-    upd = {k: v for k, v in data.model_dump().items() if v is not None}
+    raw = data.model_dump(exclude_unset=True)
+    # Allow nulling scope columns by passing empty string
+    for k in ("area_id", "role_id", "activity_id", "document_type_id"):
+        if k in raw and raw[k] == "":
+            raw[k] = None
+    upd = {k: v for k, v in raw.items() if not (v is None and k not in ("area_id", "role_id", "activity_id", "document_type_id"))}
     if not upd:
         raise HTTPException(400, "Nada que actualizar")
     res = await db.mandante_standard_items.update_one(
@@ -1461,3 +1475,64 @@ async def delete_standard_item(mandante_id: str, item_id: str, admin: dict = Dep
         raise HTTPException(404, "Ítem no encontrado")
     return {"deleted": True}
 
+
+
+# ============================================================
+# JOB ROLES / CARGOS (scoped by company)
+# ============================================================
+
+class JobRoleCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+
+
+class JobRoleUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+
+
+@v2_router.get("/job-roles")
+async def list_job_roles(user: dict = Depends(get_current_user)):
+    return await db.job_roles.find(scoped_filter(user)).sort("name", 1).to_list(500)
+
+
+@v2_router.post("/job-roles")
+async def create_job_role(data: JobRoleCreate, admin: dict = Depends(require_admin)):
+    company_id = admin.get("company_id")
+    if not company_id:
+        raise HTTPException(400, "Company scope required")
+    existing = await db.job_roles.find_one({"company_id": company_id, "name": data.name})
+    if existing:
+        raise HTTPException(400, f"Cargo '{data.name}' ya existe")
+    doc = {
+        "role_id": f"jr_{uuid.uuid4().hex[:12]}",
+        "company_id": company_id,
+        "name": data.name,
+        "description": data.description,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.job_roles.insert_one(doc)
+    return doc
+
+
+@v2_router.put("/job-roles/{role_id}")
+async def update_job_role(role_id: str, data: JobRoleUpdate, admin: dict = Depends(require_admin)):
+    upd = {k: v for k, v in data.model_dump().items() if v is not None}
+    if not upd:
+        raise HTTPException(400, "Nada que actualizar")
+    f = scoped_filter(admin, {"role_id": role_id})
+    res = await db.job_roles.update_one(f, {"$set": upd})
+    if res.matched_count == 0:
+        raise HTTPException(404, "Cargo no encontrado")
+    return await db.job_roles.find_one(f)
+
+
+@v2_router.delete("/job-roles/{role_id}")
+async def delete_job_role(role_id: str, admin: dict = Depends(require_admin)):
+    f = scoped_filter(admin, {"role_id": role_id})
+    # Clear from users that reference this cargo
+    await db.users.update_one({"role_id": role_id, "company_id": admin.get("company_id")}, {"$set": {"role_id": None}})
+    res = await db.job_roles.delete_one(f)
+    if res.deleted_count == 0:
+        raise HTTPException(404, "Cargo no encontrado")
+    return {"deleted": True}

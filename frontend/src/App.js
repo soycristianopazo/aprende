@@ -16,6 +16,7 @@ import VerifyCertificate from "./pages/VerifyCertificate";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminUsers from "./pages/admin/Users";
 import AdminUsersImport from "./pages/admin/UsersImport";
+import AdminJobRoles from "./pages/admin/JobRoles";
 import AdminAreas from "./pages/admin/Areas";
 import AdminRoles from "./pages/admin/Roles";
 import AdminCourses from "./pages/admin/Courses";
@@ -129,6 +130,7 @@ function AppRouter() {
         <Route index element={<AdminDashboard />} />
         <Route path="users" element={<AdminUsers />} />
         <Route path="users-import" element={<AdminUsersImport />} />
+        <Route path="job-roles" element={<AdminJobRoles />} />
         <Route path="areas" element={<AdminAreas />} />
         <Route path="roles" element={<AdminRoles />} />
         <Route path="courses" element={<AdminCourses />} />

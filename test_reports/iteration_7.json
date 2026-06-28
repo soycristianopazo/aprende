@@ -1,0 +1,26 @@
+{
+  "summary": "F7 (Cargos + Trabajadores refactor + Scope en Estándar) end-to-end. Backend: 15/15 pytest PASS (Job Roles CRUD with admin RBAC, duplicate-name 400, worker can list but not create, delete nulls users.role_id; PUT /api/users/{id} accepts role_id and GET returns it; POST/PUT /api/mandantes/{id}/standard/items accepts area_id/role_id/activity_id and PUT with empty string clears them). Frontend: 11/11 UI checks PASS — sidebar shows 'Trabajadores' + 'Cargos' under Personas and NO 'Importar Trabajadores'; /admin/job-roles renders, new-jobrole-btn opens dialog, name input + submit creates row, delete works; /admin/users table headers = [RUT, Nombre, Cargo, Estado, Acciones] (no 'Empresa'); bulk-import-btn opens Sheet with download-template-btn + bulk-import-file + bulk-import-submit; configure-user-{id} opens modal with config-cargo-select + config-submit-btn; /admin/mandantes/{id}/standard 'Nuevo ítem' dialog includes 'Ámbito de aplicación (opcional)' section with item-area-select / item-role-select / item-activity-select, all defaulting to Todas/Todos.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": { "ui_bugs": [], "integration_issues": [], "design_issues": [] },
+  "test_report_links": [
+    "/app/backend/tests/test_f7_job_roles_scope.py",
+    "/app/test_reports/pytest/f7_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "routes_v2.py::delete_job_role correctly clears users.role_id via db.users.update_one before deleting the job_role row — but uses update_one which only nulls the FIRST matching user. If multiple users share the same role_id this will leave dangling references. Consider db.users.update_many (or equivalent). Spec test still passes because seed has only one worker with that role at delete time.",
+    "routes_v2.py::update_standard_item handles area_id/role_id/activity_id/document_type_id='' → None correctly using model_dump(exclude_unset=True), preserving the 'clear scope' contract documented in the request.",
+    "server.py::UserUpdate exposes role_id and update_user persists it; GET /api/users returns the field (verified via integration test).",
+    "Frontend AdminLayout.js: 'Importar Trabajadores' has been removed from sidebar as required; 'Cargos' was added under Personas group."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_f7_job_roles_scope.py (new, 15 tests)"
+  ],
+  "success_rate": { "backend": "100% (15/15 passed)", "frontend": "100% (11/11 UI checks passed)" },
+  "test_credentials": "admin@aptivademo.com/admin123 and trabajador@aptivademo.com/trabajador123 — both working.",
+  "seed_data_creation": "Tests self-clean: TEST_Supervisor_F7, TEST_RoleScope_F7 job roles created and deleted; TEST_Item_Scope_F7 standard item created and deleted; no mandante/category was created (reused the existing 'Codelco' mandante + 'Documentación legal' category).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "F7 tests at /app/backend/tests/test_f7_job_roles_scope.py. Run with: pytest /app/backend/tests/test_f7_job_roles_scope.py -v. Frontend smoke: open /admin/job-roles, /admin/users (Configure + Carga Masiva sheet), /admin/mandantes/{id}/standard (Nuevo ítem dialog → Ámbito de aplicación). Mandante used by tests: mandante_81bb8020f9d9 (Codelco). Minor code-review nit only: delete_job_role uses update_one instead of update_many on users — not currently causing failures but worth tightening.",
+  "rca of the issue": "No bug detected. Implementation matches the F7 spec exactly on both backend (job_roles CRUD with company-unique name + cascade-null on users.role_id; users.role_id pass-through; standard item area/role/activity scope persistence + empty-string clearing) and frontend (sidebar restructure, JobRoles maintainer, Users refactor with Configure modal + embedded Carga Masiva Sheet, and Ámbito de aplicación selects in the standard item dialog)."
+}

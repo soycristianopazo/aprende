@@ -25,6 +25,9 @@ const MandanteStandard = () => {
   const [categories, setCategories] = useState([]);
   const [items, setItems] = useState([]);
   const [docTypes, setDocTypes] = useState([]);
+  const [areas, setAreas] = useState([]);
+  const [activities, setActivities] = useState([]);
+  const [jobRoles, setJobRoles] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Category dialog
@@ -36,7 +39,10 @@ const MandanteStandard = () => {
   const [itemDialog, setItemDialog] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [targetCategoryId, setTargetCategoryId] = useState(null);
-  const [itemForm, setItemForm] = useState({ name: '', description: '', document_type_id: '', is_required: true });
+  const [itemForm, setItemForm] = useState({
+    name: '', description: '', document_type_id: '', is_required: true,
+    area_id: '', role_id: '', activity_id: '',
+  });
 
   const [submitting, setSubmitting] = useState(false);
 
@@ -44,15 +50,21 @@ const MandanteStandard = () => {
   const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
 
   const fetchAll = async () => {
-    const [m, std, dt] = await Promise.all([
+    const [m, std, dt, ar, ac, jr] = await Promise.all([
       fetch(`${API}/mandantes`, { headers }).then((r) => r.json()),
       fetch(`${API}/mandantes/${mandanteId}/standard`, { headers }).then((r) => r.json()),
       fetch(`${API}/document-types`, { headers }).then((r) => (r.ok ? r.json() : [])),
+      fetch(`${API}/areas`, { headers }).then((r) => (r.ok ? r.json() : [])),
+      fetch(`${API}/activities`, { headers }).then((r) => (r.ok ? r.json() : [])),
+      fetch(`${API}/job-roles`, { headers }).then((r) => (r.ok ? r.json() : [])),
     ]);
     setMandante((m || []).find((x) => x.mandante_id === mandanteId) || null);
     setCategories(std.categories || []);
     setItems(std.items || []);
     setDocTypes(dt || []);
+    setAreas(ar || []);
+    setActivities(ac || []);
+    setJobRoles(jr || []);
     setLoading(false);
   };
 
@@ -70,6 +82,19 @@ const MandanteStandard = () => {
   const docTypeNameById = useMemo(
     () => docTypes.reduce((acc, d) => { acc[d.document_type_id] = d.name; return acc; }, {}),
     [docTypes]
+  );
+
+  const areaNameById = useMemo(
+    () => areas.reduce((acc, d) => { acc[d.area_id] = d.name; return acc; }, {}),
+    [areas]
+  );
+  const roleNameById = useMemo(
+    () => jobRoles.reduce((acc, d) => { acc[d.role_id] = d.name; return acc; }, {}),
+    [jobRoles]
+  );
+  const activityNameById = useMemo(
+    () => activities.reduce((acc, d) => { acc[d.activity_id] = d.name; return acc; }, {}),
+    [activities]
   );
 
   const submitCategory = async (e) => {
@@ -113,13 +138,16 @@ const MandanteStandard = () => {
         document_type_id: itemForm.document_type_id || null,
         is_required: itemForm.is_required,
         order_index: editingItem?.order_index ?? (itemsByCategory[targetCategoryId]?.length || 0),
+        area_id: itemForm.area_id || (editingItem ? '' : null),
+        role_id: itemForm.role_id || (editingItem ? '' : null),
+        activity_id: itemForm.activity_id || (editingItem ? '' : null),
       };
       const r = await fetch(url, { method, headers, body: JSON.stringify(payload) });
       if (!r.ok) throw new Error((await r.json()).detail || 'Error');
       toast.success(editingItem ? 'Ítem actualizado' : 'Ítem creado');
       setItemDialog(false);
       setEditingItem(null);
-      setItemForm({ name: '', description: '', document_type_id: '', is_required: true });
+      setItemForm({ name: '', description: '', document_type_id: '', is_required: true, area_id: '', role_id: '', activity_id: '' });
       fetchAll();
     } catch (err) {
       toast.error(err.message);
@@ -143,7 +171,7 @@ const MandanteStandard = () => {
   const openNewItem = (categoryId) => {
     setTargetCategoryId(categoryId);
     setEditingItem(null);
-    setItemForm({ name: '', description: '', document_type_id: '', is_required: true });
+    setItemForm({ name: '', description: '', document_type_id: '', is_required: true, area_id: '', role_id: '', activity_id: '' });
     setItemDialog(true);
   };
 
@@ -155,6 +183,9 @@ const MandanteStandard = () => {
       description: it.description || '',
       document_type_id: it.document_type_id || '',
       is_required: it.is_required ?? true,
+      area_id: it.area_id || '',
+      role_id: it.role_id || '',
+      activity_id: it.activity_id || '',
     });
     setItemDialog(true);
   };
@@ -251,6 +282,21 @@ const MandanteStandard = () => {
                                 {docTypeNameById[it.document_type_id] || 'Tipo vinculado'}
                               </Badge>
                             )}
+                            {it.area_id && (
+                              <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200">
+                                Área: {areaNameById[it.area_id] || it.area_id}
+                              </Badge>
+                            )}
+                            {it.role_id && (
+                              <Badge variant="outline" className="text-[10px] bg-violet-50 text-violet-700 border-violet-200">
+                                Cargo: {roleNameById[it.role_id] || it.role_id}
+                              </Badge>
+                            )}
+                            {it.activity_id && (
+                              <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-700 border-amber-200">
+                                Actividad: {activityNameById[it.activity_id] || it.activity_id}
+                              </Badge>
+                            )}
                           </div>
                           {it.description && <p className="text-xs text-slate-500 mt-0.5">{it.description}</p>}
                         </div>
@@ -324,6 +370,50 @@ const MandanteStandard = () => {
                 ))}
               </select>
               <p className="text-xs text-slate-400 mt-1">Si vinculas un tipo, el sistema podrá detectar automáticamente cuándo el trabajador lo cargue.</p>
+            </div>
+
+            <div className="rounded-md border border-slate-200 bg-slate-50 p-3 space-y-2">
+              <p className="text-xs font-semibold text-slate-700">Ámbito de aplicación (opcional)</p>
+              <p className="text-[11px] text-slate-500">Si seleccionas una opción, este ítem solo aplicará a trabajadores que cumplan ese criterio. Déjalo en &quot;Todos&quot; para que aplique a todos.</p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div>
+                  <Label className="text-[11px]">Área</Label>
+                  <select
+                    value={itemForm.area_id}
+                    onChange={(e) => setItemForm({ ...itemForm, area_id: e.target.value })}
+                    className="w-full h-9 px-2 rounded-md border border-slate-200 bg-white text-xs"
+                    data-testid="item-area-select"
+                  >
+                    <option value="">Todas</option>
+                    {areas.map((a) => <option key={a.area_id} value={a.area_id}>{a.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <Label className="text-[11px]">Cargo</Label>
+                  <select
+                    value={itemForm.role_id}
+                    onChange={(e) => setItemForm({ ...itemForm, role_id: e.target.value })}
+                    className="w-full h-9 px-2 rounded-md border border-slate-200 bg-white text-xs"
+                    data-testid="item-role-select"
+                  >
+                    <option value="">Todos</option>
+                    {jobRoles.map((r) => <option key={r.role_id} value={r.role_id}>{r.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <Label className="text-[11px]">Actividad</Label>
+                  <select
+                    value={itemForm.activity_id}
+                    onChange={(e) => setItemForm({ ...itemForm, activity_id: e.target.value })}
+                    className="w-full h-9 px-2 rounded-md border border-slate-200 bg-white text-xs"
+                    data-testid="item-activity-select"
+                  >
+                    <option value="">Todas</option>
+                    {activities.map((a) => <option key={a.activity_id} value={a.activity_id}>{a.name}</option>)}
+                  </select>
+                </div>
+              </div>
             </div>
             <label className="flex items-center gap-2 cursor-pointer">
               <Checkbox

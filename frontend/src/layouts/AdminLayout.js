@@ -5,7 +5,7 @@ import { ScrollArea } from '../components/ui/scroll-area';
 import { 
   LayoutDashboard, Users, FolderTree, GraduationCap, BookOpen,
   ClipboardCheck, Award, BadgeCheck, BarChart3, Palette, LogOut, Menu, X, ChevronRight, ChevronDown,
-  Building, FileText, FolderOpen, Upload, ShieldCheck, Flame,
+  Building, FileText, FolderOpen, ShieldCheck, Flame,
   Home, Network, Archive, Settings, Briefcase, FileSignature
 } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
@@ -60,7 +60,7 @@ const AdminLayout = () => {
         icon: Users,
         items: [
           { path: '/admin/users', icon: Users, label: 'Trabajadores' },
-          { path: '/admin/users-import', icon: Upload, label: 'Importar Trabajadores' },
+          { path: '/admin/job-roles', icon: Briefcase, label: 'Cargos' },
         ],
       },
       {

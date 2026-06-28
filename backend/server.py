@@ -57,6 +57,7 @@ class UserCreate(BaseModel):
     full_name: str
     rut: Optional[str] = None
     company: Optional[str] = None
+    role_id: Optional[str] = None
     area_ids: List[str] = []
     activity_ids: List[str] = []
     is_admin: bool = False
@@ -64,6 +65,7 @@ class UserCreate(BaseModel):
 class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     company: Optional[str] = None
+    role_id: Optional[str] = None
     area_ids: Optional[List[str]] = None
     activity_ids: Optional[List[str]] = None
     is_active: Optional[bool] = None
@@ -370,6 +372,7 @@ async def create_user(data: UserCreate, admin: dict = Depends(require_admin)):
         "full_name": data.full_name,
         "rut": data.rut,
         "company": data.company,
+        "role_id": data.role_id,
         "is_super_admin": False,
         "is_admin": data.is_admin,
         "is_active": True,
