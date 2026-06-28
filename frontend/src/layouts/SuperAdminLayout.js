@@ -105,7 +105,7 @@ const SuperAdminLayout = () => {
         </main>
 
         <footer className="border-t border-slate-200 bg-white px-4 lg:px-8 py-4">
-          <p className="text-center text-xs text-slate-500">© {new Date().getFullYear()} DoSoft · Aptiva — Gestión de Competencias, Capacitaciones y Storage</p>
+          <p className="text-center text-xs text-slate-500">© {new Date().getFullYear()} DoSoft · Aptiva — Gestión de Competencias, Capacitaciones y Evidencia Digital</p>
         </footer>
       </div>
     </div>

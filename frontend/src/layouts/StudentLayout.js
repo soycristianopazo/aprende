@@ -171,7 +171,7 @@ const StudentLayout = () => {
       {/* Footer */}
       <footer className="border-t border-slate-200 bg-white py-4 mt-auto">
         <p className="text-center text-xs text-slate-500">
-          © {new Date().getFullYear()} DoSoft · Aptiva — Gestión de Competencias, Capacitaciones y Storage
+          © {new Date().getFullYear()} DoSoft · Aptiva — Gestión de Competencias, Capacitaciones y Evidencia Digital
         </p>
       </footer>
     </div>

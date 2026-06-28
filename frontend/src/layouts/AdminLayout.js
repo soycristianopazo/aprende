@@ -2,17 +2,15 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { ScrollArea } from '../components/ui/scroll-area';
-import { Separator } from '../components/ui/separator';
 import { 
-  BookOpen, LayoutDashboard, Users, FolderTree, GraduationCap, 
-  ClipboardCheck, Award, BarChart3, Palette, LogOut, Menu, X, ChevronRight,
+  LayoutDashboard, Users, FolderTree, GraduationCap, 
+  ClipboardCheck, Award, BarChart3, Palette, LogOut, Menu, X, ChevronRight, ChevronDown,
   Building, FileText, FolderOpen, Upload, ShieldCheck, Flame
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useBranding } from '../hooks/useBranding';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
 
 const AdminLayout = () => {
   const { user, logout } = useAuth();
@@ -21,29 +19,85 @@ const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const branding = useBranding();
 
-  const menuItems = [
-    { path: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
-    { path: '/admin/compliance', icon: Flame, label: 'Cumplimiento' },
-    { path: '/admin/users', icon: Users, label: 'Trabajadores' },
-    { path: '/admin/users-import', icon: Upload, label: 'Importar Trabajadores' },
-    { path: '/admin/areas', icon: Building, label: 'Áreas' },
-    { path: '/admin/roles', icon: FolderTree, label: 'Actividades' },
-    { path: '/admin/competencies', icon: ShieldCheck, label: 'Competencias' },
-    { path: '/admin/worker-competencies', icon: Award, label: 'Matriz Competencias' },
-    { path: '/admin/courses', icon: GraduationCap, label: 'Cursos' },
-    { path: '/admin/evaluations', icon: ClipboardCheck, label: 'Evaluaciones' },
-    { path: '/admin/document-types', icon: FileText, label: 'Tipos de Documentos' },
-    { path: '/admin/worker-documents', icon: FolderOpen, label: 'Expedientes' },
-    { path: '/admin/certificates', icon: Award, label: 'Certificados' },
-    { path: '/admin/reports', icon: BarChart3, label: 'Reportes' },
-    { path: '/admin/branding', icon: Palette, label: 'Branding' },
-  ];
+  const menuGroups = useMemo(() => ([
+    {
+      id: 'general',
+      label: 'General',
+      items: [
+        { path: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
+        { path: '/admin/compliance', icon: Flame, label: 'Cumplimiento' },
+      ],
+    },
+    {
+      id: 'personas',
+      label: 'Personas',
+      items: [
+        { path: '/admin/users', icon: Users, label: 'Trabajadores' },
+        { path: '/admin/users-import', icon: Upload, label: 'Importar Trabajadores' },
+      ],
+    },
+    {
+      id: 'organizacion',
+      label: 'Organización',
+      items: [
+        { path: '/admin/areas', icon: Building, label: 'Áreas' },
+        { path: '/admin/roles', icon: FolderTree, label: 'Actividades' },
+      ],
+    },
+    {
+      id: 'competencias',
+      label: 'Competencias y Capacitaciones',
+      items: [
+        { path: '/admin/competencies', icon: ShieldCheck, label: 'Competencias' },
+        { path: '/admin/worker-competencies', icon: Award, label: 'Matriz Competencias' },
+        { path: '/admin/courses', icon: GraduationCap, label: 'Cursos' },
+        { path: '/admin/evaluations', icon: ClipboardCheck, label: 'Evaluaciones' },
+      ],
+    },
+    {
+      id: 'evidencia',
+      label: 'Evidencia Digital',
+      items: [
+        { path: '/admin/document-types', icon: FileText, label: 'Tipos de Documentos' },
+        { path: '/admin/worker-documents', icon: FolderOpen, label: 'Expedientes' },
+        { path: '/admin/certificates', icon: Award, label: 'Certificados' },
+      ],
+    },
+    {
+      id: 'configuracion',
+      label: 'Insights y Configuración',
+      items: [
+        { path: '/admin/reports', icon: BarChart3, label: 'Reportes' },
+        { path: '/admin/branding', icon: Palette, label: 'Branding' },
+      ],
+    },
+  ]), []);
 
   const isActive = (path, exact = false) => {
-    if (exact) {
-      return location.pathname === path;
-    }
+    if (exact) return location.pathname === path;
     return location.pathname.startsWith(path);
+  };
+
+  // Open groups: by default all open; persist user toggles in localStorage.
+  const [collapsedGroups, setCollapsedGroups] = useState(() => {
+    try {
+      const saved = localStorage.getItem('aptiva.adminMenuCollapsed');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const toggleGroup = (id) => {
+    setCollapsedGroups((prev) => {
+      const next = { ...prev, [id]: !prev[id] };
+      try {
+        localStorage.setItem('aptiva.adminMenuCollapsed', JSON.stringify(next));
+      } catch {
+        // Ignore quota / private mode errors
+      }
+      return next;
+    });
   };
 
   const handleLogout = async () => {
@@ -96,28 +150,52 @@ const AdminLayout = () => {
           </div>
 
           {/* Navigation */}
-          <ScrollArea className="flex-1 px-3 py-4">
-            <nav className="space-y-1">
-              {menuItems.map((item) => {
-                const active = isActive(item.path, item.exact);
+          <ScrollArea className="flex-1 px-3 py-3">
+            <nav className="space-y-3" data-testid="admin-sidebar-nav">
+              {menuGroups.map((group) => {
+                const groupHasActive = group.items.some((it) => isActive(it.path, it.exact));
+                // If group is in saved-collapsed state but contains the active route, force-open it.
+                const collapsed = collapsedGroups[group.id] && !groupHasActive;
                 return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    onClick={() => setSidebarOpen(false)}
-                    className={`
-                      flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors
-                      ${active 
-                        ? 'bg-blue-50 text-blue-700' 
-                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                      }
-                    `}
-                    data-testid={`nav-${item.label.toLowerCase().replace(' ', '-')}`}
-                  >
-                    <item.icon className={`w-5 h-5 ${active ? 'text-blue-600' : ''}`} />
-                    <span className="font-medium">{item.label}</span>
-                    {active && <ChevronRight className="w-4 h-4 ml-auto" />}
-                  </Link>
+                  <div key={group.id} className="space-y-1" data-testid={`admin-menu-group-${group.id}`}>
+                    <button
+                      type="button"
+                      onClick={() => toggleGroup(group.id)}
+                      className="w-full flex items-center justify-between px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400 hover:text-slate-600 transition-colors"
+                      data-testid={`admin-menu-group-toggle-${group.id}`}
+                    >
+                      <span>{group.label}</span>
+                      <ChevronDown
+                        className={`w-3.5 h-3.5 transition-transform ${collapsed ? '-rotate-90' : ''}`}
+                      />
+                    </button>
+                    {!collapsed && (
+                      <div className="space-y-0.5">
+                        {group.items.map((item) => {
+                          const active = isActive(item.path, item.exact);
+                          return (
+                            <Link
+                              key={item.path}
+                              to={item.path}
+                              onClick={() => setSidebarOpen(false)}
+                              className={`
+                                flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors
+                                ${active
+                                  ? 'bg-blue-50 text-blue-700'
+                                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                                }
+                              `}
+                              data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
+                            >
+                              <item.icon className={`w-4.5 h-4.5 ${active ? 'text-blue-600' : 'text-slate-400'}`} />
+                              <span className="font-medium">{item.label}</span>
+                              {active && <ChevronRight className="w-4 h-4 ml-auto" />}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </nav>
@@ -187,7 +265,7 @@ const AdminLayout = () => {
         {/* Footer */}
         <footer className="border-t border-slate-200 bg-white px-4 lg:px-8 py-4">
           <p className="text-center text-xs text-slate-500">
-            © {new Date().getFullYear()} DoSoft · Aptiva — Gestión de Competencias, Capacitaciones y Storage
+            © {new Date().getFullYear()} DoSoft · Aptiva — Gestión de Competencias, Capacitaciones y Evidencia Digital
           </p>
         </footer>
       </div>
