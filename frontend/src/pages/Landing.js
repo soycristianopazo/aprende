@@ -140,8 +140,8 @@ const Landing = () => {
             <div className="relative animate-slide-up stagger-2">
               <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 to-blue-600/5 rounded-3xl transform rotate-3"></div>
               <img
-                src="https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=900&q=80"
-                alt="Trabajadores en faena con evidencia digital al día"
+                src="https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1100&q=80"
+                alt="Cuadrilla de trabajadores en faena con hi-vis y casco"
                 className="relative rounded-3xl shadow-2xl shadow-blue-600/10 object-cover w-full h-[460px]"
               />
             </div>
@@ -231,8 +231,8 @@ const Landing = () => {
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-tl from-blue-600/15 to-blue-600/0 rounded-3xl transform -rotate-3"></div>
                 <img
-                  src="https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?w=900&q=80"
-                  alt="Supervisor verificando habilitación desde tablet en faena"
+                  src="https://images.unsplash.com/photo-1531834685032-c34bf0d84c77?w=1100&q=80"
+                  alt="Trabajador realizando faena de altura en estructura"
                   className="relative rounded-3xl shadow-xl shadow-blue-600/10 object-cover w-full h-[460px]"
                 />
               </div>
