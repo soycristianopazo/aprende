@@ -67,6 +67,13 @@ Vendor / dueño del producto: **DoSoft**.
 - Footers: "© <year> DoSoft · Aptiva — Gestión de Competencias, Capacitaciones y Storage".
 
 ## What's Been Implemented (CHANGELOG)
+### 2026-02 — F6 (Mapa de Calor de Cumplimiento)
+- [x] Backend: `GET /api/compliance/heatmap` (admin) que entrega `activities`, `competencies`, `cells` (actividad × competencia × {acquired, expired, pending, percentage}), `summary` (avg %, críticas, en verde, total trabajadores) y `generated_at`.
+- [x] Backend: `GET /api/compliance/heatmap/export` que devuelve CSV "Listo para auditoría" (UTF-8 BOM, `;` separador, Empresa/RUT/Generado headers + matriz + Resumen, filename `aptiva_cumplimiento_YYYYMMDD_HHMM.csv`).
+- [x] Frontend `/admin/compliance`: 4 tarjetas resumen (% promedio, trabajadores, celdas verdes, celdas críticas), matriz heatmap con color-coding (rojo <50, ámbar 50-79, verde ≥80, gris sin trabajadores), tooltips por celda, botón "Exportar CSV" y leyenda.
+- [x] Sidebar Admin con nuevo item "Cumplimiento" (icono Flame) justo después de Dashboard.
+- [x] Tests: 10/10 backend pytest + 10/10 frontend Playwright passing (`/app/backend/tests/test_f6_compliance_heatmap.py`).
+
 ### 2026-02 — Fase 5 (Motor "Ruta Aptiva")
 - [x] `/api/student/progress` ahora es competency-driven: para cada trabajador calcula `required_competencies` (desde sus actividades), `acquired_active` y `acquired_expired` (desde worker_competencies), `missing_competencies` (incluye vigentes y vencidas).
 - [x] Filtro de cursos: solo se devuelven los que (a) son generales (sin `grants_competency_ids`), (b) otorgan al menos una competencia faltante, o (c) ya están completados (se mantienen como historial).
@@ -120,10 +127,13 @@ Vendor / dueño del producto: **DoSoft**.
 ## Prioritized Backlog
 
 ### P0 — Próximo
-- **Mapa de Calor de Cumplimiento (Admin Dashboard)**: visualización matricial actividad × competencia × % de trabajadores acreditados + export CSV "listo para auditoría".
+- **Seed con curso+evaluación que otorgue competencia** para validar auto-grant end-to-end y poder hacer demos sin configuración previa.
 
 ### P1
-- Seed: dejar al menos un curso publicado con `grants_competency_ids` + evaluación para poder ejercer el auto-grant end-to-end sin tener que configurar manualmente.
+- Alertas por email (documentos/competencias por vencer).
+- Refactor backend (`server.py` + `routes_v2.py` → `/app/backend/routes/`).
+
+### P2 — Backlog
 - **Fase 4 — Módulo Competencias**:
   - Catálogo de competencias por empresa.
   - Asignación de competencias a actividades.
