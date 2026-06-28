@@ -61,12 +61,12 @@ const Landing = () => {
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 glass border-b border-slate-200" data-testid="landing-nav">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-20">
             <div className="flex items-center gap-2">
               {branding?.banner_logo_url ? (
-                <img src={`${BACKEND_URL}${branding.banner_logo_url}`} alt="Aptiva" className="h-10 max-w-[180px] object-contain" />
+                <img src={`${BACKEND_URL}${branding.banner_logo_url}`} alt="Aptiva" className="h-14 max-w-[240px] object-contain" />
               ) : (
-                <img src="/aptiva-logo.png" alt="Aptiva" className="h-10 max-w-[180px] object-contain" />
+                <img src="/aptiva-logo.png" alt="Aptiva" className="h-14 max-w-[240px] object-contain" />
               )}
             </div>
             <div className="flex items-center gap-4">
@@ -86,7 +86,7 @@ const Landing = () => {
       </nav>
 
       {/* Hero */}
-      <section className="pt-32 pb-20 bg-gradient-to-br from-blue-50 to-white">
+      <section className="pt-36 pb-20 bg-gradient-to-br from-blue-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="animate-slide-up">
@@ -402,9 +402,9 @@ const Landing = () => {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               {branding?.banner_logo_url ? (
-                <img src={`${BACKEND_URL}${branding.banner_logo_url}`} alt="Aptiva" className="h-8 max-w-[140px] object-contain brightness-0 invert" />
+                <img src={`${BACKEND_URL}${branding.banner_logo_url}`} alt="Aptiva" className="h-12 max-w-[200px] object-contain brightness-0 invert" />
               ) : (
-                <img src="/aptiva-logo.png" alt="Aptiva" className="h-8 max-w-[140px] object-contain brightness-0 invert" />
+                <img src="/aptiva-logo.png" alt="Aptiva" className="h-12 max-w-[200px] object-contain brightness-0 invert" />
               )}
             </div>
             <p className="text-slate-400 text-sm text-center md:text-right">
