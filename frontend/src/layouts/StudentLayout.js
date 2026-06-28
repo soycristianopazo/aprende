@@ -44,7 +44,7 @@ const StudentLayout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 flex flex-col">
       {/* Navigation */}
       <header className="sticky top-0 z-50 bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -164,7 +164,7 @@ const StudentLayout = () => {
       </header>
 
       {/* Page Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-1">
         <Outlet />
       </main>
 

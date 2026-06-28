@@ -237,7 +237,7 @@ const AdminLayout = () => {
       </aside>
 
       {/* Main Content */}
-      <div className="lg:pl-64">
+      <div className="lg:pl-64 min-h-screen flex flex-col">
         {/* Top Bar */}
         <header className="sticky top-0 z-30 h-16 bg-white/80 backdrop-blur-md border-b border-slate-200">
           <div className="flex items-center justify-between h-full px-4 lg:px-8">
@@ -265,7 +265,7 @@ const AdminLayout = () => {
         </header>
 
         {/* Page Content */}
-        <main className="p-4 lg:p-8">
+        <main className="p-4 lg:p-8 flex-1">
           <Outlet />
         </main>
 
