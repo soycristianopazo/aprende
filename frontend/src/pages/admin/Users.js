@@ -481,7 +481,11 @@ const AdminUsers = () => {
 
       {/* Configure dialog */}
       <Dialog open={configOpen} onOpenChange={(o) => { setConfigOpen(o); if (!o) setConfigUser(null); }}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent
+          className="sm:max-w-lg max-h-[90vh] overflow-y-auto"
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>Configurar Trabajador</DialogTitle>
             <DialogDescription>
