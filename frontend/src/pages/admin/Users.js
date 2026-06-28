@@ -103,7 +103,7 @@ const AdminUsers = () => {
         });
 
         if (response.ok) {
-          toast.success('Usuario actualizado');
+          toast.success('Trabajador actualizado');
           fetchUsers();
         } else {
           const error = await response.json();
@@ -120,7 +120,7 @@ const AdminUsers = () => {
         });
 
         if (response.ok) {
-          toast.success('Usuario creado');
+          toast.success('Trabajador creado');
           fetchUsers();
         } else {
           const error = await response.json();
@@ -165,7 +165,7 @@ const AdminUsers = () => {
       });
 
       if (response.ok) {
-        toast.success('Usuario eliminado');
+        toast.success('Trabajador eliminado');
         fetchUsers();
       } else {
         toast.error('Error al eliminar usuario');
@@ -188,7 +188,7 @@ const AdminUsers = () => {
       });
 
       if (response.ok) {
-        toast.success(`Usuario ${user.is_active ? 'desactivado' : 'activado'}`);
+        toast.success(`Trabajador ${user.is_active ? 'desactivado' : 'activado'}`);
         fetchUsers();
       }
     } catch (error) {
@@ -254,9 +254,9 @@ const AdminUsers = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            Usuarios
+            Trabajadores
           </h1>
-          <p className="text-slate-600 mt-1">Gestiona los trabajadores de tu empresa</p>
+          <p className="text-slate-600 mt-1">Gestiona los trabajadores y usuarios de tu empresa</p>
         </div>
         <div className="flex gap-2">
           <Button 
@@ -266,20 +266,20 @@ const AdminUsers = () => {
             data-testid="init-roles-btn"
           >
             <RefreshCw className="w-4 h-4 mr-2" />
-            Inicializar Roles
+            Inicializar Actividades
           </Button>
           <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
             <DialogTrigger asChild>
               <Button className="bg-blue-600 hover:bg-blue-700 text-white" data-testid="add-user-btn">
                 <Plus className="w-4 h-4 mr-2" />
-                Nuevo Usuario
+                Nuevo Trabajador
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>{editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}</DialogTitle>
+                <DialogTitle>{editingUser ? 'Editar Trabajador' : 'Nuevo Trabajador'}</DialogTitle>
                 <DialogDescription>
-                  {editingUser ? 'Actualiza los datos del usuario' : 'Ingresa los datos del nuevo usuario'}
+                  {editingUser ? 'Actualiza los datos del trabajador' : 'Ingresa los datos del nuevo trabajador'}
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -340,7 +340,7 @@ const AdminUsers = () => {
                   <div className="border rounded-lg p-3 max-h-64 overflow-y-auto space-y-2 bg-slate-50">
                     {roles.length === 0 ? (
                       <p className="text-sm text-slate-500 text-center py-4">
-                        No hay roles disponibles. Haz clic en "Inicializar Roles" para crear los roles predefinidos.
+                        No hay actividades disponibles. Haz clic en &quot;Inicializar Actividades&quot; para crear las actividades predefinidas.
                       </p>
                     ) : (
                       roles.map((role) => (
@@ -403,10 +403,10 @@ const AdminUsers = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Usuario</TableHead>
+                <TableHead>Trabajador</TableHead>
                 <TableHead>RUT</TableHead>
                 <TableHead>Empresa</TableHead>
-                <TableHead>Rol/Actividad</TableHead>
+                <TableHead>Actividad</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
