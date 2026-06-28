@@ -1,0 +1,41 @@
+{
+  "summary": "F10 Worker × Competency Matrix: both backend endpoints and the /admin/reports/competency-matrix UI are working correctly after a single fix. Backend: 15/15 pytest tests pass (auth 401/403 negatives, JSON shape, status-bucket semantics, compliance excludes not_required, CSV BOM + filename + Resumen section). Frontend: admin login OK, sidebar 'Matriz por Trabajador' visible, page loads with KPIs (Trabajadores 8, Competencias 7, Vigentes 16, Por vencer 0, Vencidas 4, Faltantes 4, Cumplimiento global 67%) matching backend summary. Table renders 8 rows × 56 cells with sticky first/last columns, search/area/role/activity filters reduce rows correctly, CSV export downloads a 2017-byte file with UTF-8 BOM and the expected header 'Reporte: Matriz Trabajadores x Competencias'. Legend shows all 5 status labels. Multi-tenant scoping confirmed (only Río Loa workers returned).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_f10_worker_competency_matrix.py",
+    "/app/test_reports/pytest/f10_results.xml"
+  ],
+  "action_items": [
+    "(Resolved by testing agent) Added missing top-level import `StreamingResponse` in /app/backend/routes_v2.py — without it, GET /api/reports/worker-competency-matrix/export raised NameError (500). Confirm the change is acceptable; alternatively replicate the per-function local import pattern used by the compliance heatmap export."
+  ],
+  "critical_code_review_comments": [
+    "routes_v2.py: `_compute_worker_matrix` correctly indexes activities by activity_id and unions competency_ids per worker; status precedence (expired → warning → valid) is correct.",
+    "Per-worker compliance uses (valid+warning)/(valid+warning+expired+missing) — matches spec (excludes not_required). Average_compliance at /summary uses the same formula across all required cells.",
+    "CSV export was missing `StreamingResponse` import — fixed. Compliance heatmap export uses a local import which is a smell; consolidate to a single top-level import for both.",
+    "Frontend CompetencyMatrix.js downloads CSV with hardcoded filename 'matriz_competencias.csv', losing the backend-provided timestamped filename ('aptiva_matriz_competencias_YYYYMMDD_HHMM.csv'). Backend filename pattern still verified directly. Consider parsing Content-Disposition for user-friendlier filename, but not a functional defect.",
+    "Frontend: 'Solo con problemas' checkbox treats `warning` as a problem; in current seed all 8 workers have at least one expired/missing/warning so the row count does not change (8→8). Verified logic; not a bug.",
+    "Worker login negative test required using a real seeded worker (jsoto@rioloaspa.cl/17234) — trabajador@aptivademo.com does not exist in current seed. Updated tests accordingly."
+  ],
+  "updated_files": [
+    "/app/backend/routes_v2.py (added StreamingResponse to top-level import to fix NameError in matrix export)",
+    "/app/backend/tests/test_f10_worker_competency_matrix.py (new pytest suite, 15 tests)"
+  ],
+  "success_rate": {
+    "backend": "100% (15/15 pytest)",
+    "frontend": "100% (sidebar, title, 7 KPIs, table 8×7=56 cells, search/area/role/activity filters, only-issues toggle, legend 5 statuses, CSV export with BOM)"
+  },
+  "test_credentials": "Admin: admin@aptivademo.com/admin123 (Río Loa SpA). Worker negative: jsoto@rioloaspa.cl/17234 (returns 403 on both matrix endpoints).",
+  "seed_data_creation": "None. Used existing Río Loa seed (8 trabajadores, 7 competencias, 6 actividades, 20 worker_competencies).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "F10 reporte de matriz trabajador×competencia totalmente verificado (backend + UI). Suite reusable en /app/backend/tests/test_f10_worker_competency_matrix.py. Si el seed cambia, el test test_compliance_excludes_not_required y test_summary_buckets_sum se autoadaptan (derivan expected del payload). El fix de StreamingResponse afecta también al endpoint /reports/compliance-heatmap/export (que ya importaba localmente), no regresiona.",
+  "rca of the issue": "GET /api/reports/worker-competency-matrix/export devolvía 500 NameError: 'StreamingResponse' is not defined porque la función nueva (línea 1267 de routes_v2.py) no importaba StreamingResponse, mientras que la función pre-existente de compliance heatmap export (línea 990) la importaba de forma local dentro del cuerpo. Mitigación aplicada: agregado `StreamingResponse` al import top-level `from fastapi.responses import RedirectResponse, StreamingResponse`. Reproducción previa: `curl -H 'Authorization: Bearer <admin>' $URL/api/reports/worker-competency-matrix/export` → 500. Tras el fix: 200 con CSV de 2017 bytes, BOM UTF-8 y filename `aptiva_matriz_competencias_YYYYMMDD_HHMM.csv`."
+}

@@ -52,6 +52,7 @@ const AdminLayout = () => {
         items: [
           { path: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
           { path: '/admin/compliance', icon: Flame, label: 'Cumplimiento' },
+          { path: '/admin/reports/competency-matrix', icon: BarChart3, label: 'Matriz por Trabajador' },
         ],
       },
       {

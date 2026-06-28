@@ -6,7 +6,7 @@ routes_v2.py - Multi-tenant routes for Aptiva platform
 - Bulk user import (CSV)
 """
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, StreamingResponse
 from pydantic import BaseModel, Field, EmailStr
 from typing import Optional, List, Any, Dict
 from datetime import datetime, timezone, timedelta
@@ -1045,6 +1045,231 @@ async def export_compliance_heatmap(admin: dict = Depends(require_admin)):
         media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+# ============================================================
+# WORKER × COMPETENCY MATRIX REPORT
+# ============================================================
+
+async def _compute_worker_matrix(company_id: str):
+    """Build a Worker × Competency matrix with per-cell status.
+
+    Status values:
+      - valid       : acquired and (no expiry OR expires > 30 days from now)
+      - warning     : acquired and expires within 30 days
+      - expired     : acquired but expiry_date < now
+      - missing     : NOT acquired but REQUIRED (any of the worker's activities lists this competency)
+      - not_required: NOT acquired and NOT required for the worker
+    """
+    # Pull data
+    workers = await db.users.find({
+        "company_id": company_id,
+        "is_admin": False,
+        "is_super_admin": False,
+    }).to_list(5000)
+    competencies = await db.competencies.find({"company_id": company_id, "is_active": True}).sort("name", 1).to_list(5000)
+    activities = await db.activities.find({"company_id": company_id}).to_list(5000)
+    areas = await db.areas.find({"company_id": company_id}).to_list(5000)
+    job_roles = await db.job_roles.find({"company_id": company_id}).to_list(500)
+    wcs = await db.worker_competencies.find({"company_id": company_id}).to_list(50000)
+
+    # Index lookups
+    activity_by_id = {a["activity_id"]: a for a in activities}
+    area_name_by_id = {a["area_id"]: a["name"] for a in areas}
+    role_name_by_id = {r["role_id"]: r["name"] for r in job_roles}
+
+    # Latest worker_competency per (user_id, competency_id)
+    latest = {}
+    for wc in wcs:
+        key = (wc["user_id"], wc["competency_id"])
+        cur = latest.get(key)
+        if cur is None or (wc.get("acquired_at") or "") > (cur.get("acquired_at") or ""):
+            latest[key] = wc
+
+    now = datetime.now(timezone.utc)
+    soon = now + timedelta(days=30)
+
+    def _to_dt(value):
+        if not value:
+            return None
+        if isinstance(value, datetime):
+            return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+        try:
+            return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        except Exception:
+            return None
+
+    workers_payload = []
+    cells = []
+    summary = {"valid": 0, "warning": 0, "expired": 0, "missing": 0, "not_required": 0}
+
+    for w in workers:
+        w_acts = w.get("activity_ids") or []
+        # Set of competencies REQUIRED for this worker, from activities
+        required_set = set()
+        for act_id in w_acts:
+            act = activity_by_id.get(act_id)
+            if act:
+                for cid in (act.get("competency_ids") or []):
+                    required_set.add(cid)
+
+        per_worker_summary = {"valid": 0, "warning": 0, "expired": 0, "missing": 0, "not_required": 0}
+
+        for comp in competencies:
+            cid = comp["competency_id"]
+            wc = latest.get((w["user_id"], cid))
+            required = cid in required_set
+            status = None
+            expiry_iso = None
+            acquired_iso = None
+
+            if wc:
+                expiry_dt = _to_dt(wc.get("expiry_date"))
+                acquired_dt = _to_dt(wc.get("acquired_at"))
+                expiry_iso = expiry_dt.isoformat() if expiry_dt else None
+                acquired_iso = acquired_dt.isoformat() if acquired_dt else None
+                if expiry_dt and expiry_dt < now:
+                    status = "expired"
+                elif expiry_dt and expiry_dt < soon:
+                    status = "warning"
+                else:
+                    status = "valid"
+            else:
+                status = "missing" if required else "not_required"
+
+            per_worker_summary[status] += 1
+            summary[status] += 1
+            cells.append({
+                "user_id": w["user_id"],
+                "competency_id": cid,
+                "status": status,
+                "required": required,
+                "expiry_date": expiry_iso,
+                "acquired_at": acquired_iso,
+                "source": (wc or {}).get("source"),
+            })
+
+        total_req = per_worker_summary["valid"] + per_worker_summary["warning"] + per_worker_summary["expired"] + per_worker_summary["missing"]
+        compliance = round(((per_worker_summary["valid"] + per_worker_summary["warning"]) / total_req) * 100) if total_req else None
+
+        workers_payload.append({
+            "user_id": w["user_id"],
+            "full_name": w.get("full_name") or "",
+            "rut": w.get("rut") or "",
+            "email": w.get("email") or "",
+            "role_id": w.get("role_id"),
+            "role_name": role_name_by_id.get(w.get("role_id")) if w.get("role_id") else None,
+            "area_ids": w.get("area_ids") or [],
+            "area_names": [area_name_by_id.get(aid) for aid in (w.get("area_ids") or []) if aid in area_name_by_id],
+            "activity_ids": w_acts,
+            "totals": per_worker_summary,
+            "compliance_pct": compliance,
+        })
+
+    competencies_payload = [
+        {
+            "competency_id": c["competency_id"],
+            "name": c["name"],
+            "validity_months": c.get("validity_months"),
+        }
+        for c in competencies
+    ]
+
+    total_required_overall = summary["valid"] + summary["warning"] + summary["expired"] + summary["missing"]
+    avg_compliance = round(((summary["valid"] + summary["warning"]) / total_required_overall) * 100) if total_required_overall else 0
+
+    return {
+        "generated_at": now.isoformat(),
+        "workers": workers_payload,
+        "competencies": competencies_payload,
+        "cells": cells,
+        "summary": {
+            **summary,
+            "total_workers": len(workers_payload),
+            "total_competencies": len(competencies_payload),
+            "average_compliance": avg_compliance,
+        },
+    }
+
+
+@v2_router.get("/reports/worker-competency-matrix")
+async def worker_competency_matrix(admin: dict = Depends(require_admin)):
+    company_id = admin.get("company_id")
+    if not company_id:
+        raise HTTPException(400, "Sin empresa asociada")
+    return await _compute_worker_matrix(company_id)
+
+
+@v2_router.get("/reports/worker-competency-matrix/export")
+async def worker_competency_matrix_export(admin: dict = Depends(require_admin)):
+    company_id = admin.get("company_id")
+    if not company_id:
+        raise HTTPException(400, "Sin empresa asociada")
+    data = await _compute_worker_matrix(company_id)
+
+    status_label = {
+        "valid": "Vigente",
+        "warning": "Por vencer",
+        "expired": "Vencida",
+        "missing": "Falta",
+        "not_required": "No aplica",
+    }
+
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(["Reporte: Matriz Trabajadores x Competencias"])
+    writer.writerow([f"Generado: {data['generated_at']}"])
+    writer.writerow([])
+
+    cells_idx = {(c["user_id"], c["competency_id"]): c for c in data["cells"]}
+    comp_list = data["competencies"]
+
+    header = ["RUT", "Trabajador", "Cargo", "Áreas"] + [c["name"] for c in comp_list] + ["% Cumplimiento"]
+    writer.writerow(header)
+
+    for w in data["workers"]:
+        row = [
+            w["rut"],
+            w["full_name"],
+            w["role_name"] or "",
+            "; ".join(w["area_names"]),
+        ]
+        for comp in comp_list:
+            cell = cells_idx.get((w["user_id"], comp["competency_id"]))
+            if not cell:
+                row.append("")
+                continue
+            label = status_label.get(cell["status"], "")
+            extra = ""
+            if cell.get("expiry_date"):
+                try:
+                    extra = f" (vence {cell['expiry_date'][:10]})"
+                except Exception:
+                    pass
+            row.append(label + extra)
+        row.append(f"{w['compliance_pct']}%" if w["compliance_pct"] is not None else "—")
+        writer.writerow(row)
+
+    writer.writerow([])
+    s = data["summary"]
+    writer.writerow(["Resumen"])
+    writer.writerow(["Trabajadores", s["total_workers"]])
+    writer.writerow(["Competencias", s["total_competencies"]])
+    writer.writerow(["Vigentes", s["valid"]])
+    writer.writerow(["Por vencer", s["warning"]])
+    writer.writerow(["Vencidas", s["expired"]])
+    writer.writerow(["Faltantes", s["missing"]])
+    writer.writerow(["No aplica", s["not_required"]])
+    writer.writerow(["Cumplimiento promedio", f"{s['average_compliance']}%"])
+
+    filename = f"aptiva_matriz_competencias_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M')}.csv"
+    content = ("\ufeff" + buf.getvalue()).encode("utf-8")
+    return StreamingResponse(
+        io.BytesIO(content),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
 
 
 # ============================================================

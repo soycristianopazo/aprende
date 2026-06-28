@@ -28,6 +28,7 @@ import AdminWorkerDocuments from "./pages/admin/WorkerDocuments";
 import AdminCompetencies from "./pages/admin/Competencies";
 import AdminWorkerCompetencies from "./pages/admin/WorkerCompetencies";
 import AdminCompliance from "./pages/admin/Compliance";
+import AdminCompetencyMatrix from "./pages/admin/CompetencyMatrix";
 import AdminCompany from "./pages/admin/Company";
 import AdminMandantes from "./pages/admin/Mandantes";
 import AdminMandanteStandard from "./pages/admin/MandanteStandard";
@@ -148,6 +149,7 @@ function AppRouter() {
         <Route path="gerencias" element={<AdminGerencias />} />
         <Route path="certificates" element={<AdminCertificates />} />
         <Route path="reports" element={<AdminReports />} />
+        <Route path="reports/competency-matrix" element={<AdminCompetencyMatrix />} />
         <Route path="branding" element={<AdminBranding />} />
       </Route>
       
