@@ -67,6 +67,13 @@ Vendor / dueño del producto: **DoSoft**.
 - Footers: "© <year> DoSoft · Aptiva — Gestión de Competencias, Capacitaciones y Storage".
 
 ## What's Been Implemented (CHANGELOG)
+### 2026-02 — F7 (Cargos + Refactor Trabajadores + Scope en Estándar)
+- [x] Migration `migration_job_roles.sql` aplicada: tabla `job_roles` (company-scoped), `users.role_id`, columnas `area_id/role_id/activity_id` en `mandante_standard_items`.
+- [x] Backend: CRUD `/api/job-roles` (Cargos). `UserCreate/UserUpdate` aceptan `role_id`. `StandardItemCreate/Update` aceptan `area_id`, `role_id`, `activity_id` (scope opcional); PUT permite limpiar enviando "". `delete_job_role` setea `role_id=NULL` en todos los usuarios que apuntaban al cargo (UPDATE multi-fila explícito).
+- [x] Frontend: nuevo mantenedor `/admin/job-roles` (Cargos) en sidebar bajo Personas. Página /admin/users refactorizada: columnas RUT · Nombre · Cargo (sin "Empresa"); botón "Configurar" por fila abre modal con Cargo (select) + Áreas + Actividades (checkboxes); "Carga Masiva" embebida como Sheet (no más item separado en sidebar).
+- [x] Frontend: dialog de ítem en `/admin/mandantes/{id}/standard` incluye sección "Ámbito de aplicación (opcional)" con selects Área/Cargo/Actividad. Badges de scope se muestran junto al ítem.
+- [x] Tests: 15/15 backend pytest + 11/11 frontend Playwright passing (`/app/backend/tests/test_f7_job_roles_scope.py`).
+
 ### 2026-02 — Landing v2 (Evidencia Digital)
 - [x] Landing reescrita con nueva narrativa "Cada trabajador competente. Cada requisito respaldado.": hero + 7 dimensiones de requerimientos (Cargo/Área/Actividad/Proyecto/Riesgos/Legal/Procedimientos), control total (5 items), verificación en terreno (5 checks), anticípate al incumplimiento (3 cards Vigente/Por vencer/Vencido), sección oscura "Protege a tu organización" (6 puntos legales + 3 métricas 100%/Multi-empresa/24/7), CTA y footer.
 - [x] Title HTML + meta description + OG actualizados a "Evidencia Digital".
@@ -132,11 +139,12 @@ Vendor / dueño del producto: **DoSoft**.
 ## Prioritized Backlog
 
 ### P0 — Próximo
-- **Seed con curso+evaluación que otorgue competencia** para validar auto-grant end-to-end y poder hacer demos sin configuración previa.
+- **Match automático de documentos ↔ estándar de acreditación**: cuando un trabajador sube un documento de un Tipo que está vinculado a un ítem del estándar (y respeta el scope área/cargo/actividad), marcar ese ítem como cumplido automáticamente.
 
 ### P1
 - Alertas por email (documentos/competencias por vencer).
 - Refactor backend (`server.py` + `routes_v2.py` → `/app/backend/routes/`).
+- Vista para el Mandante: dashboard de cumplimiento del estándar por contratista.
 
 ### P2 — Backlog
 - **Fase 4 — Módulo Competencias**:

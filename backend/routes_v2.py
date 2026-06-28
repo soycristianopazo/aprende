@@ -1530,8 +1530,14 @@ async def update_job_role(role_id: str, data: JobRoleUpdate, admin: dict = Depen
 @v2_router.delete("/job-roles/{role_id}")
 async def delete_job_role(role_id: str, admin: dict = Depends(require_admin)):
     f = scoped_filter(admin, {"role_id": role_id})
-    # Clear from users that reference this cargo
-    await db.users.update_one({"role_id": role_id, "company_id": admin.get("company_id")}, {"$set": {"role_id": None}})
+    # Clear role_id from ALL users in this company that reference this cargo
+    from db_adapter import get_pool
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        await conn.execute(
+            'UPDATE "users" SET "role_id" = NULL WHERE "role_id" = $1 AND "company_id" = $2',
+            role_id, admin.get("company_id"),
+        )
     res = await db.job_roles.delete_one(f)
     if res.deleted_count == 0:
         raise HTTPException(404, "Cargo no encontrado")
