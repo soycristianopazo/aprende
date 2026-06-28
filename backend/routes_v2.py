@@ -46,10 +46,17 @@ class CompanyCreate(BaseModel):
 
 class CompanyUpdate(BaseModel):
     name: Optional[str] = None
+    business_name: Optional[str] = None
     rut: Optional[str] = None
     contact_email: Optional[EmailStr] = None
     contact_phone: Optional[str] = None
     address: Optional[str] = None
+    city: Optional[str] = None
+    country: Optional[str] = None
+    website: Optional[str] = None
+    industry: Optional[str] = None
+    legal_representative: Optional[str] = None
+    legal_representative_rut: Optional[str] = None
     is_active: Optional[bool] = None
     primary_color: Optional[str] = None
     secondary_color: Optional[str] = None
@@ -1027,3 +1034,42 @@ async def export_compliance_heatmap(admin: dict = Depends(require_admin)):
         media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+# ============================================================
+# COMPANY PROFILE (admin self-service)
+# ============================================================
+
+# Fields the admin is NOT allowed to change on their own company.
+_PROTECTED_COMPANY_FIELDS = {"is_active"}
+
+
+@v2_router.get("/company")
+async def get_my_company(admin: dict = Depends(require_admin)):
+    """Admin gets their own company profile."""
+    company_id = admin.get("company_id")
+    if not company_id:
+        raise HTTPException(400, "Sin empresa asociada")
+    company = await db.companies.find_one({"company_id": company_id})
+    if not company:
+        raise HTTPException(404, "Empresa no encontrada")
+    return company
+
+
+@v2_router.put("/company")
+async def update_my_company(data: CompanyUpdate, admin: dict = Depends(require_admin)):
+    """Admin updates their own company (cannot touch is_active)."""
+    company_id = admin.get("company_id")
+    if not company_id:
+        raise HTTPException(400, "Sin empresa asociada")
+    update_data = {
+        k: v for k, v in data.model_dump().items()
+        if v is not None and k not in _PROTECTED_COMPANY_FIELDS
+    }
+    if not update_data:
+        raise HTTPException(400, "Nada que actualizar")
+    res = await db.companies.update_one({"company_id": company_id}, {"$set": update_data})
+    if res.matched_count == 0:
+        raise HTTPException(404, "Empresa no encontrada")
+    return await db.companies.find_one({"company_id": company_id})
+

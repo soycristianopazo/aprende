@@ -74,6 +74,7 @@ const AdminLayout = () => {
       label: 'Configuración',
       icon: Settings,
       items: [
+        { path: '/admin/company', icon: Building, label: 'Mi Empresa' },
         { path: '/admin/reports', icon: BarChart3, label: 'Reportes' },
         { path: '/admin/branding', icon: Palette, label: 'Branding' },
       ],
@@ -104,6 +105,17 @@ const AdminLayout = () => {
   const toggleGroup = (id) => {
     setOpenGroup((prev) => (prev === id ? null : id));
   };
+
+  // Fetch own company for the sidebar profile card.
+  const [company, setCompany] = useState(null);
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    fetch(`${BACKEND_URL}/api/company`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((c) => c && setCompany(c))
+      .catch(() => {});
+  }, []);
 
   const handleLogout = async () => {
     await logout();
@@ -208,21 +220,27 @@ const AdminLayout = () => {
             </nav>
           </ScrollArea>
 
-          {/* User Info */}
+          {/* Company profile card */}
           <div className="p-4 border-t border-slate-200">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                <span className="text-blue-700 font-semibold">
-                  {(user?.full_name || user?.name || 'A')[0].toUpperCase()}
-                </span>
+            <Link
+              to="/admin/company"
+              onClick={() => setSidebarOpen(false)}
+              className="flex items-center gap-3 mb-3 p-2 -m-2 rounded-lg hover:bg-slate-50 transition-colors group"
+              data-testid="sidebar-company-card"
+            >
+              <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
+                <Building className="w-5 h-5 text-blue-700" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-slate-900 truncate">
-                  {user?.full_name || user?.name || 'Admin'}
+                <p className="font-semibold text-slate-900 truncate text-sm" data-testid="sidebar-company-name">
+                  {company?.name || 'Mi Empresa'}
                 </p>
-                <p className="text-xs text-slate-500 truncate">{user?.email}</p>
+                <p className="text-xs text-slate-500 truncate">
+                  {company?.rut ? `RUT ${company.rut}` : (user?.email || 'Configurar datos')}
+                </p>
               </div>
-            </div>
+              <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-blue-600 transition-colors" />
+            </Link>
             <Button
               variant="outline"
               className="w-full border-slate-200 text-slate-600 hover:text-red-600 hover:border-red-200"
