@@ -1,0 +1,28 @@
+{
+  "summary": "F8 (Default password = first 5 RUT digits + admin reset-password) end-to-end. Backend 12/12 pytest PASS: helper default_password_from_rut covers all spec cases ('17.234.567-8'->'17234', '8.234.567-9'->'82345', '12-3'->None, ''->None, None->None, '12345'->'12345'); POST /api/users derives pwd from RUT and returns initial_password (login OK); explicit password overrides RUT (login with explicit OK, derived fails); HTTP 400 when no password and RUT<5 digits or no RUT; POST /users/{id}/reset-password with empty body, omitted body and manual new_password all behave per spec; 404 on unknown user; 403 when caller is a worker (non-admin); CSV bulk-import derives pwd from RUT when password column empty and routes short-RUT rows to errors (verified login of created users with derived/explicit pwd); seeded jsoto@rioloaspa.cl/17234 still logs in (regression). Frontend 4/4 UI checks PASS on /admin/users: 'Nuevo Trabajador' dialog has NO user-password-input, shows blue info 'primeros 5 dígitos del RUT', after create the success card shows initial-password-value matching first 5 RUT digits; Configurar modal shows amber 'Contraseña' section with reset-password-btn and reset-password-result rendering the new password + toast ('Contraseña restablecida: 23521'); 'Carga Masiva' Sheet help text explicitly mentions 'Si password está vacío, se usa automáticamente los primeros 5 dígitos del RUT'.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": { "ui_bugs": [], "integration_issues": [], "design_issues": [] },
+  "test_report_links": [
+    "/app/backend/tests/test_f8_default_password.py",
+    "/app/test_reports/pytest/f8_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py::reset_user_password correctly scopes target user by admin company via scoped_filter (returns 404 if user not in same company) and uses require_admin (403 for workers) — verified by tests.",
+    "server.py::create_user resolution order is explicit password > default_password_from_rut(rut) > HTTP 400; initial_password is returned ONCE in the response so admin can share it. Good UX.",
+    "routes_v2.py::bulk_import_users now imports default_password_from_rut from server and correctly routes rows with empty password and <5-digit RUT to the `errors` list (not `created`).",
+    "MINOR: PasswordResetPayload accepts only `new_password`; admin cannot force-derive from RUT explicitly while passing other fields. Current behavior (empty/missing body = derive) matches spec.",
+    "MINOR: bulk_import_users does not validate email format — relies on downstream login. Out of scope for F8 but worth a Pydantic validator pass later.",
+    "MINOR: server.py at 1748 lines is approaching the >700-line split threshold from the code-review guide; user/auth/reset endpoints could be moved to a routers module."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_f8_default_password.py (new, 12 tests)"
+  ],
+  "success_rate": { "backend": "100% (12/12 passed)", "frontend": "100% (UI checks for create/reset/bulk-help passed)" },
+  "test_credentials": "admin@aptivademo.com/admin123 (Río Loa SpA) and jsoto@rioloaspa.cl/17234 (worker) both verified working.",
+  "seed_data_creation": "Tests self-clean: every TEST_/BULK_ user created via POST /api/users or bulk-import is deleted via DELETE /api/users/{id} in fixture teardown. UI test also cleans up the temporary worker it creates.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "F8 backend tests live at /app/backend/tests/test_f8_default_password.py (run: pytest /app/backend/tests/test_f8_default_password.py -v). Frontend public URL is https://user-credentials-6.preview.emergentagent.com (NOT the one mentioned in the request). data-testids in scope: add-user-btn, user-fullname-input, user-rut-input, user-email-input, user-submit-btn, created-info, initial-password-value, configure-user-{id}, reset-password-btn, reset-password-result, bulk-import-btn. The data-testid user-password-input has been correctly removed.",
+  "rca of the issue": "No bug — F8 implementation matches the spec on backend (helper + create_user + reset_user_password + bulk-import) and frontend (Users.js dialog redesign, Configurar modal amber 'Restablecer' block, Carga Masiva Sheet help text)."
+}

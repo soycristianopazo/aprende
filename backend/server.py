@@ -53,7 +53,7 @@ logger = logging.getLogger(__name__)
 
 class UserCreate(BaseModel):
     email: EmailStr
-    password: str
+    password: Optional[str] = None  # If empty, derived from RUT (first 5 digits)
     full_name: str
     rut: Optional[str] = None
     company: Optional[str] = None
@@ -148,6 +148,18 @@ def hash_password(password: str) -> str:
 
 def verify_password(password: str, hashed: str) -> bool:
     return bcrypt.checkpw(password.encode(), hashed.encode())
+
+def default_password_from_rut(rut: Optional[str]) -> Optional[str]:
+    """Return the first 5 digits of the RUT as the default password.
+    Strips dots, dashes and the verifier digit. Returns None if not enough digits.
+    Examples: '17.234.567-8' -> '17234'; '8.234.567-9' -> '82345'.
+    """
+    if not rut:
+        return None
+    digits = "".join(ch for ch in rut if ch.isdigit())
+    if len(digits) < 5:
+        return None
+    return digits[:5]
 
 def create_token(user_id: str, is_admin: bool) -> str:
     payload = {
@@ -363,12 +375,18 @@ async def create_user(data: UserCreate, admin: dict = Depends(require_admin)):
         raise HTTPException(400, "Email already registered")
     if data.rut and await db.users.find_one({"company_id": company_id, "rut": data.rut}):
         raise HTTPException(400, "RUT already registered in this company")
+
+    # Resolve password: explicit > first 5 digits of RUT > error
+    password = (data.password or "").strip() or default_password_from_rut(data.rut)
+    if not password:
+        raise HTTPException(400, "Debes ingresar una contraseña o un RUT con al menos 5 dígitos para generarla automáticamente")
+
     user_id = f"user_{uuid.uuid4().hex[:12]}"
     doc = {
         "user_id": user_id,
         "company_id": company_id,
         "email": data.email,
-        "password_hash": hash_password(data.password),
+        "password_hash": hash_password(password),
         "full_name": data.full_name,
         "rut": data.rut,
         "company": data.company,
@@ -382,6 +400,7 @@ async def create_user(data: UserCreate, admin: dict = Depends(require_admin)):
     }
     await db.users.insert_one(doc)
     doc.pop("password_hash", None)
+    doc["initial_password"] = password  # Returned ONCE so admin can share it
     return doc
 
 @api_router.get("/users")
@@ -418,6 +437,27 @@ async def delete_user(user_id: str, admin: dict = Depends(require_admin)):
         raise HTTPException(status_code=404, detail="User not found")
     await db.users.delete_one({"user_id": user_id})
     return {"message": "User deleted"}
+
+
+class PasswordResetPayload(BaseModel):
+    new_password: Optional[str] = None  # If empty, derive from RUT
+
+
+@api_router.post("/users/{user_id}/reset-password")
+async def reset_user_password(user_id: str, payload: Optional[PasswordResetPayload] = None, admin: dict = Depends(require_admin)):
+    """Admin resets a worker's password. If `new_password` is not provided,
+    defaults to the first 5 digits of the worker's RUT."""
+    existing = await db.users.find_one(scoped_filter(admin, {"user_id": user_id}))
+    if not existing:
+        raise HTTPException(404, "Trabajador no encontrado")
+    new_pw = (payload.new_password if payload else None) or ""
+    new_pw = new_pw.strip()
+    if not new_pw:
+        new_pw = default_password_from_rut(existing.get("rut")) or ""
+    if not new_pw:
+        raise HTTPException(400, "El trabajador no tiene RUT suficiente para generar contraseña automática. Ingresa una contraseña manual.")
+    await db.users.update_one({"user_id": user_id}, {"$set": {"password_hash": hash_password(new_pw)}})
+    return {"reset": True, "new_password": new_pw}
 
 @api_router.get("/users/search/rut/{rut}")
 async def search_user_by_rut(rut: str, admin: dict = Depends(require_admin)):

@@ -17,15 +17,15 @@ import {
 import { toast } from 'sonner';
 import {
   Plus, Search, Trash2, Loader2, UserCheck, UserX, Settings, Upload, Download,
-  CheckCircle, XCircle, FileWarning,
+  CheckCircle, XCircle, FileWarning, KeyRound,
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const CSV_TEMPLATE = `email,password,full_name,rut,area_names,activity_names
-bulk1@miempresa.com,test123,Juan Pérez,11111111-1,Operaciones Mina,Trabajo en Altura
-bulk2@miempresa.com,test123,María López,22222222-2,Mantenimiento,Conducción;Soldadura
+bulk1@miempresa.com,,Juan Pérez,11.111.111-1,Operaciones Mina,Trabajo en Altura
+bulk2@miempresa.com,,María López,22.222.222-2,Mantenimiento,Conducción;Soldadura
 `;
 
 const AdminUsers = () => {
@@ -38,14 +38,17 @@ const AdminUsers = () => {
 
   // Create-user dialog
   const [createOpen, setCreateOpen] = useState(false);
-  const [createForm, setCreateForm] = useState({ email: '', password: '', full_name: '', rut: '' });
+  const [createForm, setCreateForm] = useState({ email: '', full_name: '', rut: '' });
   const [creating, setCreating] = useState(false);
+  const [createdInfo, setCreatedInfo] = useState(null); // {email, initial_password}
 
   // Configure dialog
   const [configOpen, setConfigOpen] = useState(false);
   const [configUser, setConfigUser] = useState(null);
   const [configForm, setConfigForm] = useState({ full_name: '', role_id: '', area_ids: [], activity_ids: [] });
   const [savingConfig, setSavingConfig] = useState(false);
+  const [resetInfo, setResetInfo] = useState(null); // string with new password after reset
+  const [resetting, setResetting] = useState(false);
 
   // Bulk import sheet
   const [importOpen, setImportOpen] = useState(false);
@@ -103,7 +106,6 @@ const AdminUsers = () => {
         method: 'POST', headers: jsonHeaders,
         body: JSON.stringify({
           email: createForm.email.trim().toLowerCase(),
-          password: createForm.password,
           full_name: createForm.full_name.trim(),
           rut: createForm.rut || null,
           is_admin: false,
@@ -113,9 +115,10 @@ const AdminUsers = () => {
         const d = await r.json().catch(() => ({}));
         throw new Error(d.detail || 'Error al crear trabajador');
       }
-      toast.success('Trabajador creado');
-      setCreateOpen(false);
-      setCreateForm({ email: '', password: '', full_name: '', rut: '' });
+      const data = await r.json();
+      setCreatedInfo({ email: data.email, initial_password: data.initial_password });
+      toast.success(`Trabajador creado · contraseña inicial: ${data.initial_password}`);
+      setCreateForm({ email: '', full_name: '', rut: '' });
       fetchAll();
     } catch (err) {
       toast.error(err.message);
@@ -133,7 +136,30 @@ const AdminUsers = () => {
       area_ids: u.area_ids || [],
       activity_ids: u.activity_ids || [],
     });
+    setResetInfo(null);
     setConfigOpen(true);
+  };
+
+  const resetPassword = async () => {
+    if (!configUser) return;
+    if (!window.confirm(`Restablecer la contraseña de ${configUser.full_name} a los primeros 5 dígitos de su RUT?`)) return;
+    setResetting(true);
+    try {
+      const r = await fetch(`${API}/users/${configUser.user_id}/reset-password`, {
+        method: 'POST', headers: jsonHeaders, body: JSON.stringify({}),
+      });
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({}));
+        throw new Error(d.detail || 'Error al restablecer');
+      }
+      const data = await r.json();
+      setResetInfo(data.new_password);
+      toast.success(`Contraseña restablecida: ${data.new_password}`);
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setResetting(false);
+    }
   };
 
   const toggleInList = (key, id) => {
@@ -251,6 +277,7 @@ const AdminUsers = () => {
                   <ul className="text-xs text-slate-600 list-disc pl-5 space-y-1 mt-2">
                     <li><strong>area_names</strong> y <strong>activity_names</strong> se separan con <code>;</code>.</li>
                     <li>Los nombres deben coincidir con áreas/actividades ya creadas.</li>
+                    <li>Si <strong>password</strong> está vacío, se usa automáticamente los primeros 5 dígitos del RUT.</li>
                     <li>Si un email ya existe, esa fila se omite.</li>
                   </ul>
                   <Button variant="outline" size="sm" onClick={downloadTemplate} className="mt-3" data-testid="download-template-btn">
@@ -302,7 +329,7 @@ const AdminUsers = () => {
           </Sheet>
 
           {/* Create dialog */}
-          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+          <Dialog open={createOpen} onOpenChange={(o) => { setCreateOpen(o); if (!o) setCreatedInfo(null); }}>
             <DialogTrigger asChild>
               <Button className="bg-blue-600 hover:bg-blue-700 text-white" data-testid="add-user-btn">
                 <Plus className="w-4 h-4 mr-2" /> Nuevo Trabajador
@@ -313,30 +340,49 @@ const AdminUsers = () => {
                 <DialogTitle>Nuevo Trabajador</DialogTitle>
                 <DialogDescription>Crea al trabajador con sus datos básicos. Luego usa &quot;Configurar&quot; para asignarle cargo, áreas y actividades.</DialogDescription>
               </DialogHeader>
-              <form onSubmit={submitCreate} className="space-y-3">
-                <div>
-                  <Label>Nombre completo *</Label>
-                  <Input required value={createForm.full_name} onChange={(e) => setCreateForm({ ...createForm, full_name: e.target.value })} data-testid="user-fullname-input" />
+
+              {createdInfo ? (
+                <div className="space-y-4">
+                  <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4" data-testid="created-info">
+                    <p className="text-sm font-semibold text-emerald-800">Trabajador creado correctamente</p>
+                    <p className="text-xs text-emerald-700 mt-1">Comparte estas credenciales con el trabajador:</p>
+                    <div className="mt-3 space-y-1 font-mono text-xs">
+                      <p><span className="text-slate-500">Email:</span> <span className="text-slate-900">{createdInfo.email}</span></p>
+                      <p><span className="text-slate-500">Contraseña inicial:</span> <span className="text-slate-900 font-bold" data-testid="initial-password-value">{createdInfo.initial_password}</span></p>
+                    </div>
+                    <p className="text-[11px] text-emerald-700 mt-3">El trabajador podrá iniciar sesión con estos datos.</p>
+                  </div>
+                  <DialogFooter>
+                    <Button onClick={() => { setCreatedInfo(null); }} variant="outline">Crear otro</Button>
+                    <Button onClick={() => { setCreatedInfo(null); setCreateOpen(false); }} className="bg-blue-600 hover:bg-blue-700">Cerrar</Button>
+                  </DialogFooter>
                 </div>
-                <div>
-                  <Label>RUT *</Label>
-                  <Input required placeholder="12345678-9" value={createForm.rut} onChange={(e) => setCreateForm({ ...createForm, rut: e.target.value })} data-testid="user-rut-input" />
-                </div>
-                <div>
-                  <Label>Email *</Label>
-                  <Input required type="email" value={createForm.email} onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })} data-testid="user-email-input" />
-                </div>
-                <div>
-                  <Label>Contraseña *</Label>
-                  <Input required type="password" value={createForm.password} onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })} data-testid="user-password-input" />
-                </div>
-                <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>Cancelar</Button>
-                  <Button type="submit" disabled={creating} className="bg-blue-600 hover:bg-blue-700" data-testid="user-submit-btn">
-                    {creating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} Crear
-                  </Button>
-                </DialogFooter>
-              </form>
+              ) : (
+                <form onSubmit={submitCreate} className="space-y-3">
+                  <div>
+                    <Label>Nombre completo *</Label>
+                    <Input required value={createForm.full_name} onChange={(e) => setCreateForm({ ...createForm, full_name: e.target.value })} data-testid="user-fullname-input" />
+                  </div>
+                  <div>
+                    <Label>RUT *</Label>
+                    <Input required placeholder="12.345.678-9" value={createForm.rut} onChange={(e) => setCreateForm({ ...createForm, rut: e.target.value })} data-testid="user-rut-input" />
+                  </div>
+                  <div>
+                    <Label>Email *</Label>
+                    <Input required type="email" value={createForm.email} onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })} data-testid="user-email-input" />
+                  </div>
+                  <div className="rounded-md border border-blue-200 bg-blue-50 p-3 text-xs text-blue-900">
+                    <p className="font-semibold mb-0.5">Contraseña automática</p>
+                    <p className="text-blue-800">La contraseña inicial se asigna automáticamente con los <strong>primeros 5 dígitos del RUT</strong> (sin puntos ni guion). El trabajador podrá cambiarla luego.</p>
+                  </div>
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>Cancelar</Button>
+                    <Button type="submit" disabled={creating} className="bg-blue-600 hover:bg-blue-700" data-testid="user-submit-btn">
+                      {creating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} Crear
+                    </Button>
+                  </DialogFooter>
+                </form>
+              )}
             </DialogContent>
           </Dialog>
         </div>
@@ -487,6 +533,34 @@ const AdminUsers = () => {
                     <label htmlFor={`act-${act.activity_id}`} className="text-sm text-slate-700 cursor-pointer flex-1">{act.name}</label>
                   </div>
                 ))}
+              </div>
+            </div>
+
+            <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-amber-900 flex items-center gap-1.5">
+                    <KeyRound className="w-3.5 h-3.5" /> Contraseña
+                  </p>
+                  <p className="text-[11px] text-amber-800 mt-0.5">Resetea la contraseña a los <strong>primeros 5 dígitos del RUT</strong>.</p>
+                  {resetInfo && (
+                    <p className="mt-2 text-xs font-mono text-amber-900" data-testid="reset-password-result">
+                      Nueva contraseña: <strong>{resetInfo}</strong>
+                    </p>
+                  )}
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="border-amber-300 text-amber-900 hover:bg-amber-100 shrink-0"
+                  onClick={resetPassword}
+                  disabled={resetting}
+                  data-testid="reset-password-btn"
+                >
+                  {resetting ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <KeyRound className="w-3.5 h-3.5 mr-1.5" />}
+                  Restablecer
+                </Button>
               </div>
             </div>
 

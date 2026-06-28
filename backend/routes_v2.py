@@ -572,6 +572,9 @@ async def bulk_import_users(file: UploadFile = File(...), admin: dict = Depends(
     area_by_name = {a["name"].strip().upper(): a["area_id"] for a in areas}
     act_by_name = {a["name"].strip().upper(): a["activity_id"] for a in activities}
 
+    # Re-import auth deps from server.py
+    from server import default_password_from_rut
+
     created, errors, skipped = [], [], []
     for i, row in enumerate(reader, start=2):  # row 1 = header
         try:
@@ -579,8 +582,13 @@ async def bulk_import_users(file: UploadFile = File(...), admin: dict = Depends(
             password = (row.get("password") or "").strip()
             full_name = (row.get("full_name") or "").strip()
             rut = (row.get("rut") or "").strip() or None
-            if not email or not password or not full_name:
-                errors.append({"row": i, "error": "Missing email/password/full_name"})
+            if not email or not full_name:
+                errors.append({"row": i, "error": "Missing email/full_name"})
+                continue
+            if not password:
+                password = default_password_from_rut(rut) or ""
+            if not password:
+                errors.append({"row": i, "error": "Sin contraseña y RUT con menos de 5 dígitos"})
                 continue
 
             existing = await db.users.find_one({"email": email})

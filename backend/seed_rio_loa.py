@@ -330,7 +330,6 @@ async def seed_standard(conn, mandantes, doc_types, area_ids, role_ids, act_ids)
 
 
 async def seed_workers(conn, area_ids, role_ids, act_ids):
-    pwd = _hash("trabajador123")
     workers = [
         # (full_name, rut, email, role, area, activities)
         ("Juan Carlos Soto Martínez", "17.234.567-8", "jsoto@rioloaspa.cl",
@@ -362,13 +361,17 @@ async def seed_workers(conn, area_ids, role_ids, act_ids):
     for full_name, rut, email, role_name, area_name, activity_names in workers:
         uid = _id("user")
         aids = [act_ids[a] for a in activity_names]
+        # Default password = first 5 digits of RUT
+        digits = "".join(c for c in (rut or "") if c.isdigit())
+        pwd_plain = digits[:5] if len(digits) >= 5 else "trabajador"
+        pwd = _hash(pwd_plain)
         await conn.execute(
             'INSERT INTO users (user_id, company_id, email, password_hash, full_name, rut, is_super_admin, is_admin, is_active, area_ids, activity_ids, role_id, created_at) VALUES ($1,$2,$3,$4,$5,$6,false,false,true,$7,$8,$9,$10)',
             uid, COMPANY_ID, email, pwd, full_name, rut,
             [area_ids[area_name]], aids, role_ids[role_name], _now(),
         )
         out.append({"user_id": uid, "name": full_name, "role": role_name, "acts": activity_names})
-    print(f"✓ {len(out)} trabajadores creados (contraseña: trabajador123)")
+    print(f"✓ {len(out)} trabajadores creados (contraseña = primeros 5 dígitos del RUT)")
     return out
 
 
