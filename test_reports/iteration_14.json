@@ -1,0 +1,31 @@
+{
+  "summary": "Regression smoke test after Notifications.js syntax fix (line 69: `if (s && ...)`). Verified no webpack 'Compiled with problems' overlay on /admin, /admin/notifications, or /admin/reports/competency-matrix. Notifications filters (search by email 'criquelme', by item_name 'psicos', severity=expired, kind=competency/document) all behave as expected for FCAB admin.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (frontend-only)", "frontend": "100%"},
+  "test_credentials": "Admin FCAB: copazo@fcab.cl / fcab123 (login OK, redirects to /admin)",
+  "seed_data_creation": "",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Iteration 14 confirmed the JSX syntax fix in /app/frontend/src/pages/admin/Notifications.js line 69 compiles cleanly. Login flow OK, admin bundle loads on all 3 target routes. FCAB shows exactly 6 expired notifications (all kind=competency, 0 document). Search filter now also matches user_email (criquelme → 1 row for Cristián Osvaldo Riquelme Muñoz).",
+  "detailed_results": {
+    "compilation_overlay_on_admin": false,
+    "compilation_overlay_on_notifications": false,
+    "compilation_overlay_on_competency_matrix": false,
+    "admin_notifications_testid_present": true,
+    "competency_matrix_report_testid_present": true,
+    "search_criquelme_rows": 1,
+    "search_psicos_rows": 2,
+    "severity_expired_rows": 6,
+    "kind_competency_rows": 6,
+    "kind_document_rows": 0
+  }
+}

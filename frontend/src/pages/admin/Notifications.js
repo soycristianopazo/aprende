@@ -66,7 +66,7 @@ const AdminNotifications = () => {
     return data.notifications.filter((n) => {
       if (severity !== 'all' && n.severity !== severity) return false;
       if (kind !== 'all' && n.kind !== kind) return false;
-      if s && !(`${n.user_name} ${n.user_rut} ${n.item_name} ${n.user_role_name || ''} ${n.user_email || ''}`).toLowerCase().includes(s)) return false;
+      if (s && !(`${n.user_name} ${n.user_rut} ${n.item_name} ${n.user_role_name || ''} ${n.user_email || ''}`).toLowerCase().includes(s)) return false;
       return true;
     });
   }, [data, search, severity, kind]);
