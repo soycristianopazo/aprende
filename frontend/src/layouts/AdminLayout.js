@@ -5,7 +5,7 @@ import { ScrollArea } from '../components/ui/scroll-area';
 import { 
   LayoutDashboard, Users, FolderTree, GraduationCap, BookOpen,
   ClipboardCheck, Award, BadgeCheck, BarChart3, Palette, LogOut, Menu, X, ChevronRight, ChevronDown,
-  Building, FileText, FolderOpen, ShieldCheck, Flame,
+  Building, FileText, FolderOpen, ShieldCheck, Flame, Bell,
   Home, Network, Archive, Settings, Briefcase, FileSignature
 } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
@@ -51,6 +51,7 @@ const AdminLayout = () => {
         icon: Home,
         items: [
           { path: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
+          { path: '/admin/notifications', icon: Bell, label: 'Notificaciones' },
           { path: '/admin/compliance', icon: Flame, label: 'Cumplimiento' },
           { path: '/admin/reports/competency-matrix', icon: BarChart3, label: 'Matriz por Trabajador' },
         ],

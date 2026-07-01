@@ -1,0 +1,57 @@
+{
+  "summary": "Full end-to-end validation of the new Notifications feature (GET /api/notifications + /admin/notifications page). 8/8 backend pytest cases pass and every frontend test id from the spec is reachable and behaves as designed.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_notifications.py",
+    "/app/test_reports/pytest/notifications_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "routes_v2.py has grown large (1938 lines); consider splitting long files into feature modules per code-review guidelines (>700 lines).",
+    "list_notifications performs 6 sequential DB reads (users, job_roles, competencies, document_types, worker_competencies, worker_documents). For large tenants this can be slow; consider gather() to parallelize the independent lookups.",
+    "The document notification exposes `file_url` in the API response but the frontend never renders it — either drop it from the payload or add a UI link/download action.",
+    "Frontend search filter matches name/rut/item/role but not email; documented behavior, but users searching by email prefix (e.g. 'criquelme') get 0 results, which can surprise. Consider including email in the search haystack."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_notifications.py"
+  ],
+  "success_rate": {"backend": "100% (8/8)", "frontend": "100%"},
+  "test_credentials": "Admin FCAB copazo@fcab.cl/fcab123 (6 expired alerts) · Admin Río Loa admin@aptivademo.com/admin123 (4 expired alerts) · FCAB worker criquelme@fcab.cl/14234 for 403 test",
+  "seed_data_creation": "Test #8 inserts a worker_document with a 20-day expiry directly via db_adapter (worker_document_id='TEST_wd_notifications_20d') and removes it in teardown. No residual test data.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend adapter is Postgres-backed (db_adapter, not Motor). Reuse /app/backend/tests/test_notifications.py fixture pattern for future features touching worker_documents/worker_competencies. FCAB tenant currently has zero worker_documents seeded — the doc-severity assertion is verified by inserting one on the fly.",
+  "detailed_findings": {
+    "backend": {
+      "GET /api/notifications no token": "401 as expected",
+      "GET /api/notifications worker token": "403 as expected",
+      "GET /api/notifications FCAB admin": "summary={total:6, expired:6, critical:0, warning:0, workers_affected:6}",
+      "GET /api/notifications Río Loa admin": "4 expired alerts, disjoint from FCAB (multi-tenant OK)",
+      "id prefixes": "All notifications use wc: or wd: prefix",
+      "severity math": "All 6+4 rows satisfy days<0→expired, ≤30→critical, ≤90→warning, else info",
+      "include_ok=true": "Returns >= default count and default excludes severity=info",
+      "worker_documents with 20d expiry": "Appears as severity=critical with wd: prefix, kind=document, kind_label=Documento"
+    },
+    "frontend": {
+      "sidebar item": "nav-notificaciones visible under General group with Bell icon",
+      "page root": "data-testid=admin-notifications visible after navigation",
+      "KPIs": "5 KPIs render (total=6, expired=6, critical=0, warning=0, workers=6 for FCAB)",
+      "KPI click filter": "Clicking notif-kpi-critical drops table rows to 0 (matches state)",
+      "severity buttons": "notif-sev-all/expired/critical/warning all present and filter table",
+      "kind buttons": "notif-kind-all/competency/document present; document→0 rows for FCAB (no seeded docs), competency→6 rows",
+      "search": "matches by name (Riquelme→1), RUT (14.234.567→1), item (Psicosensotécnico→2)",
+      "table rows": "All rows carry data-testid=notif-row-{id}; badges show Severidad label + icon; date formatted es-CL (e.g. '01 jun 2026'); estado shows 'hace 31d'",
+      "export": "CSV downloaded (aptiva_notificaciones_2026-07-01.csv, 989 bytes, non-empty)",
+      "refresh": "Reloads and re-renders without errors",
+      "console errors": "None detected on either FCAB or Río Loa view"
+    }
+  }
+}

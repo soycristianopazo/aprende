@@ -1791,3 +1791,147 @@ async def delete_job_role(role_id: str, admin: dict = Depends(require_admin)):
     if res.deleted_count == 0:
         raise HTTPException(404, "Cargo no encontrado")
     return {"deleted": True}
+
+
+# ============================================================
+# NOTIFICATIONS (expiration alerts across the company)
+# ============================================================
+
+def _severity_from_days(days_remaining: Optional[int]) -> str:
+    """Bucket a days-until-expiry integer into a severity string."""
+    if days_remaining is None:
+        return "info"
+    if days_remaining < 0:
+        return "expired"
+    if days_remaining <= 30:
+        return "critical"
+    if days_remaining <= 90:
+        return "warning"
+    return "info"
+
+
+@v2_router.get("/notifications")
+async def list_notifications(
+    horizon_days: int = 90,
+    include_ok: bool = False,
+    admin: dict = Depends(require_admin),
+):
+    """List all expiration alerts in the admin's company.
+
+    Combines:
+      - worker_competencies (expiry_date)
+      - worker_documents.files[].expiry_date
+
+    Args:
+      horizon_days: number of days ahead to include as 'warning' (default 90).
+      include_ok:   include items that expire beyond the horizon (default False).
+    """
+    company_id = admin.get("company_id")
+    if not company_id:
+        raise HTTPException(400, "Sin empresa asociada")
+
+    now = datetime.now(timezone.utc)
+    horizon = now + timedelta(days=horizon_days)
+
+    # Lookups
+    users = await db.users.find({
+        "company_id": company_id, "is_admin": False, "is_super_admin": False,
+    }).to_list(5000)
+    users_by_id = {u["user_id"]: u for u in users}
+    job_roles = await db.job_roles.find({"company_id": company_id}).to_list(500)
+    role_name_by_id = {r["role_id"]: r["name"] for r in job_roles}
+    competencies = await db.competencies.find({"company_id": company_id}).to_list(2000)
+    comp_name_by_id = {c["competency_id"]: c["name"] for c in competencies}
+    doc_types = await db.document_types.find({"company_id": company_id}).to_list(2000)
+    dt_name_by_id = {d["document_type_id"]: d["name"] for d in doc_types}
+
+    def _to_dt(value):
+        if not value:
+            return None
+        if isinstance(value, datetime):
+            return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+        try:
+            return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        except Exception:
+            return None
+
+    notifications = []
+
+    # --- Worker competencies ---
+    wcs = await db.worker_competencies.find({"company_id": company_id}).to_list(50000)
+    for wc in wcs:
+        expiry = _to_dt(wc.get("expiry_date"))
+        if not expiry:
+            continue
+        days = (expiry - now).days
+        if not include_ok and expiry > horizon:
+            continue
+        u = users_by_id.get(wc["user_id"])
+        if not u:
+            continue
+        notifications.append({
+            "id": f"wc:{wc.get('worker_competency_id')}",
+            "kind": "competency",
+            "kind_label": "Capacitación",
+            "user_id": u["user_id"],
+            "user_name": u.get("full_name") or "",
+            "user_rut": u.get("rut") or "",
+            "user_role_name": role_name_by_id.get(u.get("role_id")) if u.get("role_id") else None,
+            "item_id": wc.get("competency_id"),
+            "item_name": comp_name_by_id.get(wc.get("competency_id"), "Competencia desconocida"),
+            "expiry_date": expiry.isoformat(),
+            "days_remaining": days,
+            "severity": _severity_from_days(days),
+        })
+
+    # --- Worker documents (per file inside jsonb 'files') ---
+    wds = await db.worker_documents.find({"company_id": company_id}).to_list(50000)
+    for wd in wds:
+        u = users_by_id.get(wd.get("user_id"))
+        if not u:
+            continue
+        item_name = dt_name_by_id.get(wd.get("document_type_id"), "Documento")
+        files = wd.get("files") or []
+        # Pick the file with the latest expiry (most recent upload semantics)
+        latest_file = None
+        latest_expiry = None
+        for f in files:
+            fexp = _to_dt(f.get("expiry_date"))
+            if fexp and (latest_expiry is None or fexp > latest_expiry):
+                latest_expiry = fexp
+                latest_file = f
+        if not latest_expiry:
+            continue
+        days = (latest_expiry - now).days
+        if not include_ok and latest_expiry > horizon:
+            continue
+        notifications.append({
+            "id": f"wd:{wd.get('worker_document_id')}",
+            "kind": "document",
+            "kind_label": "Documento",
+            "user_id": u["user_id"],
+            "user_name": u.get("full_name") or "",
+            "user_rut": u.get("rut") or "",
+            "user_role_name": role_name_by_id.get(u.get("role_id")) if u.get("role_id") else None,
+            "item_id": wd.get("document_type_id"),
+            "item_name": item_name,
+            "expiry_date": latest_expiry.isoformat(),
+            "days_remaining": days,
+            "severity": _severity_from_days(days),
+            "file_url": (latest_file or {}).get("file_url"),
+        })
+
+    # Sort: expired first, then soonest expiry
+    notifications.sort(key=lambda n: (n["days_remaining"] >= 0, n["days_remaining"]))
+
+    summary = {
+        "total": len(notifications),
+        "expired": sum(1 for n in notifications if n["severity"] == "expired"),
+        "critical": sum(1 for n in notifications if n["severity"] == "critical"),
+        "warning": sum(1 for n in notifications if n["severity"] == "warning"),
+        "info": sum(1 for n in notifications if n["severity"] == "info"),
+        "workers_affected": len({n["user_id"] for n in notifications if n["severity"] in ("expired", "critical", "warning")}),
+        "horizon_days": horizon_days,
+        "generated_at": now.isoformat(),
+    }
+    return {"summary": summary, "notifications": notifications}
