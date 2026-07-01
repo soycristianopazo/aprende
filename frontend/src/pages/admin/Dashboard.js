@@ -59,12 +59,13 @@ const AdminDashboard = () => {
   const donutData = useMemo(() => {
     if (!matrix) return [];
     const s = matrix.summary;
+    // Always show all four categories in the legend for consistent color coding across tenants.
     return [
-      { name: 'Vigentes',   value: s.valid,        key: 'valid' },
-      { name: 'Por vencer', value: s.warning,      key: 'warning' },
-      { name: 'Vencidas',   value: s.expired,      key: 'expired' },
-      { name: 'Faltantes',  value: s.missing,      key: 'missing' },
-    ].filter((x) => x.value > 0);
+      { name: 'Vigentes',   value: s.valid,   key: 'valid' },
+      { name: 'Por vencer', value: s.warning, key: 'warning' },
+      { name: 'Vencidas',   value: s.expired, key: 'expired' },
+      { name: 'Faltantes',  value: s.missing, key: 'missing' },
+    ];
   }, [matrix]);
 
   const complianceByRole = useMemo(() => {
@@ -187,8 +188,8 @@ const AdminDashboard = () => {
         />
         <HeroKpi testId="kpi-workers" label="Trabajadores" value={m.total_workers} icon={Users} tone="blue"
           hint={`${s.active_users || 0} activos`} />
-        <HeroKpi testId="kpi-valid-certs" label="Certificados vigentes" value={validCerts} icon={Award} tone="violet"
-          hint={`${certificates.length} totales`} />
+        <HeroKpi testId="kpi-valid-certs" label="Acreditaciones vigentes" value={validCerts || m.valid} icon={Award} tone="violet"
+          hint={validCerts ? `${certificates.length} certificados emitidos` : `${m.valid} competencias válidas`} />
         <HeroKpi testId="kpi-warnings" label="Alertas activas" value={m.expired + m.warning + m.missing} icon={AlertTriangle} tone="rose"
           hint={`${m.expired} vencidas · ${m.missing} faltantes`} />
       </div>
@@ -201,19 +202,19 @@ const AdminDashboard = () => {
             <CardDescription>Distribución de todas las celdas requeridas del set trabajador × competencia.</CardDescription>
           </CardHeader>
           <CardContent>
-            {donutData.length ? (
+            {donutData.some((d) => d.value > 0) ? (
               <ResponsiveContainer width="100%" height={260}>
                 <PieChart>
                   <Pie
                     data={donutData} innerRadius={55} outerRadius={90} paddingAngle={3}
                     dataKey="value" nameKey="name" labelLine={false}
-                    label={({ value, percent }) => `${value} (${Math.round(percent * 100)}%)`}
+                    label={({ value, percent }) => (value > 0 ? `${value}` : '')}
                   >
                     {donutData.map((d) => (
                       <Cell key={d.key} fill={STATUS_COLORS[d.key]} />
                     ))}
                   </Pie>
-                  <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid #E2E8F0' }} />
+                  <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid #E2E8F0' }} formatter={(v) => [v, 'Celdas']} />
                   <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
                 </PieChart>
               </ResponsiveContainer>
