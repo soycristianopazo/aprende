@@ -13,6 +13,7 @@ from datetime import datetime, timezone, timedelta
 import uuid
 import csv
 import io
+import asyncio
 import bcrypt
 import logging
 
@@ -1833,16 +1834,18 @@ async def list_notifications(
     now = datetime.now(timezone.utc)
     horizon = now + timedelta(days=horizon_days)
 
-    # Lookups
-    users = await db.users.find({
-        "company_id": company_id, "is_admin": False, "is_super_admin": False,
-    }).to_list(5000)
+    # Lookups (parallelised — independent reads)
+    users, job_roles, competencies, doc_types, wcs, wds = await asyncio.gather(
+        db.users.find({"company_id": company_id, "is_admin": False, "is_super_admin": False}).to_list(5000),
+        db.job_roles.find({"company_id": company_id}).to_list(500),
+        db.competencies.find({"company_id": company_id}).to_list(2000),
+        db.document_types.find({"company_id": company_id}).to_list(2000),
+        db.worker_competencies.find({"company_id": company_id}).to_list(50000),
+        db.worker_documents.find({"company_id": company_id}).to_list(50000),
+    )
     users_by_id = {u["user_id"]: u for u in users}
-    job_roles = await db.job_roles.find({"company_id": company_id}).to_list(500)
     role_name_by_id = {r["role_id"]: r["name"] for r in job_roles}
-    competencies = await db.competencies.find({"company_id": company_id}).to_list(2000)
     comp_name_by_id = {c["competency_id"]: c["name"] for c in competencies}
-    doc_types = await db.document_types.find({"company_id": company_id}).to_list(2000)
     dt_name_by_id = {d["document_type_id"]: d["name"] for d in doc_types}
 
     def _to_dt(value):
@@ -1875,6 +1878,7 @@ async def list_notifications(
             "kind_label": "Capacitación",
             "user_id": u["user_id"],
             "user_name": u.get("full_name") or "",
+            "user_email": u.get("email") or "",
             "user_rut": u.get("rut") or "",
             "user_role_name": role_name_by_id.get(u.get("role_id")) if u.get("role_id") else None,
             "item_id": wc.get("competency_id"),
@@ -1911,6 +1915,7 @@ async def list_notifications(
             "kind_label": "Documento",
             "user_id": u["user_id"],
             "user_name": u.get("full_name") or "",
+            "user_email": u.get("email") or "",
             "user_rut": u.get("rut") or "",
             "user_role_name": role_name_by_id.get(u.get("role_id")) if u.get("role_id") else None,
             "item_id": wd.get("document_type_id"),
