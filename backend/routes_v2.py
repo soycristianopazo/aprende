@@ -7,7 +7,7 @@ routes_v2.py - Multi-tenant routes for Aptiva platform
 """
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form, Request
 from fastapi.responses import RedirectResponse, StreamingResponse
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field, EmailStr, field_validator
 from typing import Optional, List, Any, Dict
 from datetime import datetime, timezone, timedelta
 import uuid
@@ -34,6 +34,14 @@ v2_router = APIRouter(prefix="/api")
 
 
 # ==================== Pydantic Models ====================
+
+def _blank_to_none(v):
+    """Normalize empty strings to None so Optional[EmailStr] fields accept blanks."""
+    if isinstance(v, str) and v.strip() == "":
+        return None
+    return v
+
+
 class CompanyCreate(BaseModel):
     name: str
     rut: Optional[str] = None
@@ -43,6 +51,8 @@ class CompanyCreate(BaseModel):
     company_type: Optional[str] = None  # 'mandante' | 'contratista' | None
     primary_color: str = "#2563EB"
     secondary_color: str = "#3B82F6"
+
+    _empty_email = field_validator("contact_email", mode="before")(lambda cls, v: _blank_to_none(v))
 
 
 class CompanyUpdate(BaseModel):
@@ -63,6 +73,8 @@ class CompanyUpdate(BaseModel):
     primary_color: Optional[str] = None
     secondary_color: Optional[str] = None
     footer_text: Optional[str] = None
+
+    _empty_email = field_validator("contact_email", mode="before")(lambda cls, v: _blank_to_none(v))
 
 
 class CompanyAdminCreate(BaseModel):
@@ -1323,6 +1335,8 @@ class MandanteCreate(BaseModel):
     address: Optional[str] = None
     notes: Optional[str] = None
 
+    _empty_email = field_validator("contact_email", mode="before")(lambda cls, v: _blank_to_none(v))
+
 
 class MandanteUpdate(BaseModel):
     name: Optional[str] = None
@@ -1331,6 +1345,8 @@ class MandanteUpdate(BaseModel):
     contact_phone: Optional[str] = None
     address: Optional[str] = None
     notes: Optional[str] = None
+
+    _empty_email = field_validator("contact_email", mode="before")(lambda cls, v: _blank_to_none(v))
 
 
 async def _require_company_type(admin: dict, expected: str) -> str:

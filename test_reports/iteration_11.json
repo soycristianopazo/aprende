@@ -1,0 +1,36 @@
+{
+  "summary": "Bug 'toast [object Object] on empty contact_email' fully verified. Backend: 11/11 pytest tests pass across POST/PUT /superadmin/companies, PUT /company, POST/PUT /mandantes with empty string, null, missing, valid and invalid email inputs. Invalid emails still correctly return 422 with detail as Pydantic array. Frontend E2E via Playwright: superadmin login → /superadmin/companies → Nueva empresa with Name/RUT/Address/Type=Mandante and email BLANK → 200 + green toast 'Empresa creada' + company visible in grid (NO '[object Object]' anywhere). Same form with email='not-an-email' → red toast 'contact_email: value is not a valid email address: An email address must have an @-sign.' — perfectly human-readable, NO '[object Object]'. Cleanup DELETE returned 200. `extractApiError` helper works exactly as designed for string / array-of-dicts / object detail shapes.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_company_empty_email.py",
+    "/app/test_reports/pytest/company_empty_email_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Semantic gap (NOT the reported bug, but worth flagging): PUT /superadmin/companies/{id}, PUT /company and PUT /mandantes/{id} use `{k:v for k,v in data.model_dump().items() if v is not None}`. Because the new field_validator coerces contact_email='' → None BEFORE model_dump, the field is silently dropped from the update payload. Consequence: a user cannot CLEAR a previously set contact_email through the UI (submitting a blank field leaves the old value in DB). The reported bug (create with empty email crashing) is fully fixed. If clearing on edit is required, use model_dump(exclude_unset=True) plus keep None values, or handle contact_email via a sentinel.",
+    "handleSubmit in Companies.js already converts every empty string to null client-side (line 62-64) before POSTing — that's belt-and-suspenders together with backend _blank_to_none validator. Robust.",
+    "apiError.js `extractApiError` correctly handles all three FastAPI detail shapes (string, array of {loc,msg,type}, object). Fallback string is used when detail is missing. Result is always a plain string; toast.error(err.message) can never render [object Object].",
+    "field_validator with mode='before' on Optional[EmailStr] is the correct Pydantic v2 pattern. Applied to CompanyCreate, CompanyUpdate, MandanteCreate, MandanteUpdate."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_company_empty_email.py (new pytest suite, 11 tests, all passing)"
+  ],
+  "success_rate": {
+    "backend": "100% (11/11 pytest)",
+    "frontend": "100% (empty-email → green toast + persisted, invalid-email → readable red toast, no '[object Object]' in either case, cleanup OK)"
+  },
+  "test_credentials": "SuperAdmin: superadmin@aptiva.com/superadmin123. Admin: admin@aptivademo.com/admin123 (Río Loa SpA).",
+  "seed_data_creation": "Test rows are prefixed TEST_ and deleted in the same run (fixture teardown + explicit UI cleanup via DELETE /api/superadmin/companies/{id}). No residual data.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Reusable regression suite at /app/backend/tests/test_company_empty_email.py — invoke with REACT_APP_BACKEND_URL env var. Two nuances: (a) PUT tests intentionally send contact_email='' together with another field (name) because the PUT endpoints reject empty payloads with 400 'No fields to update'. (b) HTML5 type=email on the input blocks obvious invalid values on the client, so the invalid-email E2E path uses page.evaluate to set novalidate on the form before submitting 'not-an-email' — this is the only way to exercise the backend 422 path from the UI.",
+  "rca of the issue": "ROOT CAUSE: POST /api/superadmin/companies with contact_email='' hit Pydantic v2's Optional[EmailStr] validator which rejected the empty string, returning 422 with detail=[{loc, msg, type,...}]. The frontend's `throw new Error(data.detail)` then stringified the array to '[object Object]', which sonner's toast.error rendered verbatim. FIX applied in code: (1) _blank_to_none helper + field_validator(mode='before') in CompanyCreate/CompanyUpdate/MandanteCreate/MandanteUpdate coerces '' → None so Optional[EmailStr] accepts blanks; (2) extractApiError in /app/frontend/src/lib/apiError.js awaits the JSON, then maps whatever shape .detail has (string, array, object) into a plain human-readable string; (3) Companies.js handleSubmit additionally converts every empty form string to null before POST. Reproduction (pre-fix): curl -X POST -H 'Authorization: Bearer ...' -d '{\"name\":\"X\",\"contact_email\":\"\"}' /api/superadmin/companies → 422. Post-fix: 200 OK; contact_email=null; UI shows green 'Empresa creada' toast."
+}

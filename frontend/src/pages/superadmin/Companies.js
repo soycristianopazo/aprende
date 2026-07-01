@@ -10,6 +10,7 @@ import {
 import { Building2, Plus, Trash2, UserPlus, Loader2, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { useConfirm } from '../../components/ui/confirm';
+import { extractApiError } from '../../lib/apiError';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -57,8 +58,12 @@ const SuperAdminCompanies = () => {
     try {
       const url = editing ? `${API}/superadmin/companies/${editing.company_id}` : `${API}/superadmin/companies`;
       const method = editing ? 'PUT' : 'POST';
-      const r = await fetch(url, { method, headers, body: JSON.stringify(form) });
-      if (!r.ok) throw new Error((await r.json()).detail || 'Error');
+      // Coerce empty optional strings to null so Pydantic EmailStr does not reject ""
+      const payload = Object.fromEntries(
+        Object.entries(form).map(([k, v]) => [k, typeof v === 'string' && v.trim() === '' ? null : v])
+      );
+      const r = await fetch(url, { method, headers, body: JSON.stringify(payload) });
+      if (!r.ok) throw new Error(await extractApiError(r, 'No se pudo guardar la empresa'));
       toast.success(editing ? 'Empresa actualizada' : 'Empresa creada');
       setOpenCreate(false);
       setEditing(null);
@@ -94,7 +99,7 @@ const SuperAdminCompanies = () => {
       const r = await fetch(`${API}/superadmin/companies/${adminTarget.company_id}/admin`, {
         method: 'POST', headers, body: JSON.stringify(adminForm),
       });
-      if (!r.ok) throw new Error((await r.json()).detail || 'Error');
+      if (!r.ok) throw new Error(await extractApiError(r, 'No se pudo crear el admin'));
       toast.success('Admin creado para ' + adminTarget.name);
       setOpenAdmin(false);
       setAdminForm(emptyAdmin);
