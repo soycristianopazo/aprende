@@ -1,0 +1,29 @@
+{
+  "summary": "Frontend-only Playwright verification of the rebuilt /admin Dashboard for both FCAB and Río Loa admins. All KPIs, all 6 chart sections, alert panels, and the summary strip render correctly with data-testids present and values matching the backend matrix/certs/summary endpoints. No blocking issues found.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Dashboard > Estado de competencias (donut)", "issues": ["Since both tenants currently have 0 'Por vencer' (warning) cells, the amber slice is filtered out via .filter(v>0). Legend only shows 3 categories. Not a bug per code, but the spec mentioned expecting the amber legend entry — consider always rendering the 4 legend entries (with 0-value slice) so the color legend remains stable across tenants."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "(Optional/polish) Keep the 4 status categories in the donut legend even when a category has zero cells, so users always see the color coding for Por vencer / Vencidas / Faltantes.",
+    "(Optional) For Río Loa the 'Certificados vigentes' KPI shows 0 because /api/certificates is empty for that tenant, while the matrix shows 16 valid cells. This is consistent with the code, but worth noting to E1 in case matrix-derived valid cells should also be reflected as 'certificados vigentes' or the label should be adjusted."
+  ],
+  "critical_code_review_comments": [
+    "Dashboard.js is ~470 lines with three helper components inline (HeroKpi, StatMini, TopBottomCard, EmptyChart). Fine for now but consider extracting to /components/dashboard/* if more widgets are added.",
+    "fetchAll swallows fetch errors on individual endpoints (returns null/[]) which is good, but the toast.error only fires on outer try/catch. If a single endpoint 401s the UI silently renders zeros — consider surfacing per-endpoint warnings.",
+    "expirationsByMonth uses toLocaleDateString('es-CL', {month:'short', year:'2-digit'}) as bucket key; on some locales the resulting string can collide across years (e.g. 'ene. 26' vs 'ene. 27'). Currently OK for a 6-month window but fragile."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a", "frontend": "100%"},
+  "test_credentials": "copazo@fcab.cl / fcab123 (FCAB admin), admin@aptivademo.com / admin123 (Río Loa admin) — both from /app/memory/test_credentials.md",
+  "seed_data_creation": "None (used existing seed).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Dashboard verified: FCAB -> KPIs 55% / 12 workers / 31 certs / 25 alerts, 7 role bars, donut with 3 non-zero slices (warning=0 filtered out), radar with 7 competencies, top+bottom worker bar charts, expiring-soon-list present, at-risk-list with 6 workers. Río Loa -> 67% / 8 / 0 / 8, 7 role bars, radar 7 competencies, at-risk-list with 3 workers. Both tenants show 'No hay vencimientos en los próximos 6 meses' placeholder (correct — no cells with valid/warning expiry in that window). All required data-testids (admin-dashboard, kpi-compliance, kpi-workers, kpi-valid-certs, kpi-warnings, expiring-soon-list, at-risk-list) are present and populated.",
+  "rca of the issue": "N/A — no bugs found."
+}
