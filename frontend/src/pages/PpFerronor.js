@@ -552,7 +552,7 @@ const PpFerronor = () => {
 
           {/* Mensual — highlighted */}
           <div className="rounded-xl border-2 border-blue-600 bg-gradient-to-b from-blue-50 to-white p-3.5 relative shadow-lg">
-            <span className="absolute -top-2 left-3 bg-blue-600 text-white text-[8.5px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider">Plan recomendado</span>
+            <span className="absolute -top-2 left-3 bg-blue-600 text-white text-[8.5px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider">Plan</span>
             <p className="text-[9.5px] uppercase tracking-widest text-blue-700 font-semibold mt-1">Licencia mensual</p>
             <p className="text-[24px] font-black text-slate-900 mt-1.5 leading-none tabular-nums whitespace-nowrap">$1.150.000</p>
             <p className="text-[9.5px] text-slate-500 mt-0.5">CLP + IVA · mensual · todo incluido</p>
