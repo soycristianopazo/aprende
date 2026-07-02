@@ -216,9 +216,9 @@ const PpFerronor = () => {
             <StepCard n="1" title="Onboarding"
               desc="Cargamos áreas, actividades, cargos, competencias y trabajadores desde Excel o directo por CSV. En 2 días queda parametrizado." />
             <StepCard n="2" title="Activación"
-              desc="Cada trabajador recibe su usuario y contraseña inicial (primeros 5 dígitos del RUT). Ingresa a su perfil desde cualquier dispositivo." />
+              desc="Cada trabajador recibe su usuario y contraseña inicial. Ingresa a su perfil desde cualquier dispositivo." />
             <StepCard n="3" title="Operación diaria"
-              desc="Trabajadores suben su evidencia. Admin gestiona cursos, capacitaciones y expedientes. Sistema calcula el cumplimiento automáticamente." />
+              desc="Se carga la evidencia. El Admin gestiona cursos, capacitaciones y expedientes. Sistema calcula el cumplimiento automáticamente." />
             <StepCard n="4" title="Auditoría & KPIs"
               desc="Dashboard ejecutivo, reportes exportables, matriz de cumplimiento y alertas. Todo trazable, todo con fecha y autor." />
           </div>
