@@ -304,7 +304,7 @@ const PpFerronor = () => {
             {[
               { i: Zap, t: 'Cero paralización por vencimientos', d: 'La operación no se detiene porque un maquinista tenía la licencia vencida.' },
               { i: Sparkles, t: 'Auditorías más rápidas', d: 'Auditor pide evidencia → un click, un PDF. Sin correos, sin carpetas físicas.' },
-              { i: Rocket, t: 'Escalable con Ferronor', d: 'Multi-tenant y por rol: hoy 50 trabajadores, mañana 500 sin cambio de plataforma.' },
+              { i: Rocket, t: 'Escalable con Ferronor', d: 'Diseñada por Gerencia y Rol: hoy 50 trabajadores, mañana 500 sin cambio de plataforma ni de precio.' },
               { i: Building2, t: 'Datos por Gerencia y Área', d: 'Filtra el cumplimiento por Gerencia, Área o Cargo para focalizar planes de acción específicos.' },
               { i: ShieldCheck, t: 'Reduce riesgo laboral y legal', d: 'Trazabilidad completa: fecha, autor, adjunto, vigencia. Prueba en tribunales.' },
               { i: LineChart, t: 'Gerencia con datos, no anécdotas', d: 'Tablero de KPIs actualizado 24/7 accesible desde cualquier dispositivo.' },
@@ -327,8 +327,8 @@ const PpFerronor = () => {
           title="Diseñado para crecer con Ferronor.">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="rounded-xl border border-slate-200 p-5 bg-slate-50">
-              <p className="text-sm font-bold text-slate-900">Multi-tenant nativo</p>
-              <p className="text-xs text-slate-600 mt-2 leading-relaxed">Datos aislados por empresa. Ferronor mantiene control total y privacidad sobre su información.</p>
+              <p className="text-sm font-bold text-slate-900">Entorno dedicado</p>
+              <p className="text-xs text-slate-600 mt-2 leading-relaxed">Ferronor cuenta con su propio espacio, datos privados y estándar configurado a la medida — con control total sobre su información.</p>
             </div>
             <div className="rounded-xl border border-slate-200 p-5 bg-slate-50">
               <p className="text-sm font-bold text-slate-900">Cloud escalable</p>
