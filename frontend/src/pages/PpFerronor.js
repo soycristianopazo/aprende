@@ -454,7 +454,7 @@ const PpFerronor = () => {
                 </h3>
                 <p className="mt-3 text-blue-100 text-sm leading-relaxed">
                   Aptiva puede estar operativo en Ferronor en 15 días. Sin costo de implementación,
-                  con un valor fijo mensual y todos los módulos incluidos. Solo falta que digan &laquo;sí&raquo;.
+                  con un valor fijo mensual y todos los módulos incluidos.
                 </p>
               </div>
               <div className="rounded-xl bg-white/10 border border-white/20 p-6">
