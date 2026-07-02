@@ -394,10 +394,12 @@ const PpFerronor = () => {
               <p className="text-5xl font-black text-slate-900 mt-3 leading-none">Opcional</p>
               <p className="text-xs text-slate-500 mt-1">Bajo cotización específica</p>
               <ul className="mt-4 space-y-2">
+                <CheckLine>Módulo de Evaluación de trabajadores</CheckLine>
+                <CheckLine>Módulo Hoja de Vida del trabajador</CheckLine>
+                <CheckLine>Módulo de Comunicaciones internas</CheckLine>
+                <CheckLine>Elaboración de Cursos a medida</CheckLine>
                 <CheckLine>Integración con ERP / RRHH</CheckLine>
                 <CheckLine>Personalización de reportes</CheckLine>
-                <CheckLine>Marca blanca / dominio propio</CheckLine>
-                <CheckLine>Cursos e-learning a medida</CheckLine>
               </ul>
             </div>
           </div>
