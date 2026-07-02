@@ -445,7 +445,7 @@ const PpFerronor = () => {
         {/* Cierre / CTA */}
         <Section id="cierre" eyebrow="Siguiente paso"
           title="¿Cuándo empezamos?"
-          subtitle="Reserve una llamada de 30 minutos para revisar juntos el detalle y coordinar la implementación en Ferronor.">
+          subtitle="Quedamos atentos para revisar juntos el detalle de la propuesta y si procede, coordinar la implementación en Ferronor.">
           <div className="rounded-2xl bg-gradient-to-br from-blue-600 to-blue-800 text-white p-8 sm:p-10">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
               <div>
