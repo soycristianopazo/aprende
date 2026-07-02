@@ -74,11 +74,11 @@ const Page = ({ children, className = '', bleed = false, testId }) => (
   </div>
 );
 
-const PageHeader = ({ page, total = 8 }) => (
+const PageHeader = ({ page, total = 8, clientName }) => (
   <div className="flex items-center justify-between pb-3 border-b border-slate-200">
     <AptivaLogo size="sm" dark />
     <div className="text-[9px] uppercase tracking-[0.2em] text-slate-400 font-semibold">
-      Propuesta Ferronor · {String(page).padStart(2, '0')} / {String(total).padStart(2, '0')}
+      Propuesta {clientName} · {String(page).padStart(2, '0')} / {String(total).padStart(2, '0')}
     </div>
   </div>
 );
@@ -187,11 +187,37 @@ const MatrixLegend = () => (
 // ==========================================================================
 
 const PpFerronor = () => {
+  return <Proposal client={FERRONOR} />;
+};
+
+const FERRONOR = {
+  slug: 'ferronor',
+  name: 'Ferronor',
+  coverContacts: 'Javier López · Eduardo Catrifol',
+  recipients: [
+    { initials: 'JL', name: 'Javier López' },
+    { initials: 'EC', name: 'Eduardo Catrifol' },
+  ],
+};
+
+const FCAB = {
+  slug: 'fcab',
+  name: 'FCAB',
+  coverContacts: 'Felipe Corrales',
+  recipients: [
+    { initials: 'FC', name: 'Felipe Corrales' },
+  ],
+};
+
+// Named export so PpFcab.js can render the same template with different client
+export const PpFcab = () => <Proposal client={FCAB} />;
+
+const Proposal = ({ client }) => {
   const handlePrint = () => window.print();
   const today = new Date().toLocaleDateString('es-CL', { day: '2-digit', month: 'long', year: 'numeric' });
 
   return (
-    <div className="pdf-container" data-testid="pp-ferronor-page">
+    <div className="pdf-container" data-testid={`pp-${client.slug}-page`}>
       <style>{`
         @page { size: A4; margin: 0; }
         .pdf-page {
@@ -260,7 +286,7 @@ const PpFerronor = () => {
             <div className="flex-1 flex flex-col justify-center py-6">
               <p className="text-blue-300 text-xs uppercase tracking-[0.3em] font-semibold">Propuesta técnica y económica</p>
               <h1 className="mt-4 text-[60px] font-black leading-[1.02]" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                Aptiva para<br /><span className="text-blue-300">Ferronor</span>
+                Aptiva para<br /><span className="text-blue-300">{client.name}</span>
               </h1>
               <p className="mt-5 text-slate-300 text-base max-w-[140mm] leading-relaxed">
                 Plataforma digital para gestionar competencias, capacitaciones y evidencia
@@ -278,7 +304,7 @@ const PpFerronor = () => {
             {/* Bottom info cards */}
             <div className="grid grid-cols-3 gap-3">
               {[
-                { k: 'Dirigido a', v: 'Javier López · Eduardo Catrifol', sub: 'Ferronor' },
+                { k: 'Dirigido a', v: client.coverContacts, sub: client.name },
                 { k: 'Fecha', v: today, sub: 'Vigencia 30 días' },
                 { k: 'Preparado por', v: 'DoSoft SpA', sub: 'Spin-Off de Legav' },
               ].map((c) => (
@@ -297,7 +323,7 @@ const PpFerronor = () => {
           PAGE 2 — RESUMEN + PROBLEMA
           ========================================================= */}
       <Page testId="page-resumen">
-        <PageHeader page={2} />
+        <PageHeader page={2} clientName={client.name} />
         <PageTitle eyebrow="Resumen ejecutivo"
           title="Cero papel. Cero planillas dispersas. Cero sorpresas en auditoría."
           subtitle="Aptiva centraliza todo el ciclo de vida de la evidencia laboral: cursos, certificados, exámenes médicos, licencias y capacitaciones — con alertas antes de que un vencimiento se convierta en una detención de faena." />
@@ -344,7 +370,7 @@ const PpFerronor = () => {
           PAGE 3 — SOLUCIÓN + CÓMO FUNCIONA
           ========================================================= */}
       <Page testId="page-solucion">
-        <PageHeader page={3} />
+        <PageHeader page={3} clientName={client.name} />
         <PageTitle eyebrow="La solución"
           title="Aptiva: la evidencia digital operativa de sus trabajadores."
           subtitle="Cada trabajador tiene su expediente digital. Cada admin ve el cumplimiento en tiempo real. Cada auditor recibe evidencia trazable en 1 click." />
@@ -385,10 +411,10 @@ const PpFerronor = () => {
           PAGE 4 — MATRIZ DE VENCIMIENTOS (hero visual)
           ========================================================= */}
       <Page testId="page-matriz">
-        <PageHeader page={4} />
+        <PageHeader page={4} clientName={client.name} />
         <PageTitle eyebrow="Visual · Matriz de cumplimiento"
           title="Un solo vistazo. Todos sus trabajadores, todas sus competencias."
-          subtitle="Ejemplo real del reporte que Ferronor tendrá disponible desde el día 1. Cada celda muestra el estado (Vigente / Por vencer / Vencida / Falta / No aplica). La columna final indica el % de cumplimiento del trabajador, calculado sobre las competencias que le corresponden por cargo y actividad." />
+          subtitle={`Ejemplo real del reporte que ${client.name} tendrá disponible desde el día 1. Cada celda muestra el estado (Vigente / Por vencer / Vencida / Falta / No aplica). La columna final indica el % de cumplimiento del trabajador, calculado sobre las competencias que le corresponden por cargo y actividad.`} />
 
         <MatrixMock />
         <MatrixLegend />
@@ -422,7 +448,7 @@ const PpFerronor = () => {
           PAGE 5 — FUNCIONALIDADES PRINCIPALES
           ========================================================= */}
       <Page testId="page-funcionalidades">
-        <PageHeader page={5} />
+        <PageHeader page={5} clientName={client.name} />
         <PageTitle eyebrow="Funcionalidades principales"
           title="Todo lo que necesita para dejar las planillas dispersas en la historia." />
 
@@ -447,7 +473,7 @@ const PpFerronor = () => {
               'Descarga directa desde el perfil del trabajador.',
             ]},
             { icon: ShieldCheck, title: 'Cumplimiento y estándares', items: [
-              'Estándar de acreditación configurable a la medida de Ferronor.',
+              `Estándar de acreditación configurable a la medida de ${client.name}.`,
               'Scope granular: por área, cargo o actividad.',
               'Match automático documento ↔ ítem del estándar.',
               'Certificados autogenerados con código de verificación.',
@@ -482,15 +508,15 @@ const PpFerronor = () => {
           PAGE 6 — BENEFICIOS + ARQUITECTURA
           ========================================================= */}
       <Page testId="page-beneficios">
-        <PageHeader page={6} />
-        <PageTitle eyebrow="Beneficios directos para Ferronor"
+        <PageHeader page={6} clientName={client.name} />
+        <PageTitle eyebrow={`Beneficios directos para ${client.name}`}
           title="Por qué esto justifica su inversión en el mes 1." />
 
         <div className="grid grid-cols-2 gap-2.5 mt-4">
           {[
             { i: Zap, t: 'Cero paralización por vencimientos', d: 'La operación no se detiene porque un maquinista tenía la licencia vencida.' },
             { i: Sparkles, t: 'Auditorías más rápidas', d: 'Auditor pide evidencia → un click, un PDF. Sin correos, sin carpetas físicas.' },
-            { i: Rocket, t: 'Escalable con Ferronor', d: 'Hoy 50 trabajadores, mañana 500 sin cambio de plataforma ni de precio.' },
+            { i: Rocket, t: `Escalable con ${client.name}`, d: 'Hoy 50 trabajadores, mañana 500 sin cambio de plataforma ni de precio.' },
             { i: Building2, t: 'Datos por Gerencia y Área', d: 'Filtra el cumplimiento por Gerencia, Área o Cargo para focalizar planes de acción.' },
             { i: ShieldCheck, t: 'Reduce riesgo laboral y legal', d: 'Trazabilidad completa: fecha, autor, adjunto, vigencia. Prueba en tribunales.' },
             { i: LineChart, t: 'Gerencia con datos, no anécdotas', d: 'Tablero de KPIs actualizado 24/7 desde cualquier dispositivo.' },
@@ -508,7 +534,7 @@ const PpFerronor = () => {
         </div>
 
         <PageTitle eyebrow="Arquitectura"
-          title="Diseñado para crecer con Ferronor." />
+          title={`Diseñado para crecer con ${client.name}.`} />
 
         <div className="grid grid-cols-3 gap-2.5 mt-4">
           {[
@@ -532,7 +558,7 @@ const PpFerronor = () => {
           PAGE 7 — INVERSIÓN
           ========================================================= */}
       <Page testId="page-inversion">
-        <PageHeader page={7} />
+        <PageHeader page={7} clientName={client.name} />
         <PageTitle eyebrow="Inversión"
           title="Precio simple. Cero implementación."
           subtitle="Un valor mensual fijo con todos los módulos incluidos. Sin cargos ocultos, sin costos por implementación." />
@@ -605,7 +631,7 @@ const PpFerronor = () => {
           PAGE 8 — ROADMAP + CIERRE
           ========================================================= */}
       <Page testId="page-cierre">
-        <PageHeader page={8} />
+        <PageHeader page={8} clientName={client.name} />
         <PageTitle eyebrow="Puesta en marcha"
           title="De la firma al primer reporte en 15 días hábiles." />
 
@@ -613,7 +639,7 @@ const PpFerronor = () => {
           <div className="rounded-lg border-l-4 border-blue-600 bg-slate-50 p-4">
             <p className="text-[10px] uppercase tracking-widest text-blue-700 font-bold">Semana 1</p>
             <p className="text-[13px] text-slate-900 font-bold mt-1">Levantamiento</p>
-            <p className="text-[11px] text-slate-600 mt-1.5 leading-relaxed">Reunión kick-off. Definición de áreas, actividades, cargos y competencias específicas de Ferronor. Recopilación de datos.</p>
+            <p className="text-[11px] text-slate-600 mt-1.5 leading-relaxed">Reunión kick-off. Definición de áreas, actividades, cargos y competencias específicas de {client.name}. Recopilación de datos.</p>
           </div>
           <div className="rounded-lg border-l-4 border-blue-600 bg-slate-50 p-4">
             <p className="text-[10px] uppercase tracking-widest text-blue-700 font-bold">Semana 2</p>
@@ -629,7 +655,7 @@ const PpFerronor = () => {
 
         <PageTitle eyebrow="Siguiente paso"
           title="¿Cuándo empezamos?"
-          subtitle="Quedamos atentos para revisar juntos el detalle de la propuesta y si procede, coordinar la implementación en Ferronor." />
+          subtitle={`Quedamos atentos para revisar juntos el detalle de la propuesta y si procede, coordinar la implementación en ${client.name}.`} />
 
         <div className="mt-5 rounded-xl bg-gradient-to-br from-blue-600 to-blue-800 text-white p-6">
           <div className="grid grid-cols-2 gap-6 items-center">
@@ -638,27 +664,22 @@ const PpFerronor = () => {
                 Dejemos las planillas dispersas atrás.
               </h3>
               <p className="mt-2 text-blue-100 text-[12px] leading-relaxed">
-                Aptiva puede estar operativo en Ferronor en 15 días. Sin costo de implementación,
+                Aptiva puede estar operativo en {client.name} en 15 días. Sin costo de implementación,
                 con un valor fijo mensual y todos los módulos incluidos.
               </p>
             </div>
             <div className="rounded-lg bg-white/10 border border-white/20 p-4">
               <p className="text-[10px] uppercase tracking-widest text-blue-200 font-semibold">Propuesta dirigida a</p>
               <ul className="mt-3 space-y-2.5">
-                <li className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-bold text-[11px]">JL</div>
-                  <div>
-                    <p className="text-white font-bold text-[12px]">Javier López</p>
-                    <p className="text-blue-200 text-[10px]">Ferronor</p>
-                  </div>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-bold text-[11px]">EC</div>
-                  <div>
-                    <p className="text-white font-bold text-[12px]">Eduardo Catrifol</p>
-                    <p className="text-blue-200 text-[10px]">Ferronor</p>
-                  </div>
-                </li>
+                {client.recipients.map((r) => (
+                  <li key={r.initials} className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-bold text-[11px]">{r.initials}</div>
+                    <div>
+                      <p className="text-white font-bold text-[12px]">{r.name}</p>
+                      <p className="text-blue-200 text-[10px]">{client.name}</p>
+                    </div>
+                  </li>
+                ))}
               </ul>
             </div>
           </div>

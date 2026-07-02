@@ -31,6 +31,7 @@ import AdminCompliance from "./pages/admin/Compliance";
 import AdminCompetencyMatrix from "./pages/admin/CompetencyMatrix";
 import AdminNotifications from "./pages/admin/Notifications";
 import PpFerronor from "./pages/PpFerronor";
+import PpFcab from "./pages/PpFcab";
 import AdminCompany from "./pages/admin/Company";
 import AdminMandantes from "./pages/admin/Mandantes";
 import AdminMandanteStandard from "./pages/admin/MandanteStandard";
@@ -115,6 +116,7 @@ function AppRouter() {
       <Route path="/register" element={<Register />} />
       <Route path="/verify/:code" element={<VerifyCertificate />} />
       <Route path="/pp-ferronor" element={<PpFerronor />} />
+      <Route path="/pp-fcab" element={<PpFcab />} />
       
       {/* SuperAdmin Routes */}
       <Route path="/superadmin" element={
