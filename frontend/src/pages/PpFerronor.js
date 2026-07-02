@@ -115,7 +115,7 @@ const PpFerronor = () => {
             </h1>
             <p className="mt-6 text-slate-300 text-base sm:text-lg max-w-2xl leading-relaxed">
               Plataforma digital para gestionar competencias, capacitaciones y evidencia digital de sus trabajadores —
-              lista para auditorías, sin planillas Excel y sin sorpresas de vencimiento.
+              lista para auditorías, sin planillas dispersas y sin sorpresas de vencimiento.
             </p>
             <p className="mt-4 inline-flex items-center gap-2 text-xs text-white/70 bg-white/5 border border-white/10 rounded-full px-3 py-1.5">
               <Sparkles className="w-3.5 h-3.5 text-blue-300" />
@@ -146,14 +146,14 @@ const PpFerronor = () => {
 
         {/* Resumen ejecutivo */}
         <Section id="resumen" eyebrow="Resumen ejecutivo"
-          title="Cero papel. Cero Excel. Cero sorpresas en auditoría."
+          title="Cero papel. Cero planillas dispersas. Cero sorpresas en auditoría."
           subtitle="Aptiva centraliza todo el ciclo de vida de la evidencia laboral: cursos, certificados, exámenes médicos, licencias y capacitaciones — con alertas antes de que un vencimiento se convierta en una detención de faena."
         >
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="rounded-2xl border border-slate-200 p-6 bg-gradient-to-b from-blue-50 to-white">
               <p className="text-4xl font-black text-blue-700 leading-none">95%</p>
               <p className="mt-2 text-sm text-slate-700 font-semibold">Menos tiempo administrativo</p>
-              <p className="mt-1 text-xs text-slate-500">vs. gestión manual en Excel/carpetas físicas.</p>
+              <p className="mt-1 text-xs text-slate-500">vs. gestión manual con planillas dispersas y carpetas físicas.</p>
             </div>
             <div className="rounded-2xl border border-slate-200 p-6 bg-gradient-to-b from-emerald-50 to-white">
               <p className="text-4xl font-black text-emerald-700 leading-none">100%</p>
@@ -198,7 +198,7 @@ const PpFerronor = () => {
             <FeatureCard icon={Bell} tone="amber" title="Alertas de vencimiento"
               desc="Notificaciones automáticas por email y en el sistema a 90, 30 y 0 días. Nadie sube a faena con licencia vencida." />
             <FeatureCard icon={BarChart3} tone="violet" title="Matriz de cumplimiento"
-              desc="Vista cruzada Trabajadores × Competencias con estado por celda (vigente / por vencer / vencida / falta / no aplica). Exportable a CSV." />
+              desc="Vista cruzada Trabajadores × Competencias con estado por celda (vigente / por vencer / vencida / falta / no aplica). Exportable a Excel." />
             <FeatureCard icon={Award} tone="emerald" title="Certificados autogenerados"
               desc="Al aprobar un curso, Aptiva emite un certificado con código de verificación público. Descargable en PDF y verificable por QR." />
             <FeatureCard icon={LineChart} tone="rose" title="Dashboard en tiempo real"
@@ -214,7 +214,7 @@ const PpFerronor = () => {
           subtitle="Implementación en 2-3 semanas, sin cambios en su ERP.">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mt-8">
             <StepCard n="1" title="Onboarding"
-              desc="Cargamos áreas, actividades, cargos, competencias y trabajadores desde Excel o directo por CSV. En 2 días queda parametrizado." />
+              desc="Cargamos áreas, actividades, cargos, competencias y trabajadores directamente desde archivos Excel. En 2 días queda parametrizado." />
             <StepCard n="2" title="Activación"
               desc="Cada trabajador recibe su usuario y contraseña inicial. Ingresa a su perfil desde cualquier dispositivo." />
             <StepCard n="3" title="Operación diaria"
@@ -226,7 +226,7 @@ const PpFerronor = () => {
 
         {/* Funcionalidades principales */}
         <Section id="funcionalidades" eyebrow="Funcionalidades principales"
-          title="Todo lo que necesita para dejar el Excel en la historia.">
+          title="Todo lo que necesita para dejar las planillas dispersas en la historia.">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
             <div>
               <h4 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
@@ -235,7 +235,7 @@ const PpFerronor = () => {
               <ul className="space-y-2">
                 <CheckLine>Trabajadores con RUT, cargo, áreas y actividades asignadas.</CheckLine>
                 <CheckLine>Mantenedor de cargos (Maquinista, Rigger, Prevencionista, etc.).</CheckLine>
-                <CheckLine>Carga masiva por CSV con validación previa.</CheckLine>
+                <CheckLine>Carga masiva por Excel con validación previa.</CheckLine>
                 <CheckLine>Reseteo de contraseñas a un click.</CheckLine>
               </ul>
             </div>
@@ -280,7 +280,7 @@ const PpFerronor = () => {
                 <CheckLine>Notificaciones a 90, 30 y 0 días del vencimiento.</CheckLine>
                 <CheckLine>Panel centralizado de alertas con severidad.</CheckLine>
                 <CheckLine>Email y notificación in-app.</CheckLine>
-                <CheckLine>Export CSV para reuniones semanales.</CheckLine>
+                <CheckLine>Export a Excel para reuniones semanales.</CheckLine>
               </ul>
             </div>
             <div>
@@ -291,7 +291,7 @@ const PpFerronor = () => {
                 <CheckLine>Dashboard ejecutivo con 6+ gráficos en tiempo real.</CheckLine>
                 <CheckLine>Matriz Trabajadores × Competencias.</CheckLine>
                 <CheckLine>Heatmap Actividades × Competencias.</CheckLine>
-                <CheckLine>Exportación CSV y PDF de todos los reportes.</CheckLine>
+                <CheckLine>Exportación a Excel y PDF de todos los reportes.</CheckLine>
               </ul>
             </div>
           </div>
@@ -448,7 +448,7 @@ const PpFerronor = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
               <div>
                 <h3 className="text-2xl sm:text-3xl font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                  Dejemos el Excel atrás.
+                  Dejemos las planillas dispersas atrás.
                 </h3>
                 <p className="mt-3 text-blue-100 text-sm leading-relaxed">
                   Aptiva puede estar operativo en Ferronor en 15 días. Sin costo de implementación,
