@@ -196,11 +196,12 @@ const PpFerronor = () => {
         @page { size: A4; margin: 0; }
         .pdf-page {
           width: 210mm;
-          min-height: 297mm;
+          height: 297mm;
           padding: 12mm 12mm 18mm 12mm;
           box-sizing: border-box;
           background: white;
           page-break-after: always;
+          break-after: page;
           overflow: hidden;
           position: relative;
         }
@@ -210,11 +211,11 @@ const PpFerronor = () => {
           .pdf-page { margin: 0 auto 28px; box-shadow: 0 20px 60px -20px rgba(15,23,42,0.35); border-radius: 4px; }
         }
         @media print {
-          body { background: white !important; margin: 0 !important; }
+          html, body { background: white !important; margin: 0 !important; padding: 0 !important; }
           .no-print { display: none !important; }
           .pdf-container { background: white !important; padding: 0 !important; }
-          .pdf-page { margin: 0 !important; box-shadow: none !important; border-radius: 0 !important; page-break-after: always; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .pdf-page:last-of-type { page-break-after: auto; }
+          .pdf-page { margin: 0 !important; box-shadow: none !important; border-radius: 0 !important; page-break-after: always; break-after: page; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .pdf-page:last-of-type { page-break-after: auto; break-after: auto; }
         }
       `}</style>
 
@@ -230,11 +231,10 @@ const PpFerronor = () => {
           PAGE 1 — COVER (full bleed dark)
           ========================================================= */}
       <Page bleed testId="page-cover">
-        <div className="w-full h-full min-h-[297mm] bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 text-white relative overflow-hidden px-[14mm] py-[14mm]"
-             style={{ minHeight: '297mm' }}>
+        <div className="w-full h-full bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 text-white relative overflow-hidden px-[14mm] py-[14mm]">
           <div className="absolute inset-0 opacity-25"
             style={{ backgroundImage: "radial-gradient(circle at 15% 15%, #3B82F6 0, transparent 40%), radial-gradient(circle at 85% 85%, #10B981 0, transparent 45%)" }} />
-          <div className="relative flex flex-col h-full min-h-[273mm]">
+          <div className="relative flex flex-col h-full">
             {/* Top */}
             <div className="flex items-center justify-between">
               <AptivaLogo size="lg" />
@@ -242,17 +242,17 @@ const PpFerronor = () => {
             </div>
 
             {/* Middle */}
-            <div className="mt-auto mb-auto pt-16">
+            <div className="flex-1 flex flex-col justify-center py-6">
               <p className="text-blue-300 text-xs uppercase tracking-[0.3em] font-semibold">Propuesta técnica y económica</p>
-              <h1 className="mt-4 text-[64px] font-black leading-[1.02]" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              <h1 className="mt-4 text-[60px] font-black leading-[1.02]" style={{ fontFamily: 'Manrope, sans-serif' }}>
                 Aptiva para<br /><span className="text-blue-300">Ferronor</span>
               </h1>
-              <p className="mt-6 text-slate-300 text-lg max-w-[140mm] leading-relaxed">
+              <p className="mt-5 text-slate-300 text-base max-w-[140mm] leading-relaxed">
                 Plataforma digital para gestionar competencias, capacitaciones y evidencia
                 documental de sus trabajadores — lista para auditorías, sin planillas dispersas
                 y sin sorpresas de vencimiento.
               </p>
-              <p className="mt-6 inline-flex items-center gap-2 text-xs text-white/80 bg-white/5 border border-white/10 rounded-full px-3 py-1.5">
+              <p className="mt-5 inline-flex items-center gap-2 text-xs text-white/80 bg-white/5 border border-white/10 rounded-full px-3 py-1.5 self-start">
                 <Sparkles className="w-3.5 h-3.5 text-blue-300" />
                 Un producto de <strong className="text-white ml-0.5">DoSoft</strong>
                 <span className="text-white/50">·</span>
@@ -261,7 +261,7 @@ const PpFerronor = () => {
             </div>
 
             {/* Bottom info cards */}
-            <div className="grid grid-cols-3 gap-3 mt-auto">
+            <div className="grid grid-cols-3 gap-3">
               {[
                 { k: 'Dirigido a', v: 'Javier López · Eduardo Catrifol', sub: 'Ferronor' },
                 { k: 'Fecha', v: today, sub: 'Vigencia 30 días' },
