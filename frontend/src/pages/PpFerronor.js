@@ -496,6 +496,7 @@ const PpFerronor = () => {
       {/* Floating export FAB (mobile) */}
       <button
         onClick={handlePrint}
+        aria-label="Exportar a PDF"
         className="no-print fixed bottom-6 right-6 md:hidden bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-2xl px-4 py-3 flex items-center gap-2 font-semibold text-sm"
         data-testid="pp-export-pdf-fab"
       >
