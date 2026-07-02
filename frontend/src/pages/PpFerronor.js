@@ -522,14 +522,14 @@ const PpFerronor = () => {
           title="Precio simple. Cero implementación."
           subtitle="Un valor mensual fijo con todos los módulos incluidos. Sin cargos ocultos, sin costos por implementación." />
 
-        <div className="grid grid-cols-3 gap-3 mt-6">
+        <div className="grid grid-cols-3 gap-2.5 mt-6">
           {/* Setup */}
-          <div className="rounded-xl border-2 border-emerald-300 bg-gradient-to-b from-emerald-50 to-white p-5 relative">
-            <span className="absolute -top-2.5 left-4 bg-emerald-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Sin costo</span>
-            <p className="text-[10px] uppercase tracking-widest text-emerald-700 font-semibold">Implementación</p>
-            <p className="text-4xl font-black text-slate-900 mt-2 leading-none">$0</p>
-            <p className="text-[10px] text-slate-500 mt-0.5">Pesos chilenos</p>
-            <ul className="mt-4 space-y-1.5">
+          <div className="rounded-xl border-2 border-emerald-300 bg-gradient-to-b from-emerald-50 to-white p-3.5 relative">
+            <span className="absolute -top-2 left-3 bg-emerald-600 text-white text-[8.5px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider">Sin costo</span>
+            <p className="text-[9.5px] uppercase tracking-widest text-emerald-700 font-semibold mt-1">Implementación</p>
+            <p className="text-[26px] font-black text-slate-900 mt-1.5 leading-none">$0</p>
+            <p className="text-[9.5px] text-slate-500 mt-0.5">Pesos chilenos</p>
+            <ul className="mt-3 space-y-1">
               <CheckLine>Configuración inicial y parametrización</CheckLine>
               <CheckLine>Carga de trabajadores</CheckLine>
               <CheckLine>Onboarding y capacitación admin</CheckLine>
@@ -538,12 +538,12 @@ const PpFerronor = () => {
           </div>
 
           {/* Mensual — highlighted */}
-          <div className="rounded-xl border-2 border-blue-600 bg-gradient-to-b from-blue-50 to-white p-5 relative shadow-lg scale-[1.03]">
-            <span className="absolute -top-2.5 left-4 bg-blue-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Plan recomendado</span>
-            <p className="text-[10px] uppercase tracking-widest text-blue-700 font-semibold">Licencia mensual</p>
-            <p className="text-4xl font-black text-slate-900 mt-2 leading-none tabular-nums">$1.150.000</p>
-            <p className="text-[10px] text-slate-500 mt-0.5">CLP + IVA · mensual · todo incluido</p>
-            <ul className="mt-4 space-y-1.5">
+          <div className="rounded-xl border-2 border-blue-600 bg-gradient-to-b from-blue-50 to-white p-3.5 relative shadow-lg">
+            <span className="absolute -top-2 left-3 bg-blue-600 text-white text-[8.5px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider">Plan recomendado</span>
+            <p className="text-[9.5px] uppercase tracking-widest text-blue-700 font-semibold mt-1">Licencia mensual</p>
+            <p className="text-[24px] font-black text-slate-900 mt-1.5 leading-none tabular-nums whitespace-nowrap">$1.150.000</p>
+            <p className="text-[9.5px] text-slate-500 mt-0.5">CLP + IVA · mensual · todo incluido</p>
+            <ul className="mt-3 space-y-1">
               <CheckLine>Trabajadores <strong>ilimitados</strong></CheckLine>
               <CheckLine>Todos los módulos activos</CheckLine>
               <CheckLine>Certificados autogenerados</CheckLine>
@@ -554,11 +554,11 @@ const PpFerronor = () => {
           </div>
 
           {/* Extras */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
-            <p className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">Servicios adicionales</p>
-            <p className="text-4xl font-black text-slate-900 mt-2 leading-none">Opcional</p>
-            <p className="text-[10px] text-slate-500 mt-0.5">Bajo cotización específica</p>
-            <ul className="mt-4 space-y-1.5">
+          <div className="rounded-xl border border-slate-200 bg-white p-3.5">
+            <p className="text-[9.5px] uppercase tracking-widest text-slate-500 font-semibold mt-1">Servicios adicionales</p>
+            <p className="text-[26px] font-black text-slate-900 mt-1.5 leading-none">Opcional</p>
+            <p className="text-[9.5px] text-slate-500 mt-0.5">Bajo cotización específica</p>
+            <ul className="mt-3 space-y-1">
               <CheckLine>Módulo de Evaluación de trabajadores</CheckLine>
               <CheckLine>Módulo Hoja de Vida del trabajador</CheckLine>
               <CheckLine>Módulo de Comunicaciones internas</CheckLine>
