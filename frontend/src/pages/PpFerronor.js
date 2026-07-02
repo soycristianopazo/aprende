@@ -16,13 +16,55 @@ import {
 // ==========================================================================
 
 const AptivaLogo = ({ dark = false, size = 'md' }) => {
-  const sizeCls = size === 'lg' ? 'h-16 sm:h-20' : size === 'sm' ? 'h-8' : 'h-10';
+  const heights = { sm: 22, md: 30, lg: 60 };
+  const h = heights[size] || heights.md;
+  const fg = dark ? '#0F172A' : '#FFFFFF';       // Wordmark color
+  const ring = dark ? '#2563EB' : '#93C5FD';     // Ring / dot color
+  const sub = dark ? '#64748B' : 'rgba(255,255,255,0.65)'; // "Competencias"
   return (
-    <img
-      src="/aptiva-logo.png"
-      alt="Aptiva — Evidencia Digital"
-      className={`${sizeCls} w-auto object-contain ${dark ? '' : 'brightness-0 invert'}`}
-    />
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 260 70"
+      style={{ height: `${h}px`, width: 'auto' }}
+      role="img"
+      aria-label="Aptiva — Competencias"
+    >
+      {/* Icon: open ring + accent dot */}
+      <g transform="translate(2 4)">
+        <path
+          d="M 34 4 A 27 27 0 1 0 60 34"
+          fill="none"
+          stroke={fg}
+          strokeWidth="7"
+          strokeLinecap="round"
+        />
+        <circle cx="55" cy="14" r="6" fill={ring} />
+      </g>
+      {/* Wordmark */}
+      <text
+        x="78"
+        y="46"
+        fontFamily="Manrope, Inter, system-ui, sans-serif"
+        fontSize="42"
+        fontWeight="800"
+        fill={fg}
+        letterSpacing="-1.5"
+      >
+        Aptiva.
+      </text>
+      {/* Subline */}
+      <text
+        x="80"
+        y="61"
+        fontFamily="Manrope, Inter, system-ui, sans-serif"
+        fontSize="7.5"
+        fontWeight="600"
+        fill={sub}
+        letterSpacing="3"
+      >
+        COMPETENCIAS
+      </text>
+    </svg>
   );
 };
 
@@ -232,8 +274,21 @@ const PpFerronor = () => {
           ========================================================= */}
       <Page bleed testId="page-cover">
         <div className="w-full h-full bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 text-white relative overflow-hidden px-[14mm] py-[14mm]">
-          <div className="absolute inset-0 opacity-25"
-            style={{ backgroundImage: "radial-gradient(circle at 15% 15%, #3B82F6 0, transparent 40%), radial-gradient(circle at 85% 85%, #10B981 0, transparent 45%)" }} />
+          {/* Vector blobs (SVG — vectorial, no raster) */}
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 210 297" preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+              <radialGradient id="ppBlobBlue" cx="15%" cy="15%" r="45%">
+                <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.35" />
+                <stop offset="100%" stopColor="#3B82F6" stopOpacity="0" />
+              </radialGradient>
+              <radialGradient id="ppBlobEmerald" cx="85%" cy="85%" r="50%">
+                <stop offset="0%" stopColor="#10B981" stopOpacity="0.30" />
+                <stop offset="100%" stopColor="#10B981" stopOpacity="0" />
+              </radialGradient>
+            </defs>
+            <rect width="210" height="297" fill="url(#ppBlobBlue)" />
+            <rect width="210" height="297" fill="url(#ppBlobEmerald)" />
+          </svg>
           <div className="relative flex flex-col h-full">
             {/* Top */}
             <div className="flex items-center justify-between">
