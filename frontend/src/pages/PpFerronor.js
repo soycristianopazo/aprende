@@ -45,7 +45,7 @@ const FeatureCard = ({ icon: Icon, title, desc, tone = 'blue' }) => {
   return (
     <div className={`rounded-lg border p-3.5 bg-gradient-to-b to-white ${toneMap[tone]}`}>
       <div className="flex items-center gap-2">
-        <div className="w-8 h-8 rounded-md bg-white shadow-sm border border-slate-100 flex items-center justify-center">
+        <div className="w-8 h-8 rounded-md bg-white border border-slate-100 flex items-center justify-center">
           <Icon className="w-4 h-4" />
         </div>
         <p className="text-[13px] font-bold text-slate-900 leading-tight">{title}</p>
@@ -57,7 +57,7 @@ const FeatureCard = ({ icon: Icon, title, desc, tone = 'blue' }) => {
 
 const StepCard = ({ n, title, desc }) => (
   <div className="relative rounded-lg border border-slate-200 bg-white p-4">
-    <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm absolute -top-3 -left-3 shadow-md">
+    <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm absolute -top-3 -left-3">
       {n}
     </div>
     <h4 className="mt-1 text-slate-900 font-bold text-sm">{title}</h4>
@@ -91,10 +91,10 @@ const PageFooter = () => (
 );
 
 const PageTitle = ({ eyebrow, title, subtitle }) => (
-  <div className="mt-4">
-    {eyebrow && <p className="text-[10px] uppercase tracking-[0.2em] text-blue-700 font-semibold mb-1">{eyebrow}</p>}
+  <div className="mt-8">
+    {eyebrow && <p className="text-[10px] uppercase tracking-[0.2em] text-blue-700 font-semibold mb-1.5">{eyebrow}</p>}
     <h2 className="text-[22px] font-bold text-slate-900 leading-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{title}</h2>
-    {subtitle && <p className="mt-2 text-[12.5px] text-slate-600 leading-relaxed text-justify">{subtitle}</p>}
+    {subtitle && <p className="mt-2.5 text-[12.5px] text-slate-600 leading-relaxed text-justify">{subtitle}</p>}
   </div>
 );
 
@@ -216,6 +216,8 @@ const PpFerronor = () => {
           .pdf-container { background: white !important; padding: 0 !important; }
           .pdf-page { margin: 0 !important; box-shadow: none !important; border-radius: 0 !important; page-break-after: always; break-after: page; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           .pdf-page:last-of-type { page-break-after: auto; break-after: auto; }
+          /* Kill every rasterized shadow that Chrome print emits as a gray box */
+          .pdf-page *, .pdf-page *::before, .pdf-page *::after { box-shadow: none !important; }
         }
       `}</style>
 
@@ -551,7 +553,7 @@ const PpFerronor = () => {
           </div>
 
           {/* Mensual — highlighted */}
-          <div className="rounded-xl border-2 border-blue-600 bg-gradient-to-b from-blue-50 to-white p-3.5 relative shadow-lg">
+          <div className="rounded-xl border-2 border-blue-600 bg-gradient-to-b from-blue-50 to-white p-3.5 relative">
             <span className="absolute -top-2 left-3 bg-blue-600 text-white text-[8.5px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider">Plan</span>
             <p className="text-[9.5px] uppercase tracking-widest text-blue-700 font-semibold mt-1">Licencia mensual</p>
             <p className="text-[24px] font-black text-slate-900 mt-1.5 leading-none tabular-nums whitespace-nowrap">$1.150.000</p>
