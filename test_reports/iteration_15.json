@@ -1,0 +1,25 @@
+{
+  "summary": "Frontend-only smoke & content test of the public proposal page /pp-ferronor. All 18 acceptance checks from the review request passed: public route (no redirect to /login), no compile overlay, hero with H1 'Aptiva para Ferronor', recipients 'Javier López · Eduardo Catrifol', 'Ferronor' card, es-CL localized date, 'Vigencia 30 días', 'contacto@aptiva.cl', resumen with 3 KPIs (95%/100%/0), 4 problem cards, 6 solution cards, 4 numbered steps, 6 functional subsections, 6 beneficios cards, 6 escalabilidad cards, INVERSIÓN critical block ($0 setup + $1.150.000 CLP+IVA con 'Plan recomendado' + Opcional + '12 meses' + '30 días' + 'Transferencia'), 'Exportar a PDF' sticky button dispatches window.print (verified via installed spy), FAB present in DOM (md:hidden + no-print) and visible in 390x844 viewport (also triggers print), inline @media print block with '.no-print { display:none !important }' and '@page { size:A4; margin:14mm }' verified, sticky bar / mailto CTA / FAB all carry the no-print class, footer contains logo, 'aptiva.cl' and localized date.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "PpFerronor.js is a single ~490-line file with hardcoded copy; if more one-off client proposals are planned, consider extracting a reusable <ProposalTemplate/> and pass content as a config prop.",
+    "Contact phone '+56 9 1234 5678' is a placeholder — confirm with product before sending the URL to the real client (Javier López / Eduardo Catrifol).",
+    "aria-label missing on the Download icon-only FAB; adding aria-label='Exportar a PDF' would improve accessibility (mobile screen readers).",
+    "The sticky top bar uses backdrop-blur — verify how it prints (currently hidden via .no-print, which is correct)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A", "frontend": "100%"},
+  "test_credentials": "N/A — public route, tested without any token in localStorage.",
+  "seed_data_creation": "None.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Page is at /pp-ferronor (public). Key testids: pp-ferronor-page, pp-export-pdf-btn, pp-export-pdf-fab, section-{resumen|problema|solucion|funcionamiento|funcionalidades|beneficios|escalabilidad|inversion|implementacion|cierre}. Tag texts inside inversion cards ('SIN COSTO', 'PLAN RECOMENDADO', 'IMPLEMENTACIÓN', 'LICENCIA MENSUAL') are rendered uppercase via CSS text-transform; when asserting inner_text use case-insensitive matching or check inner_html. To verify PDF export, install a spy: `window.print = () => { window.__printCalled++; }` before clicking pp-export-pdf-btn.",
+  "rca of the issue": "No issues found. Route is registered as a Public Route in /app/frontend/src/App.js (line 117) alongside /, /login, /register, /verify/:code. PpFerronor component correctly avoids any auth guard, so navigation succeeds without a token."
+}
