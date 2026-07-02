@@ -16,55 +16,13 @@ import {
 // ==========================================================================
 
 const AptivaLogo = ({ dark = false, size = 'md' }) => {
-  const heights = { sm: 22, md: 30, lg: 60 };
-  const h = heights[size] || heights.md;
-  const fg = dark ? '#0F172A' : '#FFFFFF';       // Wordmark color
-  const ring = dark ? '#2563EB' : '#93C5FD';     // Ring / dot color
-  const sub = dark ? '#64748B' : 'rgba(255,255,255,0.65)'; // "Competencias"
+  const sizeCls = size === 'lg' ? 'h-16 sm:h-20' : size === 'sm' ? 'h-8' : 'h-10';
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 260 70"
-      style={{ height: `${h}px`, width: 'auto' }}
-      role="img"
-      aria-label="Aptiva — Competencias"
-    >
-      {/* Icon: open ring + accent dot */}
-      <g transform="translate(2 4)">
-        <path
-          d="M 34 4 A 27 27 0 1 0 60 34"
-          fill="none"
-          stroke={fg}
-          strokeWidth="7"
-          strokeLinecap="round"
-        />
-        <circle cx="55" cy="14" r="6" fill={ring} />
-      </g>
-      {/* Wordmark */}
-      <text
-        x="78"
-        y="46"
-        fontFamily="Manrope, Inter, system-ui, sans-serif"
-        fontSize="42"
-        fontWeight="800"
-        fill={fg}
-        letterSpacing="-1.5"
-      >
-        Aptiva.
-      </text>
-      {/* Subline */}
-      <text
-        x="80"
-        y="61"
-        fontFamily="Manrope, Inter, system-ui, sans-serif"
-        fontSize="7.5"
-        fontWeight="600"
-        fill={sub}
-        letterSpacing="3"
-      >
-        COMPETENCIAS
-      </text>
-    </svg>
+    <img
+      src="/aptiva-logo.png"
+      alt="Aptiva — Competencias"
+      className={`${sizeCls} w-auto object-contain ${dark ? '' : 'brightness-0 invert'}`}
+    />
   );
 };
 
