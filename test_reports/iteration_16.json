@@ -1,0 +1,42 @@
+{
+  "summary": "Frontend-only validation of the public /pp-ferronor commercial proposal page. All 20 requested checks passed: route loads without auth, 8 A4 pages (210mm × 297mm ≈ 793.7px × 1122.5px), page-cover is edge-to-edge (padding 0), matrix has 8 workers × 7 competencies + % column, all 5 legend states present, Export button visible and hidden under @media print via .no-print, inversion page has 3 plans ($0 / $1.150.000 / Opcional), cierre page contains Javier López, Eduardo Catrifol, 'Quedamos atentos...' next-step text and 'Aptiva es un producto de DoSoft' footer. No console errors.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "PpFerronor.js is ~665 lines and contains a lot of inline JSX with static content — consider extracting each page (cover/resumen/solucion/matriz/etc.) into its own component under /pages/pp-ferronor/ for maintainability. Not blocking.",
+    "Mock matrix data (MOCK_WORKERS, MOCK_COMPETENCIES) lives inside the page module. If reused elsewhere, extract to a data file. Acceptable for a static proposal.",
+    "PageFooter uses absolute positioning at bottom-[10mm]; if a page's content overflows this height it will overlap the footer. Verified visually all pages fit — but any future content additions should be tested against overflow: hidden."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "N/A (skipped as requested)", "frontend": "100%" },
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Public static proposal page /pp-ferronor. 8 A4 pages structure verified. data-testids: pp-ferronor-page, pp-export-pdf-btn, page-cover, page-resumen, page-solucion, page-matriz, page-funcionalidades, page-beneficios, page-inversion, page-cierre. NOTE for future tests: text with CSS class 'uppercase' will be returned uppercased by Playwright inner_text() — compare case-insensitively or use inner_html for original casing.",
+  "test_results_detail": [
+    "[PASS] Route /pp-ferronor loads without authentication",
+    "[PASS] 8 .pdf-page elements rendered",
+    "[PASS] All 8 pages width = 793.7px (=210mm @ 96dpi)",
+    "[PASS] All 8 pages height >= 1122.5px (=297mm @ 96dpi); page-cover 1137.6px due to min-h wrapper",
+    "[PASS] page-cover computed padding = 0px (edge-to-edge dark cover)",
+    "[PASS] page-cover / page-resumen / page-solucion / page-matriz / page-funcionalidades / page-beneficios / page-inversion / page-cierre all present",
+    "[PASS] Matriz has 8 worker rows (Cristián Riquelme, Rodrigo Bahamondes, Ana Céspedes, Jorge Contreras, Patricia Alarcón, Miguel Fuentealba, Ricardo Núñez, Ximena Torres)",
+    "[PASS] Matriz has 9 header columns (1 Trabajador + 7 competencias + 1 %)",
+    "[PASS] Legend contains Vigente, Por vencer, Vencida, Falta, No aplica",
+    "[PASS] pp-export-pdf-btn visible on screen media",
+    "[PASS] pp-export-pdf-btn wrapped in .no-print ancestor",
+    "[PASS] @media print rule '.no-print { display: none }' present in inline stylesheet",
+    "[PASS] Under emulated print media, export button is hidden (is_visible=false)",
+    "[PASS] Inversion page shows the 3 plans: Implementación $0, Licencia mensual $1.150.000, Servicios adicionales Opcional",
+    "[PASS] Cierre page mentions Javier López and Eduardo Catrifol (Ferronor)",
+    "[PASS] 'Quedamos atentos para revisar juntos el detalle de la propuesta' present",
+    "[PASS] Footer text 'Aptiva es un producto de DoSoft' present",
+    "[PASS] No console/JS errors during page load"
+  ]
+}
