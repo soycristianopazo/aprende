@@ -10,13 +10,16 @@ import {
   Globe,
 } from 'lucide-react';
 
-const AptivaLogo = ({ dark = false }) => (
-  <img
-    src="/aptiva-logo.png"
-    alt="Aptiva — Evidencia Digital"
-    className={`h-10 sm:h-12 w-auto object-contain ${dark ? '' : 'brightness-0 invert'}`}
-  />
-);
+const AptivaLogo = ({ dark = false, size = 'md' }) => {
+  const sizeCls = size === 'lg' ? 'h-16 sm:h-20' : size === 'sm' ? 'h-10' : 'h-12 sm:h-14';
+  return (
+    <img
+      src="/aptiva-logo.png"
+      alt="Aptiva — Evidencia Digital"
+      className={`${sizeCls} w-auto object-contain ${dark ? '' : 'brightness-0 invert'}`}
+    />
+  );
+};
 
 const Section = ({ id, eyebrow, title, subtitle, children, className = '' }) => (
   <section id={id} className={`scroll-mt-20 ${className}`} data-testid={`section-${id}`}>
@@ -101,7 +104,7 @@ const PpFerronor = () => {
           style={{ backgroundImage: "radial-gradient(circle at 20% 20%, #3B82F6 0, transparent 40%), radial-gradient(circle at 80% 80%, #10B981 0, transparent 45%)" }} />
         <div className="max-w-6xl mx-auto px-6 py-16 sm:py-20 relative">
           <div className="flex items-center justify-between">
-            <AptivaLogo />
+            <AptivaLogo size="lg" />
             <p className="text-white/60 text-xs uppercase tracking-widest">Confidencial</p>
           </div>
 
