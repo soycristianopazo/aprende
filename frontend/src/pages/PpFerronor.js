@@ -29,7 +29,7 @@ const Section = ({ id, eyebrow, title, subtitle, children, className = '' }) => 
     <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 leading-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
       {title}
     </h2>
-    {subtitle && <p className="mt-3 text-slate-600 text-base max-w-3xl">{subtitle}</p>}
+    {subtitle && <p className="mt-4 text-slate-600 text-base leading-relaxed text-justify">{subtitle}</p>}
     <div className="mt-8">{children}</div>
   </section>
 );
@@ -170,8 +170,8 @@ const PpFerronor = () => {
 
         {/* Problema */}
         <Section id="problema" eyebrow="El problema"
-          title="Hoy gestionar la evidencia HSE cuesta más de lo que se ve."
-          subtitle="En empresas ferroviarias y contratistas mineros la evidencia legal está dispersa: contratos en un archivador, certificados en el mail del prevencionista, licencias en el celular del maquinista. El resultado: alertas que llegan tarde, auditorías que se resuelven a última hora y trabajadores que suben a faena sin la habilitación vigente.">
+          title="Hoy gestionar la evidencia Documental cuesta más de lo que se ve."
+          subtitle="En operaciones ferroviarias la evidencia legal de los trabajadores está dispersa: contratos en un archivador, certificados en el mail del prevencionista, licencias en el celular del maquinista. El resultado: alertas que llegan tarde, auditorías que se resuelven a última hora y trabajadores que suben a faena sin la habilitación vigente.">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[
               { t: 'Vencimientos silenciosos', d: 'Licencias, cursos y exámenes médicos que caducan sin previo aviso y detienen operaciones.' },
@@ -202,8 +202,8 @@ const PpFerronor = () => {
               desc="Al aprobar un curso, Aptiva emite un certificado con código de verificación público. Descargable en PDF y verificable por QR." />
             <FeatureCard icon={LineChart} tone="rose" title="Dashboard en tiempo real"
               desc="Gerencia y HSE ven cumplimiento global, distribución por cargo, top y bottom trabajadores, radar de cobertura por competencia y vencimientos próximos." />
-            <FeatureCard icon={Layers} tone="slate" title="Multi-empresa · multi-mandante"
-              desc="Ferronor puede exigir su propio estándar de acreditación a contratistas. Cada contratista trae su propia visión, y el mandante ve el cumplimiento por contrato." />
+            <FeatureCard icon={Layers} tone="slate" title="Estructura organizacional propia"
+              desc="Ferronor define sus áreas, gerencias, cargos y actividades. Cada trabajador queda ubicado en su contexto operativo, con los requerimientos que corresponden a su función." />
           </div>
         </Section>
 
@@ -265,7 +265,7 @@ const PpFerronor = () => {
                 <ShieldCheck className="w-4 h-4 text-blue-600" /> Cumplimiento y estándares
               </h4>
               <ul className="space-y-2">
-                <CheckLine>Estándar de acreditación por mandante y por contratista.</CheckLine>
+                <CheckLine>Estándar de acreditación configurable a la medida de Ferronor.</CheckLine>
                 <CheckLine>Scope granular: por área, cargo o actividad.</CheckLine>
                 <CheckLine>Match automático documento ↔ ítem del estándar.</CheckLine>
                 <CheckLine>Certificados autogenerados con código de verificación.</CheckLine>
@@ -304,7 +304,7 @@ const PpFerronor = () => {
               { i: Zap, t: 'Cero paralización por vencimientos', d: 'La operación no se detiene porque un maquinista tenía la licencia vencida.' },
               { i: Sparkles, t: 'Auditorías más rápidas', d: 'Auditor pide evidencia → un click, un PDF. Sin correos, sin carpetas físicas.' },
               { i: Rocket, t: 'Escalable con Ferronor', d: 'Multi-tenant y por rol: hoy 50 trabajadores, mañana 500 sin cambio de plataforma.' },
-              { i: Building2, t: 'Control mandante ↔ contratistas', d: 'Ferronor puede exigir estándares y ver el cumplimiento por cada contratista.' },
+              { i: Building2, t: 'Datos por Gerencia y Área', d: 'Filtra el cumplimiento por Gerencia, Área o Cargo para focalizar planes de acción específicos.' },
               { i: ShieldCheck, t: 'Reduce riesgo laboral y legal', d: 'Trazabilidad completa: fecha, autor, adjunto, vigencia. Prueba en tribunales.' },
               { i: LineChart, t: 'Gerencia con datos, no anécdotas', d: 'Tablero de KPIs actualizado 24/7 accesible desde cualquier dispositivo.' },
             ].map((b) => (
@@ -327,7 +327,7 @@ const PpFerronor = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="rounded-xl border border-slate-200 p-5 bg-slate-50">
               <p className="text-sm font-bold text-slate-900">Multi-tenant nativo</p>
-              <p className="text-xs text-slate-600 mt-2 leading-relaxed">Cada empresa (Ferronor, sus contratistas, sus mandantes) tiene datos aislados con el mismo estándar.</p>
+              <p className="text-xs text-slate-600 mt-2 leading-relaxed">Datos aislados por empresa. Ferronor mantiene control total y privacidad sobre su información.</p>
             </div>
             <div className="rounded-xl border border-slate-200 p-5 bg-slate-50">
               <p className="text-sm font-bold text-slate-900">Cloud escalable</p>
