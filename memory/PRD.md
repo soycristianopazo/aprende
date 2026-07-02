@@ -102,6 +102,15 @@ Vendor / dueño del producto: **DoSoft**.
 - [x] Nav actualizado: Admin sidebar incluye Competencias + Matriz Competencias. Student nav: Mi Ruta Aptiva · Mis Competencias · Mi Expediente · Mis Constancias.
 - [x] Tests: 6/6 backend pytest passing (`/app/backend/tests/test_f4_competencies.py`). Frontend smoke verificado por testing agent.
 
+### 2026-02 — Propuesta comercial `/pp-ferronor` — Layout A4 paginado
+- [x] Rediseño edge-to-edge en 8 páginas A4 (210mm × 297mm) para exportación directa a PDF vía `window.print()`.
+- [x] CSS `@page size:A4; margin:0` + `.pdf-page` con `width/min-height` fijos + `page-break-after: always`.
+- [x] Portada full-bleed (padding 0) con gradiente oscuro `slate-950 → blue-950`.
+- [x] Página 4 dedicada a la **Matriz de vencimientos por trabajador** (visual) con 8 trabajadores × 7 competencias, leyenda de 5 estados y bloque explicativo semáforo.
+- [x] Página de inversión con 3 planes ($0 implementación / $1.150.000 mensual / Servicios adicionales opcional).
+- [x] Botón "Exportar a PDF" flotante (`.no-print` — oculto al imprimir).
+- [x] Verificado por testing agent (iteration_16.json): 20/20 checks, 100% frontend, sin errores de consola.
+
 ### 2026-02 — F3.4 (Worker storage view)
 - [x] Endpoint `/api/my-documents` ya existía y devuelve tipos requeridos + archivos subidos del trabajador (scoped por área/actividad).
 - [x] Nueva página `/student/my-documents` ("Mi Expediente") con:
