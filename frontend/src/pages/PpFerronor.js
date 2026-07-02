@@ -415,7 +415,7 @@ const PpFerronor = () => {
             </div>
             <div className="flex-1">
               <p className="text-sm font-bold">Forma de pago</p>
-              <p className="text-white/70 text-xs mt-1">Transferencia electrónica · factura emitida el día 1</p>
+              <p className="text-white/70 text-xs mt-1">Transferencia electrónica</p>
             </div>
           </div>
         </Section>
