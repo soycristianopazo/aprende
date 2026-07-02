@@ -7,19 +7,15 @@ import { Button } from '../components/ui/button';
 import {
   Download, Building2, ShieldCheck, Bell, Award, BarChart3, Layers, CheckCircle2,
   ArrowRight, Sparkles, Users, GraduationCap, FileCheck, Rocket, Zap, LineChart,
-  Mail, Phone, Globe,
+  Globe,
 } from 'lucide-react';
 
-const AptivaLogo = () => (
-  <div className="flex items-center gap-2">
-    <div className="w-9 h-9 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center">
-      <span className="text-white font-black text-base">A</span>
-    </div>
-    <div>
-      <p className="text-white font-black text-lg leading-none">Aptiva</p>
-      <p className="text-white/60 text-[10px] uppercase tracking-widest">Evidencia Digital</p>
-    </div>
-  </div>
+const AptivaLogo = ({ dark = false }) => (
+  <img
+    src="/aptiva-logo.png"
+    alt="Aptiva — Evidencia Digital"
+    className={`h-10 sm:h-12 w-auto object-contain ${dark ? '' : 'brightness-0 invert'}`}
+  />
 );
 
 const Section = ({ id, eyebrow, title, subtitle, children, className = '' }) => (
@@ -118,12 +114,18 @@ const PpFerronor = () => {
               Plataforma digital para gestionar competencias, capacitaciones y evidencia digital de sus trabajadores —
               lista para auditorías, sin planillas Excel y sin sorpresas de vencimiento.
             </p>
+            <p className="mt-4 inline-flex items-center gap-2 text-xs text-white/70 bg-white/5 border border-white/10 rounded-full px-3 py-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-blue-300" />
+              Un producto de <strong className="text-white ml-0.5">DoSoft</strong>
+              <span className="text-white/50">·</span>
+              <span className="text-white/70">Spin-Off de Legav</span>
+            </p>
 
             <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-3xl">
               {[
                 { k: 'Dirigido a', v: 'Javier López · Eduardo Catrifol', sub: 'Ferronor' },
                 { k: 'Fecha', v: today, sub: 'Vigencia 30 días' },
-                { k: 'Preparado por', v: 'Aptiva SpA', sub: 'contacto@aptiva.cl' },
+                { k: 'Preparado por', v: 'DoSoft SpA', sub: 'Spin-Off de Legav' },
               ].map((c) => (
                 <div key={c.k} className="rounded-xl bg-white/5 border border-white/10 p-4">
                   <p className="text-white/50 text-[10px] uppercase tracking-widest font-semibold">{c.k}</p>
@@ -448,14 +450,6 @@ const PpFerronor = () => {
                   Aptiva puede estar operativo en Ferronor en 15 días. Sin costo de implementación,
                   con un valor fijo mensual y todos los módulos incluidos. Solo falta que digan &laquo;sí&raquo;.
                 </p>
-                <div className="mt-6 flex flex-wrap gap-3 no-print">
-                  <a href="mailto:contacto@aptiva.cl" className="inline-flex items-center gap-2 bg-white text-blue-700 px-4 py-2.5 rounded-lg font-semibold text-sm hover:bg-blue-50 transition">
-                    <Mail className="w-4 h-4" /> contacto@aptiva.cl
-                  </a>
-                  <a href="tel:+56912345678" className="inline-flex items-center gap-2 bg-white/10 border border-white/20 text-white px-4 py-2.5 rounded-lg font-semibold text-sm hover:bg-white/20 transition">
-                    <Phone className="w-4 h-4" /> +56 9 1234 5678
-                  </a>
-                </div>
               </div>
               <div className="rounded-xl bg-white/10 border border-white/20 p-6">
                 <p className="text-xs uppercase tracking-widest text-blue-200 font-semibold">Propuesta dirigida a</p>
@@ -486,8 +480,11 @@ const PpFerronor = () => {
       <footer className="bg-slate-950 text-white py-10 mt-20">
         <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <AptivaLogo />
-          <p className="text-white/50 text-xs text-center">
-            Aptiva SpA · Evidencia Digital para operaciones críticas · <a href="https://www.aptiva.cl" className="underline"><Globe className="w-3 h-3 inline" /> aptiva.cl</a>
+          <p className="text-white/60 text-xs text-center">
+            Aptiva es un producto de <strong className="text-white">DoSoft</strong> · Spin-Off de Legav ·{' '}
+            <a href="https://www.dosoft.cl" className="underline hover:text-white transition">
+              <Globe className="w-3 h-3 inline mr-0.5" /> dosoft.cl
+            </a>
           </p>
           <p className="text-white/40 text-[10px]">Propuesta confidencial · {today}</p>
         </div>
