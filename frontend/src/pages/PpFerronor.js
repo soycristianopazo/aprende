@@ -21,12 +21,12 @@ const AptivaLogo = ({ dark = false, size = 'md' }) => {
   );
 };
 
-const Section = ({ id, eyebrow, title, subtitle, children, className = '' }) => (
+const Section = ({ id, eyebrow, title, subtitle, children, className = '', titleClassName = '' }) => (
   <section id={id} className={`scroll-mt-20 ${className}`} data-testid={`section-${id}`}>
     {eyebrow && (
       <p className="text-[11px] uppercase tracking-[0.2em] text-blue-700 font-semibold mb-2">{eyebrow}</p>
     )}
-    <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 leading-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+    <h2 className={`text-3xl sm:text-4xl font-bold text-slate-900 leading-tight ${titleClassName}`} style={{ fontFamily: 'Manrope, sans-serif' }}>
       {title}
     </h2>
     {subtitle && <p className="mt-4 text-slate-600 text-base leading-relaxed text-justify">{subtitle}</p>}
@@ -171,7 +171,8 @@ const PpFerronor = () => {
         {/* Problema */}
         <Section id="problema" eyebrow="El problema"
           title="Hoy gestionar la evidencia Documental cuesta más de lo que se ve."
-          subtitle="En operaciones ferroviarias la evidencia legal de los trabajadores está dispersa: contratos en un archivador, certificados en el mail del prevencionista, licencias en el celular del maquinista. El resultado: alertas que llegan tarde, auditorías que se resuelven a última hora y trabajadores que suben a faena sin la habilitación vigente.">
+          titleClassName="text-2xl sm:text-3xl md:text-[28px] lg:text-[32px] xl:text-4xl md:whitespace-nowrap"
+          subtitle="En operaciones ferroviarias la evidencia legal de los trabajadores está dispersa: Documentos en un archivador, certificados en el mail del prevencionista, licencias en el celular del maquinista. El resultado: alertas que llegan tarde, auditorías que se resuelven a última hora y trabajadores que realizan sus labores sin la habilitación vigente.">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[
               { t: 'Vencimientos silenciosos', d: 'Licencias, cursos y exámenes médicos que caducan sin previo aviso y detienen operaciones.' },
