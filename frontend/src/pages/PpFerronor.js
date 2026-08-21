@@ -83,9 +83,9 @@ const PageHeader = ({ page, total = 8, clientName }) => (
   </div>
 );
 
-const PageFooter = () => (
+const PageFooter = ({ hideLegav = false }) => (
   <div className="absolute bottom-[10mm] left-[12mm] right-[12mm] pt-2 border-t border-slate-200 flex justify-between items-center text-[8.5px] text-slate-400 uppercase tracking-[0.15em]">
-    <span>Aptiva · producto de <strong className="text-slate-600">DoSoft</strong> — Spin-Off de Legav</span>
+    <span>Aptiva · producto de <strong className="text-slate-600">DoSoft</strong>{!hideLegav && ' — Spin-Off de Legav'}</span>
     <span>dosoft.cl</span>
   </div>
 );
@@ -209,12 +209,27 @@ const FCAB = {
   ],
 };
 
-// Named export so PpFcab.js can render the same template with different client
+const EPRIME = {
+  slug: 'eprime',
+  name: 'EPrime',
+  coverContacts: 'Alexandra Momberg',
+  recipients: [
+    { initials: 'AM', name: 'Alexandra Momberg' },
+  ],
+  fixedDate: '21 de agosto de 2026',
+  hideLegav: true,
+  priceLabel: 'Conversable',
+  hidePriceSubtitle: true,
+};
+
+// Named exports so page wrappers can render the same template with different client
 export const PpFcab = () => <Proposal client={FCAB} />;
+export const PpEprime = () => <Proposal client={EPRIME} />;
 
 const Proposal = ({ client }) => {
   const handlePrint = () => window.print();
-  const today = new Date().toLocaleDateString('es-CL', { day: '2-digit', month: 'long', year: 'numeric' });
+  const autoToday = new Date().toLocaleDateString('es-CL', { day: '2-digit', month: 'long', year: 'numeric' });
+  const today = client.fixedDate || autoToday;
 
   return (
     <div className="pdf-container" data-testid={`pp-${client.slug}-page`}>
@@ -296,8 +311,12 @@ const Proposal = ({ client }) => {
               <p className="mt-5 inline-flex items-center gap-2 text-xs text-white/80 bg-white/5 border border-white/10 rounded-full px-3 py-1.5 self-start">
                 <Sparkles className="w-3.5 h-3.5 text-blue-300" />
                 Un producto de <strong className="text-white ml-0.5">DoSoft</strong>
-                <span className="text-white/50">·</span>
-                <span className="text-white/70">Spin-Off de Legav</span>
+                {!client.hideLegav && (
+                  <>
+                    <span className="text-white/50">·</span>
+                    <span className="text-white/70">Spin-Off de Legav</span>
+                  </>
+                )}
               </p>
             </div>
 
@@ -306,7 +325,7 @@ const Proposal = ({ client }) => {
               {[
                 { k: 'Dirigido a', v: client.coverContacts, sub: client.name },
                 { k: 'Fecha', v: today, sub: 'Vigencia 30 días' },
-                { k: 'Preparado por', v: 'DoSoft SpA', sub: 'Spin-Off de Legav' },
+                { k: 'Preparado por', v: 'DoSoft SpA', sub: client.hideLegav ? 'dosoft.cl' : 'Spin-Off de Legav' },
               ].map((c) => (
                 <div key={c.k} className="rounded-lg bg-white/5 border border-white/10 p-3">
                   <p className="text-white/50 text-[9px] uppercase tracking-[0.2em] font-semibold">{c.k}</p>
@@ -363,7 +382,7 @@ const Proposal = ({ client }) => {
             </div>
           ))}
         </div>
-        <PageFooter />
+        <PageFooter hideLegav={client.hideLegav} />
       </Page>
 
       {/* =========================================================
@@ -404,7 +423,7 @@ const Proposal = ({ client }) => {
           <StepCard n="4" title="Auditoría & KPIs"
             desc="Dashboard ejecutivo, reportes exportables, matriz de cumplimiento y alertas. Todo con fecha y autor." />
         </div>
-        <PageFooter />
+        <PageFooter hideLegav={client.hideLegav} />
       </Page>
 
       {/* =========================================================
@@ -441,7 +460,7 @@ const Proposal = ({ client }) => {
             <p className="text-white/70 text-[11px] leading-relaxed mt-0.5">La misma matriz puede filtrarse por Gerencia, Área, Cargo o Actividad para focalizar planes de capacitación.</p>
           </div>
         </div>
-        <PageFooter />
+        <PageFooter hideLegav={client.hideLegav} />
       </Page>
 
       {/* =========================================================
@@ -501,7 +520,7 @@ const Proposal = ({ client }) => {
             </div>
           ))}
         </div>
-        <PageFooter />
+        <PageFooter hideLegav={client.hideLegav} />
       </Page>
 
       {/* =========================================================
@@ -551,7 +570,7 @@ const Proposal = ({ client }) => {
             </div>
           ))}
         </div>
-        <PageFooter />
+        <PageFooter hideLegav={client.hideLegav} />
       </Page>
 
       {/* =========================================================
@@ -582,8 +601,10 @@ const Proposal = ({ client }) => {
           <div className="rounded-xl border-2 border-blue-600 bg-gradient-to-b from-blue-50 to-white p-3.5 relative">
             <span className="absolute -top-2 left-3 bg-blue-600 text-white text-[8.5px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider">Plan</span>
             <p className="text-[9.5px] uppercase tracking-widest text-blue-700 font-semibold mt-1">Licencia mensual</p>
-            <p className="text-[24px] font-black text-slate-900 mt-1.5 leading-none tabular-nums whitespace-nowrap">$1.150.000</p>
-            <p className="text-[9.5px] text-slate-500 mt-0.5">CLP + IVA · mensual · todo incluido</p>
+            <p className={`font-black text-slate-900 mt-1.5 leading-none tabular-nums whitespace-nowrap ${client.priceLabel ? 'text-[22px]' : 'text-[24px]'}`}>{client.priceLabel || '$1.150.000'}</p>
+            {!client.hidePriceSubtitle && (
+              <p className="text-[9.5px] text-slate-500 mt-0.5">CLP + IVA · mensual · todo incluido</p>
+            )}
             <ul className="mt-3 space-y-1">
               <CheckLine>Trabajadores <strong>ilimitados</strong></CheckLine>
               <CheckLine>Todos los módulos activos</CheckLine>
@@ -624,7 +645,7 @@ const Proposal = ({ client }) => {
             <p className="text-white/70 text-[10px] mt-0.5">Transferencia electrónica</p>
           </div>
         </div>
-        <PageFooter />
+        <PageFooter hideLegav={client.hideLegav} />
       </Page>
 
       {/* =========================================================
@@ -689,7 +710,7 @@ const Proposal = ({ client }) => {
         <div className="absolute bottom-[12mm] left-[12mm] right-[12mm] pt-4 border-t border-slate-200 flex items-center justify-between">
           <AptivaLogo size="sm" dark />
           <p className="text-[9px] text-slate-500 text-center flex-1 mx-4">
-            Aptiva es un producto de <strong className="text-slate-700">DoSoft</strong> · Spin-Off de Legav ·{' '}
+            Aptiva es un producto de <strong className="text-slate-700">DoSoft</strong>{!client.hideLegav && ' · Spin-Off de Legav'} ·{' '}
             <span className="text-slate-600 inline-flex items-center gap-1"><Globe className="w-2.5 h-2.5" /> dosoft.cl</span>
           </p>
           <p className="text-[8px] text-slate-400">Confidencial · {today}</p>

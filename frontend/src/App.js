@@ -32,6 +32,7 @@ import AdminCompetencyMatrix from "./pages/admin/CompetencyMatrix";
 import AdminNotifications from "./pages/admin/Notifications";
 import PpFerronor from "./pages/PpFerronor";
 import PpFcab from "./pages/PpFcab";
+import PpEprime from "./pages/PpEprime";
 import AdminCompany from "./pages/admin/Company";
 import AdminMandantes from "./pages/admin/Mandantes";
 import AdminMandanteStandard from "./pages/admin/MandanteStandard";
@@ -117,6 +118,7 @@ function AppRouter() {
       <Route path="/verify/:code" element={<VerifyCertificate />} />
       <Route path="/pp-ferronor" element={<PpFerronor />} />
       <Route path="/pp-fcab" element={<PpFcab />} />
+      <Route path="/pp-eprime" element={<PpEprime />} />
       
       {/* SuperAdmin Routes */}
       <Route path="/superadmin" element={
